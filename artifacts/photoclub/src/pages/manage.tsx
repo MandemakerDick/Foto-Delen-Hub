@@ -1,16 +1,19 @@
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { 
-  useCreateClub, 
-  useCreateTheme, 
+import {
+  useCreateClub,
+  useCreateTheme,
   useCreatePhotographer,
   useListClubs,
+  useListThemes,
   getListClubsQueryKey,
   getListThemesQueryKey,
-  getListPhotographersQueryKey
+  getListPhotographersQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,9 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Users, LayoutDashboard, User } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera } from "lucide-react";
 
-// Schemas
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
@@ -42,7 +44,6 @@ const themeSchema = z.object({
 const photographerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().optional(),
-  avatarUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   clubId: z.coerce.number().optional(),
 });
 
@@ -50,10 +51,21 @@ export default function Manage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: clubs } = useListClubs();
+  const { data: themes } = useListThemes();
 
   const createClubMutation = useCreateClub();
   const createThemeMutation = useCreateTheme();
   const createPhotographerMutation = useCreatePhotographer();
+
+  // Avatar upload state (managed outside react-hook-form)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const pendingObjectPathRef = useRef<string | null>(null);
+
+  // Theme pickers state
+  const [theme1, setTheme1] = useState("none");
+  const [theme2, setTheme2] = useState("none");
+  const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
 
   const clubForm = useForm<z.infer<typeof clubSchema>>({
     resolver: zodResolver(clubSchema),
@@ -67,7 +79,7 @@ export default function Manage() {
 
   const photographerForm = useForm<z.infer<typeof photographerSchema>>({
     resolver: zodResolver(photographerSchema),
-    defaultValues: { name: "", bio: "", avatarUrl: "" },
+    defaultValues: { name: "", bio: "" },
   });
 
   const onClubSubmit = (values: z.infer<typeof clubSchema>) => {
@@ -79,8 +91,8 @@ export default function Manage() {
           clubForm.reset();
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to create club", variant: "destructive" })
-      }
+        onError: () => toast({ title: "Error", description: "Failed to create club", variant: "destructive" }),
+      },
     );
   };
 
@@ -93,25 +105,32 @@ export default function Manage() {
           themeForm.reset();
           queryClient.invalidateQueries({ queryKey: getListThemesQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to create theme", variant: "destructive" })
-      }
+        onError: () => toast({ title: "Error", description: "Failed to create theme", variant: "destructive" }),
+      },
     );
   };
 
   const onPhotographerSubmit = (values: z.infer<typeof photographerSchema>) => {
-    const data = { ...values };
-    if (!data.avatarUrl) delete data.avatarUrl;
-    
+    const data = {
+      ...values,
+      ...(avatarUrl ? { avatarUrl } : {}),
+      ...(theme1 !== "none" ? { themeId1: Number(theme1) } : {}),
+      ...(theme2 !== "none" ? { themeId2: Number(theme2) } : {}),
+    };
+
     createPhotographerMutation.mutate(
       { data },
       {
         onSuccess: () => {
           toast({ title: "Profile Created", description: `${values.name} has joined.` });
           photographerForm.reset();
+          setAvatarUrl(null);
+          setTheme1("none");
+          setTheme2("none");
           queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to create profile", variant: "destructive" })
-      }
+        onError: () => toast({ title: "Error", description: "Failed to create profile", variant: "destructive" }),
+      },
     );
   };
 
@@ -140,6 +159,7 @@ export default function Manage() {
           </TabsTrigger>
         </TabsList>
 
+        {/* Club tab */}
         <TabsContent value="club" className="bg-secondary/20 p-6 rounded-lg border border-border/50">
           <h2 className="font-serif text-2xl font-medium mb-6">Create Community</h2>
           <Form {...clubForm}>
@@ -172,6 +192,7 @@ export default function Manage() {
           </Form>
         </TabsContent>
 
+        {/* Theme tab */}
         <TabsContent value="theme" className="bg-secondary/20 p-6 rounded-lg border border-border/50">
           <h2 className="font-serif text-2xl font-medium mb-6">Create Theme</h2>
           <Form {...themeForm}>
@@ -197,10 +218,63 @@ export default function Manage() {
           </Form>
         </TabsContent>
 
+        {/* Photographer tab */}
         <TabsContent value="photographer" className="bg-secondary/20 p-6 rounded-lg border border-border/50">
           <h2 className="font-serif text-2xl font-medium mb-6">Add Photographer</h2>
           <Form {...photographerForm}>
-            <form onSubmit={photographerForm.handleSubmit(onPhotographerSubmit)} className="space-y-4">
+            <form onSubmit={photographerForm.handleSubmit(onPhotographerSubmit)} className="space-y-5">
+
+              {/* Avatar upload */}
+              <div className="flex flex-col items-center gap-3">
+                <ObjectUploader
+                  maxNumberOfFiles={1}
+                  maxFileSize={5 * 1024 * 1024}
+                  onGetUploadParameters={async (file) => {
+                    const res = await fetch("/api/storage/uploads/request-url", {
+                      method: "POST",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+                    });
+                    if (!res.ok) throw new Error("Failed to get upload URL");
+                    const data = await res.json() as { uploadURL: string; objectPath: string };
+                    pendingObjectPathRef.current = data.objectPath;
+                    setAvatarUploading(true);
+                    return { method: "PUT" as const, url: data.uploadURL, headers: { "Content-Type": file.type ?? "image/jpeg" } };
+                  }}
+                  onComplete={(result) => {
+                    setAvatarUploading(false);
+                    if ((result.failed?.length ?? 0) > 0) {
+                      toast({ title: "Upload failed", description: "Could not upload avatar.", variant: "destructive" });
+                      return;
+                    }
+                    const objectPath = pendingObjectPathRef.current;
+                    if (objectPath) setAvatarUrl(`/api/storage${objectPath}`);
+                  }}
+                  buttonClassName="group relative w-24 h-24 rounded-full bg-secondary border-2 border-dashed border-border hover:border-primary/60 overflow-hidden flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+                >
+                  {avatarUploading ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    </div>
+                  ) : avatarUrl ? (
+                    <>
+                      <img src={avatarUrl} alt="Avatar preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
+                      <Camera className="w-6 h-6" />
+                      <span className="text-[10px] uppercase tracking-wider">Photo</span>
+                    </div>
+                  )}
+                </ObjectUploader>
+                <p className="text-xs text-muted-foreground">Click to upload a profile picture (optional)</p>
+              </div>
+
+              {/* Name */}
               <FormField control={photographerForm.control} name="name" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Name *</FormLabel>
@@ -208,13 +282,8 @@ export default function Manage() {
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={photographerForm.control} name="avatarUrl" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Avatar URL</FormLabel>
-                  <FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+
+              {/* Primary Club */}
               <FormField control={photographerForm.control} name="clubId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Primary Club</FormLabel>
@@ -233,6 +302,47 @@ export default function Manage() {
                   <FormMessage />
                 </FormItem>
               )} />
+
+              {/* Specialty themes */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-sm font-medium mb-1.5">Specialty Theme 1</p>
+                  <Select
+                    value={theme1}
+                    onValueChange={(v) => { setTheme1(v); if (v === theme2) setTheme2("none"); }}
+                  >
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {themes?.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1.5">Specialty Theme 2</p>
+                  <Select
+                    value={theme2}
+                    onValueChange={setTheme2}
+                    disabled={theme1 === "none"}
+                  >
+                    <SelectTrigger className="bg-background disabled:opacity-50">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {theme2Options.map((t) => (
+                        <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Bio */}
               <FormField control={photographerForm.control} name="bio" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Biography</FormLabel>
@@ -240,6 +350,7 @@ export default function Manage() {
                   <FormMessage />
                 </FormItem>
               )} />
+
               <Button type="submit" disabled={createPhotographerMutation.isPending} className="w-full mt-2">
                 Register Profile
               </Button>
