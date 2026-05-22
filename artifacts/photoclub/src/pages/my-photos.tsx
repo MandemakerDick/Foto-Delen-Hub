@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "wouter";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import {
   useUpdatePhotographer,
   getGetPhotographerQueryKey,
 } from "@workspace/api-client-react";
+import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,88 @@ function useMyProfile() {
   });
 
   return { profile, loading, refetch: fetchProfile };
+}
+
+function AvatarUploader({
+  profile,
+  onSaved,
+}: {
+  profile: PhotographerProfile;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const updateMutation = useUpdatePhotographer();
+  const pendingObjectPathRef = useRef<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  return (
+    <ObjectUploader
+      maxNumberOfFiles={1}
+      maxFileSize={5 * 1024 * 1024}
+      onGetUploadParameters={async (file) => {
+        const res = await fetch("/api/storage/uploads/request-url", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            contentType: file.type,
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to get upload URL");
+        const data = await res.json() as { uploadURL: string; objectPath: string };
+        pendingObjectPathRef.current = data.objectPath;
+        setUploading(true);
+        return {
+          method: "PUT" as const,
+          url: data.uploadURL,
+          headers: { "Content-Type": file.type ?? "image/jpeg" },
+        };
+      }}
+      onComplete={(result) => {
+        setUploading(false);
+        if ((result.failed?.length ?? 0) > 0) {
+          toast({ title: "Upload failed", description: "Could not upload avatar.", variant: "destructive" });
+          return;
+        }
+        const objectPath = pendingObjectPathRef.current;
+        if (!objectPath) return;
+        const avatarUrl = `/api/storage${objectPath}`;
+        updateMutation.mutate(
+          { id: profile.id, data: { avatarUrl } },
+          {
+            onSuccess: () => {
+              toast({ title: "Profile picture updated" });
+              onSaved();
+            },
+            onError: () => toast({ title: "Error", description: "Could not save profile picture.", variant: "destructive" }),
+          },
+        );
+      }}
+      buttonClassName="group relative w-14 h-14 rounded-full bg-secondary border border-border overflow-hidden flex items-center justify-center shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      {uploading ? (
+        <div className="w-full h-full flex items-center justify-center bg-background/60">
+          <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        </div>
+      ) : profile.avatarUrl ? (
+        <>
+          <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Camera className="w-5 h-5 text-white" />
+          </div>
+        </>
+      ) : (
+        <>
+          <User className="w-6 h-6 text-muted-foreground" />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+            <Camera className="w-5 h-5 text-white" />
+          </div>
+        </>
+      )}
+    </ObjectUploader>
+  );
 }
 
 function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
@@ -386,13 +469,7 @@ function MyPhotosDashboard({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-secondary border border-border overflow-hidden flex items-center justify-center shrink-0">
-            {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-6 h-6 text-muted-foreground" />
-            )}
-          </div>
+          <AvatarUploader profile={profile} onSaved={onProfileUpdated} />
           <div>
             <h1 className="font-serif text-3xl font-bold">{profile.name}</h1>
             {profile.clubName && <p className="text-sm text-muted-foreground">{profile.clubName}</p>}
