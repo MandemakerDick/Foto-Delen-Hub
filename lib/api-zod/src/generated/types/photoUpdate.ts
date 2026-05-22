@@ -11,5 +11,7 @@ export interface PhotoUpdate {
   title?: string;
   description?: string;
   /** @nullable */
+  clubId?: number | null;
+  /** @nullable */
   themeId?: number | null;
 }

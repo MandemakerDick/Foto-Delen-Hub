@@ -259,6 +259,7 @@ export const UpdatePhotoParams = zod.object({
 export const UpdatePhotoBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
+  "clubId": zod.number().nullish(),
   "themeId": zod.number().nullish()
 })
 

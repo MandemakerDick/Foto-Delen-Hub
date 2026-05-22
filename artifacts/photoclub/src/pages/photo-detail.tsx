@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Heart, Calendar, ArrowLeft, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2 } from "lucide-react";
+import { Heart, Calendar, ArrowLeft, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +10,10 @@ import {
   getGetPhotoQueryKey,
   useLikePhoto,
   useDeletePhoto,
+  useUpdatePhoto,
   useListPhotographers,
+  useListClubs,
+  useListThemes,
   useListComments,
   getListCommentsQueryKey,
   useCreateComment,
@@ -21,10 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +45,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function PhotoDetail() {

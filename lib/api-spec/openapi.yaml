@@ -583,6 +583,8 @@ components:
           minLength: 1
         description:
           type: string
+        clubId:
+          type: ["integer", "null"]
         themeId:
           type: ["integer", "null"]
 
