@@ -367,6 +367,78 @@ export function useGetClub<TData = Awaited<ReturnType<typeof getClub>>, TError =
 
 
 
+export const getUpdateClubUrl = (id: number,) => {
+
+
+
+
+  return `/api/clubs/${id}`
+}
+
+/**
+ * @summary Update a photo club
+ */
+export const updateClub = async (id: number,
+    clubInput: ClubInput, options?: RequestInit): Promise<Club> => {
+
+  return customFetch<Club>(getUpdateClubUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubInput,)
+  }
+);}
+
+
+
+
+export const getUpdateClubMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClub>>, TError,{id: number;data: BodyType<ClubInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateClub>>, TError,{id: number;data: BodyType<ClubInput>}, TContext> => {
+
+const mutationKey = ['updateClub'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateClub>>, {id: number;data: BodyType<ClubInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateClub(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateClubMutationResult = NonNullable<Awaited<ReturnType<typeof updateClub>>>
+    export type UpdateClubMutationBody = BodyType<ClubInput>
+    export type UpdateClubMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a photo club
+ */
+export const useUpdateClub = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateClub>>, TError,{id: number;data: BodyType<ClubInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateClub>>,
+        TError,
+        {id: number;data: BodyType<ClubInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateClubMutationOptions(options));
+    }
+
 export const getListThemesUrl = (params?: ListThemesParams,) => {
   const normalizedParams = new URLSearchParams();
 

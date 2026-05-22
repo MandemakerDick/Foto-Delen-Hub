@@ -74,6 +74,37 @@ export const GetClubResponse = zod.object({
 
 
 /**
+ * @summary Update a photo club
+ */
+export const UpdateClubParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdateClubBody = zod.object({
+  "name": zod.string().min(1),
+  "description": zod.string().optional(),
+  "location": zod.string().optional(),
+  "websiteUrl": zod.string().optional(),
+  "logoUrl": zod.string().optional()
+})
+
+export const UpdateClubResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "location": zod.string().nullish(),
+  "websiteUrl": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "memberCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary List all themes
  */
 export const ListThemesQueryParams = zod.object({

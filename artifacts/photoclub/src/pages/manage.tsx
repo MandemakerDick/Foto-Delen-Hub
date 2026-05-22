@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   useCreateClub,
+  useUpdateClub,
   useCreateTheme,
   useCreatePhotographer,
   useListClubs,
@@ -27,8 +28,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Users, LayoutDashboard, User, Camera } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, X } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,6 +51,8 @@ const photographerSchema = z.object({
   clubId: z.coerce.number().optional(),
 });
 
+type ClubFormValues = z.infer<typeof clubSchema>;
+
 export default function Manage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -56,15 +60,19 @@ export default function Manage() {
   const { data: themes } = useListThemes();
 
   const createClubMutation = useCreateClub();
+  const updateClubMutation = useUpdateClub();
   const createThemeMutation = useCreateTheme();
   const createPhotographerMutation = useCreatePhotographer();
 
-  // Club logo upload state
+  // Which club is being edited (null = create mode)
+  const [editingClubId, setEditingClubId] = useState<number | null>(null);
+
+  // Club logo upload state (shared for create & edit)
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const pendingLogoPathRef = useRef<string | null>(null);
 
-  // Avatar upload state (managed outside react-hook-form)
+  // Avatar upload state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const pendingObjectPathRef = useRef<string | null>(null);
@@ -74,9 +82,9 @@ export default function Manage() {
   const [theme2, setTheme2] = useState("none");
   const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
 
-  const clubForm = useForm<z.infer<typeof clubSchema>>({
+  const clubForm = useForm<ClubFormValues>({
     resolver: zodResolver(clubSchema),
-    defaultValues: { name: "", description: "", location: "", websiteUrl: "" },
+    defaultValues: { name: "", description: "", location: "", websiteUrl: "", logoUrl: "" },
   });
 
   const themeForm = useForm<z.infer<typeof themeSchema>>({
@@ -89,22 +97,64 @@ export default function Manage() {
     defaultValues: { name: "", bio: "" },
   });
 
-  const onClubSubmit = (values: z.infer<typeof clubSchema>) => {
+  const startEditing = (clubId: number) => {
+    const club = clubs?.find((c) => c.id === clubId);
+    if (!club) return;
+    setEditingClubId(clubId);
+    setLogoUrl(club.logoUrl ?? null);
+    clubForm.reset({
+      name: club.name,
+      description: club.description ?? "",
+      location: club.location ?? "",
+      websiteUrl: club.websiteUrl ?? "",
+      logoUrl: club.logoUrl ?? "",
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingClubId(null);
+    setLogoUrl(null);
+    clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", logoUrl: "" });
+  };
+
+  // Keep logoUrl in sync with the form field when editing
+  useEffect(() => {
+    if (logoUrl !== null) {
+      clubForm.setValue("logoUrl", logoUrl);
+    }
+  }, [logoUrl, clubForm]);
+
+  const onClubSubmit = (values: ClubFormValues) => {
     const data = { ...values };
     if (!data.websiteUrl) delete data.websiteUrl;
-    if (logoUrl) data.logoUrl = logoUrl;
-    createClubMutation.mutate(
-      { data },
-      {
-        onSuccess: () => {
-          toast({ title: "Community Established", description: `${values.name} has been created.` });
-          clubForm.reset();
-          setLogoUrl(null);
-          queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
+    if (logoUrl) data.logoUrl = logoUrl; else if (!data.logoUrl) delete data.logoUrl;
+
+    if (editingClubId !== null) {
+      updateClubMutation.mutate(
+        { id: editingClubId, data },
+        {
+          onSuccess: () => {
+            toast({ title: "Club Updated", description: `${values.name} has been saved.` });
+            cancelEditing();
+            queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
+          },
+          onError: () => toast({ title: "Error", description: "Failed to update club", variant: "destructive" }),
         },
-        onError: () => toast({ title: "Error", description: "Failed to create club", variant: "destructive" }),
-      },
-    );
+      );
+    } else {
+      createClubMutation.mutate(
+        { data },
+        {
+          onSuccess: () => {
+            toast({ title: "Community Established", description: `${values.name} has been created.` });
+            clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", logoUrl: "" });
+            setLogoUrl(null);
+            queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
+          },
+          onError: () => toast({ title: "Error", description: "Failed to create club", variant: "destructive" }),
+        },
+      );
+    }
   };
 
   const onThemeSubmit = (values: z.infer<typeof themeSchema>) => {
@@ -145,6 +195,8 @@ export default function Manage() {
     );
   };
 
+  const isPending = editingClubId !== null ? updateClubMutation.isPending : createClubMutation.isPending;
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <div className="mb-10 text-center">
@@ -171,94 +223,163 @@ export default function Manage() {
         </TabsList>
 
         {/* Club tab */}
-        <TabsContent value="club" className="bg-secondary/20 p-6 rounded-lg border border-border/50">
-          <h2 className="font-serif text-2xl font-medium mb-6">Create Community</h2>
-          <Form {...clubForm}>
-            <form onSubmit={clubForm.handleSubmit(onClubSubmit)} className="space-y-4">
-
-              {/* Logo upload */}
-              <div className="flex flex-col items-center gap-3 pb-2">
-                <ObjectUploader
-                  maxNumberOfFiles={1}
-                  maxFileSize={5 * 1024 * 1024}
-                  onGetUploadParameters={async (file) => {
-                    const res = await fetch("/api/storage/uploads/request-url", {
-                      method: "POST",
-                      credentials: "include",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
-                    });
-                    if (!res.ok) throw new Error("Failed to get upload URL");
-                    const data = await res.json() as { uploadURL: string; objectPath: string };
-                    pendingLogoPathRef.current = data.objectPath;
-                    setLogoUploading(true);
-                    return { method: "PUT" as const, url: data.uploadURL, headers: { "Content-Type": file.type ?? "image/jpeg" } };
-                  }}
-                  onComplete={(result) => {
-                    setLogoUploading(false);
-                    if ((result.failed?.length ?? 0) > 0) {
-                      toast({ title: "Upload failed", description: "Could not upload logo.", variant: "destructive" });
-                      return;
-                    }
-                    const objectPath = pendingLogoPathRef.current;
-                    if (objectPath) setLogoUrl(`/api/storage${objectPath}`);
-                  }}
-                  buttonClassName="group relative w-24 h-24 rounded-xl bg-secondary border-2 border-dashed border-border hover:border-primary/60 overflow-hidden flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+        <TabsContent value="club" className="space-y-6">
+          {/* Create / Edit form */}
+          <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-serif text-2xl font-medium">
+                {editingClubId !== null ? "Edit Community" : "Create Community"}
+              </h2>
+              {editingClubId !== null && (
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {logoUploading ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                    </div>
-                  ) : logoUrl ? (
-                    <>
-                      <img src={logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Camera className="w-5 h-5 text-white" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
-                      <Camera className="w-6 h-6" />
-                      <span className="text-[10px] uppercase tracking-wider">Logo</span>
-                    </div>
-                  )}
-                </ObjectUploader>
-                <p className="text-xs text-muted-foreground">Click to upload a club logo (optional)</p>
-              </div>
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+              )}
+            </div>
 
-              <FormField control={clubForm.control} name="name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Club Name *</FormLabel>
-                  <FormControl><Input {...field} className="bg-background" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={clubForm.control} name="location" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl><Input {...field} className="bg-background" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={clubForm.control} name="websiteUrl" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website URL</FormLabel>
-                  <FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={clubForm.control} name="description" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <Button type="submit" disabled={createClubMutation.isPending} className="w-full mt-2">
-                Establish Community
-              </Button>
-            </form>
-          </Form>
+            <Form {...clubForm}>
+              <form onSubmit={clubForm.handleSubmit(onClubSubmit)} className="space-y-4">
+
+                {/* Logo upload */}
+                <div className="flex flex-col items-center gap-3 pb-2">
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={5 * 1024 * 1024}
+                    onGetUploadParameters={async (file) => {
+                      const res = await fetch("/api/storage/uploads/request-url", {
+                        method: "POST",
+                        credentials: "include",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+                      });
+                      if (!res.ok) throw new Error("Failed to get upload URL");
+                      const data = await res.json() as { uploadURL: string; objectPath: string };
+                      pendingLogoPathRef.current = data.objectPath;
+                      setLogoUploading(true);
+                      return { method: "PUT" as const, url: data.uploadURL, headers: { "Content-Type": file.type ?? "image/jpeg" } };
+                    }}
+                    onComplete={(result) => {
+                      setLogoUploading(false);
+                      if ((result.failed?.length ?? 0) > 0) {
+                        toast({ title: "Upload failed", description: "Could not upload logo.", variant: "destructive" });
+                        return;
+                      }
+                      const objectPath = pendingLogoPathRef.current;
+                      if (objectPath) setLogoUrl(`/api/storage${objectPath}`);
+                    }}
+                    buttonClassName="group relative w-24 h-24 rounded-xl bg-secondary border-2 border-dashed border-border hover:border-primary/60 overflow-hidden flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+                  >
+                    {logoUploading ? (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      </div>
+                    ) : logoUrl ? (
+                      <>
+                        <img src={logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="w-5 h-5 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
+                        <Camera className="w-6 h-6" />
+                        <span className="text-[10px] uppercase tracking-wider">Logo</span>
+                      </div>
+                    )}
+                  </ObjectUploader>
+                  <p className="text-xs text-muted-foreground">Click to upload a club logo (optional)</p>
+                </div>
+
+                <FormField control={clubForm.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Club Name *</FormLabel>
+                    <FormControl><Input {...field} className="bg-background" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={clubForm.control} name="location" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl><Input {...field} className="bg-background" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={clubForm.control} name="websiteUrl" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website URL</FormLabel>
+                    <FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={clubForm.control} name="description" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <div className="flex gap-3 pt-2">
+                  {editingClubId !== null && (
+                    <Button type="button" variant="outline" onClick={cancelEditing} className="flex-1">
+                      Cancel
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={isPending} className="flex-1">
+                    {editingClubId !== null ? "Save Changes" : "Establish Community"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+
+          {/* Existing clubs list */}
+          {clubs && clubs.length > 0 && (
+            <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-border/50">
+                <h3 className="font-serif text-lg font-medium">Existing Clubs</h3>
+              </div>
+              <ul className="divide-y divide-border/50">
+                {clubs.map((club) => (
+                  <li key={club.id} className="flex items-center gap-4 px-6 py-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 overflow-hidden shrink-0 flex items-center justify-center">
+                      {club.logoUrl ? (
+                        <img src={club.logoUrl} alt={club.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-4 h-4 text-primary/60" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{club.name}</p>
+                      {club.location && (
+                        <p className="text-xs text-muted-foreground truncate">{club.location}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono shrink-0">
+                      <span>{club.memberCount} members</span>
+                      <Separator orientation="vertical" className="h-4" />
+                      <span>{club.photoCount} prints</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-1.5"
+                      onClick={() => startEditing(club.id)}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Edit
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </TabsContent>
 
         {/* Theme tab */}

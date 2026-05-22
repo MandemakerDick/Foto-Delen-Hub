@@ -96,6 +96,31 @@ paths:
                 $ref: "#/components/schemas/Club"
         "404":
           description: Not found
+    put:
+      operationId: updateClub
+      tags: [clubs]
+      summary: Update a photo club
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+        "404":
+          description: Not found
 
   /themes:
     get:
