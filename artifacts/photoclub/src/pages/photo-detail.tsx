@@ -4,6 +4,7 @@ import { Heart, Calendar, ArrowLeft, MoreHorizontal, User, Users, Tag, MessageCi
 import { format } from "date-fns";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Show } from "@clerk/react";
 import {
   useGetPhoto,
   getGetPhotoQueryKey,
@@ -15,6 +16,7 @@ import {
   useCreateComment,
   useDeleteComment,
 } from "@workspace/api-client-react";
+import { useMyProfile } from "@/hooks/use-my-profile";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +59,8 @@ export default function PhotoDetail() {
   const deleteMutation = useDeletePhoto();
   const createCommentMutation = useCreateComment();
   const deleteCommentMutation = useDeleteComment();
+
+  const { profile: myProfile } = useMyProfile();
 
   const { data: photographers } = useListPhotographers();
   const [selectedLiker, setSelectedLiker] = useState<string>("");
@@ -286,37 +290,39 @@ export default function PhotoDetail() {
           <div className="flex justify-between items-start mb-4">
             <h1 className="font-serif text-4xl font-bold leading-tight">{photo.title}</h1>
 
-            <AlertDialog>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer">
-                      Remove Photograph
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            {myProfile?.id === photo.photographerId && (
+              <AlertDialog>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer">
+                        Remove Photograph
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete "{photo.title}" from the gallery. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete "{photo.title}" from the gallery. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
           <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground font-mono">

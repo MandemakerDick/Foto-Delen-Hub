@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, photosTable, photographersTable, clubsTable, themesTable, commentsTable } from "@workspace/db";
 import { eq, ilike, desc, sql, count } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,
   CreatePhotoBody,
@@ -12,6 +13,14 @@ import {
   LikePhotoParams,
   LikePhotoBody,
 } from "@workspace/api-zod";
+
+async function getPhotographerIdForClerkUser(clerkUserId: string): Promise<number | null> {
+  const rows = await db
+    .select({ id: photographersTable.id })
+    .from(photographersTable)
+    .where(eq(photographersTable.clerkUserId, clerkUserId));
+  return rows[0]?.id ?? null;
+}
 
 const router = Router();
 
@@ -92,13 +101,25 @@ router.get("/photos", async (req, res) => {
 });
 
 router.post("/photos", async (req, res) => {
-  const body = CreatePhotoBody.safeParse(req.body);
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Sign in to upload photos" });
+    return;
+  }
+
+  const photographerId = await getPhotographerIdForClerkUser(userId);
+  if (!photographerId) {
+    res.status(403).json({ error: "Link a photographer profile before uploading" });
+    return;
+  }
+
+  const body = CreatePhotoBody.safeParse({ ...req.body, photographerId });
   if (!body.success) {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
-  const [photo] = await db.insert(photosTable).values(body.data).returning();
 
+  const [photo] = await db.insert(photosTable).values(body.data).returning();
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
   res.status(201).json(mapPhoto(rows[0]));
 });
@@ -118,27 +139,38 @@ router.get("/photos/:id", async (req, res) => {
 });
 
 router.patch("/photos/:id", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+
   const params = UpdatePhotoParams.safeParse({ id: Number(req.params.id) });
   const body = UpdatePhotoBody.safeParse(req.body);
   if (!params.success || !body.success) {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
+
+  const photographerId = await getPhotographerIdForClerkUser(userId);
+  const existing = await db.select({ photographerId: photosTable.photographerId }).from(photosTable).where(eq(photosTable.id, params.data.id));
+  if (!existing[0]) { res.status(404).json({ error: "Not found" }); return; }
+  if (existing[0].photographerId !== photographerId) { res.status(403).json({ error: "You can only edit your own photos" }); return; }
+
   await db.update(photosTable).set(body.data).where(eq(photosTable.id, params.data.id));
   const rows = await buildPhotoSelect().where(eq(photosTable.id, params.data.id));
-  if (!rows[0]) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
   res.json(mapPhoto(rows[0]));
 });
 
 router.delete("/photos/:id", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to delete photos" }); return; }
+
   const params = DeletePhotoParams.safeParse({ id: Number(req.params.id) });
-  if (!params.success) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const photographerId = await getPhotographerIdForClerkUser(userId);
+  const existing = await db.select({ photographerId: photosTable.photographerId }).from(photosTable).where(eq(photosTable.id, params.data.id));
+  if (!existing[0]) { res.status(404).json({ error: "Not found" }); return; }
+  if (existing[0].photographerId !== photographerId) { res.status(403).json({ error: "You can only delete your own photos" }); return; }
+
   await db.delete(photosTable).where(eq(photosTable.id, params.data.id));
   res.status(204).send();
 });
