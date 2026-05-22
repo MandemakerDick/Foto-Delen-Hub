@@ -12,4 +12,5 @@ export interface ClubInput {
   description?: string;
   location?: string;
   websiteUrl?: string;
+  logoUrl?: string;
 }

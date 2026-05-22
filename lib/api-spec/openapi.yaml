@@ -550,6 +550,8 @@ components:
           type: ["string", "null"]
         websiteUrl:
           type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
         photoCount:
           type: integer
         memberCount:
@@ -569,6 +571,8 @@ components:
         location:
           type: string
         websiteUrl:
+          type: string
+        logoUrl:
           type: string
 
     Theme:

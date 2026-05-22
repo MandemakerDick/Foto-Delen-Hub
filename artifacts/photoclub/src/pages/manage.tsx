@@ -35,6 +35,7 @@ const clubSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  logoUrl: z.string().optional(),
 });
 
 const themeSchema = z.object({
@@ -57,6 +58,11 @@ export default function Manage() {
   const createClubMutation = useCreateClub();
   const createThemeMutation = useCreateTheme();
   const createPhotographerMutation = useCreatePhotographer();
+
+  // Club logo upload state
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const pendingLogoPathRef = useRef<string | null>(null);
 
   // Avatar upload state (managed outside react-hook-form)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -86,12 +92,14 @@ export default function Manage() {
   const onClubSubmit = (values: z.infer<typeof clubSchema>) => {
     const data = { ...values };
     if (!data.websiteUrl) delete data.websiteUrl;
+    if (logoUrl) data.logoUrl = logoUrl;
     createClubMutation.mutate(
       { data },
       {
         onSuccess: () => {
           toast({ title: "Community Established", description: `${values.name} has been created.` });
           clubForm.reset();
+          setLogoUrl(null);
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
         onError: () => toast({ title: "Error", description: "Failed to create club", variant: "destructive" }),
@@ -167,6 +175,57 @@ export default function Manage() {
           <h2 className="font-serif text-2xl font-medium mb-6">Create Community</h2>
           <Form {...clubForm}>
             <form onSubmit={clubForm.handleSubmit(onClubSubmit)} className="space-y-4">
+
+              {/* Logo upload */}
+              <div className="flex flex-col items-center gap-3 pb-2">
+                <ObjectUploader
+                  maxNumberOfFiles={1}
+                  maxFileSize={5 * 1024 * 1024}
+                  onGetUploadParameters={async (file) => {
+                    const res = await fetch("/api/storage/uploads/request-url", {
+                      method: "POST",
+                      credentials: "include",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+                    });
+                    if (!res.ok) throw new Error("Failed to get upload URL");
+                    const data = await res.json() as { uploadURL: string; objectPath: string };
+                    pendingLogoPathRef.current = data.objectPath;
+                    setLogoUploading(true);
+                    return { method: "PUT" as const, url: data.uploadURL, headers: { "Content-Type": file.type ?? "image/jpeg" } };
+                  }}
+                  onComplete={(result) => {
+                    setLogoUploading(false);
+                    if ((result.failed?.length ?? 0) > 0) {
+                      toast({ title: "Upload failed", description: "Could not upload logo.", variant: "destructive" });
+                      return;
+                    }
+                    const objectPath = pendingLogoPathRef.current;
+                    if (objectPath) setLogoUrl(`/api/storage${objectPath}`);
+                  }}
+                  buttonClassName="group relative w-24 h-24 rounded-xl bg-secondary border-2 border-dashed border-border hover:border-primary/60 overflow-hidden flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+                >
+                  {logoUploading ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    </div>
+                  ) : logoUrl ? (
+                    <>
+                      <img src={logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
+                      <Camera className="w-6 h-6" />
+                      <span className="text-[10px] uppercase tracking-wider">Logo</span>
+                    </div>
+                  )}
+                </ObjectUploader>
+                <p className="text-xs text-muted-foreground">Click to upload a club logo (optional)</p>
+              </div>
+
               <FormField control={clubForm.control} name="name" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Club Name *</FormLabel>

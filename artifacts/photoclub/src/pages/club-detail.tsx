@@ -51,8 +51,12 @@ export default function ClubDetail() {
           <div className="flex flex-col md:flex-row gap-8 justify-between items-start md:items-end">
             <div className="max-w-3xl">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
-                  <Users className="w-6 h-6 text-primary" />
+                <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 overflow-hidden">
+                  {club.logoUrl ? (
+                    <img src={club.logoUrl} alt={`${club.name} logo`} className="w-full h-full object-cover" />
+                  ) : (
+                    <Users className="w-7 h-7 text-primary" />
+                  )}
                 </div>
                 <h1 className="font-serif text-5xl font-bold">{club.name}</h1>
               </div>

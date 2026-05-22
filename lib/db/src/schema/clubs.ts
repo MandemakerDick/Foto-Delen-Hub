@@ -8,6 +8,7 @@ export const clubsTable = pgTable("clubs", {
   description: text("description"),
   location: text("location"),
   websiteUrl: text("website_url"),
+  logoUrl: text("logo_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
