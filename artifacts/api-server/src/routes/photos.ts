@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, photosTable, photographersTable, clubsTable, themesTable } from "@workspace/db";
-import { eq, ilike, desc, sql } from "drizzle-orm";
+import { db, photosTable, photographersTable, clubsTable, themesTable, commentsTable } from "@workspace/db";
+import { eq, ilike, desc, sql, count } from "drizzle-orm";
 import {
   ListPhotosQueryParams,
   CreatePhotoBody,
@@ -16,6 +16,12 @@ import {
 const router = Router();
 
 function buildPhotoSelect() {
+  const commentCountSq = db
+    .select({ photoId: commentsTable.photoId, commentCount: count().as("comment_count") })
+    .from(commentsTable)
+    .groupBy(commentsTable.photoId)
+    .as("comment_counts");
+
   return db
     .select({
       id: photosTable.id,
@@ -30,12 +36,14 @@ function buildPhotoSelect() {
       themeId: photosTable.themeId,
       themeName: themesTable.name,
       likeCount: photosTable.likeCount,
+      commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)`,
       createdAt: photosTable.createdAt,
     })
     .from(photosTable)
     .leftJoin(photographersTable, eq(photosTable.photographerId, photographersTable.id))
     .leftJoin(clubsTable, eq(photosTable.clubId, clubsTable.id))
-    .leftJoin(themesTable, eq(photosTable.themeId, themesTable.id));
+    .leftJoin(themesTable, eq(photosTable.themeId, themesTable.id))
+    .leftJoin(commentCountSq, eq(photosTable.id, commentCountSq.photoId));
 }
 
 function mapPhoto(p: { createdAt: Date; [key: string]: unknown }) {

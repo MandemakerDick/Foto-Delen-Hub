@@ -173,6 +173,7 @@ export const ListPhotosResponseItem = zod.object({
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
   "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 export const ListPhotosResponse = zod.array(ListPhotosResponseItem)
@@ -214,6 +215,7 @@ export const ListRecentPhotosResponseItem = zod.object({
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
   "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 export const ListRecentPhotosResponse = zod.array(ListRecentPhotosResponseItem)
@@ -239,6 +241,7 @@ export const GetPhotoResponse = zod.object({
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
   "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 
@@ -272,6 +275,7 @@ export const UpdatePhotoResponse = zod.object({
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
   "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 
@@ -308,6 +312,7 @@ export const LikePhotoResponse = zod.object({
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
   "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 

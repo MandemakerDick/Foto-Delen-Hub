@@ -87,6 +87,7 @@ export interface Photo {
   /** @nullable */
   themeName?: string | null;
   likeCount?: number;
+  commentCount?: number;
   createdAt: string;
 }
 
