@@ -66,6 +66,7 @@ export default function Manage() {
 
   // Which club is being edited (null = create mode)
   const [editingClubId, setEditingClubId] = useState<number | null>(null);
+  const clubFormRef = useRef<HTMLDivElement>(null);
 
   // Club logo upload state (shared for create & edit)
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -109,6 +110,9 @@ export default function Manage() {
       websiteUrl: club.websiteUrl ?? "",
       logoUrl: club.logoUrl ?? "",
     });
+    setTimeout(() => {
+      clubFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   const cancelEditing = () => {
@@ -225,7 +229,7 @@ export default function Manage() {
         {/* Club tab */}
         <TabsContent value="club" className="space-y-6">
           {/* Create / Edit form */}
-          <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
+          <div ref={clubFormRef} className="bg-secondary/20 p-6 rounded-lg border border-border/50 scroll-mt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-serif text-2xl font-medium">
                 {editingClubId !== null ? "Edit Community" : "Create Community"}
@@ -367,13 +371,13 @@ export default function Manage() {
                     </div>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant={editingClubId === club.id ? "default" : "ghost"}
                       size="sm"
                       className="shrink-0 gap-1.5"
                       onClick={() => startEditing(club.id)}
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                      Edit
+                      {editingClubId === club.id ? "Editing…" : "Edit"}
                     </Button>
                   </li>
                 ))}
