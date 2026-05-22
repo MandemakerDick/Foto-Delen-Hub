@@ -70,12 +70,22 @@ export default function PhotoDetail() {
 
   const likeMutation = useLikePhoto();
   const deleteMutation = useDeletePhoto();
+  const updateMutation = useUpdatePhoto();
   const createCommentMutation = useCreateComment();
   const deleteCommentMutation = useDeleteComment();
 
   const { profile: myProfile } = useMyProfile();
 
+  const { data: clubs } = useListClubs();
+  const { data: themes } = useListThemes();
   const { data: photographers } = useListPhotographers();
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editClubId, setEditClubId] = useState<string>("");
+  const [editThemeId, setEditThemeId] = useState<string>("");
+
   const [selectedLiker, setSelectedLiker] = useState<string>("");
   const [selectedCommenter, setSelectedCommenter] = useState<string>("");
   const [commentBody, setCommentBody] = useState("");
@@ -132,6 +142,36 @@ export default function PhotoDetail() {
           window.location.href = "/photos";
         },
         onError: () => toast({ title: "Error", description: "Could not remove the photograph.", variant: "destructive" }),
+      },
+    );
+  };
+
+  const openEdit = () => {
+    setEditTitle(photo?.title ?? "");
+    setEditDescription(photo?.description ?? "");
+    setEditClubId(photo?.clubId?.toString() ?? "");
+    setEditThemeId(photo?.themeId?.toString() ?? "");
+    setEditOpen(true);
+  };
+
+  const handleEdit = () => {
+    updateMutation.mutate(
+      {
+        id: photoId,
+        data: {
+          title: editTitle || undefined,
+          description: editDescription || undefined,
+          clubId: editClubId ? Number(editClubId) : null,
+          themeId: editThemeId ? Number(editThemeId) : null,
+        },
+      },
+      {
+        onSuccess: (updated) => {
+          queryClient.setQueryData(getGetPhotoQueryKey(photoId), updated);
+          setEditOpen(false);
+          toast({ title: "Changes saved", description: "Your photograph details have been updated." });
+        },
+        onError: () => toast({ title: "Error", description: "Could not save changes.", variant: "destructive" }),
       },
     );
   };
@@ -304,37 +344,112 @@ export default function PhotoDetail() {
             <h1 className="font-serif text-4xl font-bold leading-tight">{photo.title}</h1>
 
             {myProfile?.id === photo.photographerId && (
-              <AlertDialog>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer">
-                        Remove Photograph
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <>
+                {/* Edit dialog */}
+                <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="font-serif text-xl">Edit Photograph</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-title">Title</Label>
+                        <Input
+                          id="edit-title"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-desc">Description</Label>
+                        <Textarea
+                          id="edit-desc"
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          className="resize-none h-24 bg-background font-serif"
+                          placeholder="Artist statement or caption..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>Community</Label>
+                          <Select value={editClubId} onValueChange={setEditClubId}>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="None" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {clubs?.map((c) => (
+                                <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Theme</Label>
+                          <Select value={editThemeId} onValueChange={setEditThemeId}>
+                            <SelectTrigger className="bg-background">
+                              <SelectValue placeholder="None" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {themes?.map((t) => (
+                                <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                      <Button onClick={handleEdit} disabled={updateMutation.isPending || !editTitle.trim()}>
+                        {updateMutation.isPending ? "Saving..." : "Save changes"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete "{photo.title}" from the gallery. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                {/* Owner dropdown */}
+                <AlertDialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={openEdit} className="cursor-pointer gap-2">
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit details
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer gap-2">
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remove photograph
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete "{photo.title}" from the gallery. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
             )}
           </div>
 
