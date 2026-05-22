@@ -18,7 +18,7 @@ export default function Home() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (search.trim()) {
-      setLocation(`/photos?search=${encodeURIComponent(search)}`);
+      setLocation(`/search?q=${encodeURIComponent(search.trim())}`);
     }
   };
 

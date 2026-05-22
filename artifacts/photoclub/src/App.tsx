@@ -19,6 +19,7 @@ import PhotographerDetail from "@/pages/photographer-detail";
 import Upload from "@/pages/upload";
 import Manage from "@/pages/manage";
 import MyPhotos from "@/pages/my-photos";
+import Search from "@/pages/search";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -140,6 +141,7 @@ function Router() {
         <Route path="/themes" component={Themes} />
         <Route path="/photographers" component={Photographers} />
         <Route path="/photographers/:id" component={PhotographerDetail} />
+        <Route path="/search" component={Search} />
         <Route path="/upload" component={Upload} />
         <Route path="/manage" component={Manage} />
         <Route path="/my-photos" component={MyPhotos} />
