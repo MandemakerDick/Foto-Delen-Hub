@@ -1,6 +1,6 @@
 import { Link, useSearch } from "wouter";
-import { User, Image as ImageIcon, Search } from "lucide-react";
-import { useListPhotographers, useListPhotos } from "@workspace/api-client-react";
+import { User, Image as ImageIcon, Search, Camera } from "lucide-react";
+import { useListPhotographers, useListPhotos, useListThemes } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 
 export default function SearchResults() {
@@ -16,14 +16,18 @@ export default function SearchResults() {
     query ? { search: query } : undefined,
   );
 
-  const loading = pgLoading || phLoading;
+  const { data: themes, isLoading: thLoading } = useListThemes(
+    query ? { search: query } : undefined,
+  );
+
+  const loading = pgLoading || phLoading || thLoading;
 
   if (!query) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
         <h2 className="font-serif text-2xl font-bold mb-2">Start searching</h2>
-        <p className="text-muted-foreground">Use the search bar on the home page to find photographs and photographers.</p>
+        <p className="text-muted-foreground">Use the search bar on the home page to find photographs, photographers, and themes.</p>
       </div>
     );
   }
@@ -37,8 +41,9 @@ export default function SearchResults() {
 
       {loading ? (
         <div className="space-y-12">
-          <SectionSkeleton label="Photographers" count={4} tall={false} />
-          <SectionSkeleton label="Photographs" count={8} tall />
+          <SectionSkeleton count={4} tall={false} />
+          <SectionSkeleton count={6} tall={false} />
+          <SectionSkeleton count={8} tall />
         </div>
       ) : (
         <div className="space-y-16">
@@ -71,9 +76,32 @@ export default function SearchResults() {
                 ))}
               </div>
             ) : (
-              <div className="py-10 text-center border border-border/40 rounded-lg bg-secondary/20">
-                <p className="text-muted-foreground text-sm">No photographers match &ldquo;{query}&rdquo;.</p>
+              <EmptyState message={`No photographers match \u201c${query}\u201d.`} />
+            )}
+          </section>
+
+          {/* Themes */}
+          <section>
+            <h2 className="font-serif text-2xl font-bold mb-1 flex items-center gap-2">
+              <Camera className="w-5 h-5 text-primary" />
+              Themes
+              <span className="text-base font-mono text-muted-foreground ml-1">({themes?.length ?? 0})</span>
+            </h2>
+            <p className="text-muted-foreground text-sm mb-6">Collections whose name matches.</p>
+
+            {themes && themes.length > 0 ? (
+              <div className="flex flex-wrap gap-3">
+                {themes.map((t) => (
+                  <Link key={t.id} href={`/themes`}>
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 bg-background hover:border-primary/60 hover:bg-secondary/40 transition-colors group cursor-pointer">
+                      <Camera className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                      <span className="text-sm font-medium group-hover:text-primary transition-colors">{t.name}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
+            ) : (
+              <EmptyState message={`No themes match \u201c${query}\u201d.`} />
             )}
           </section>
 
@@ -93,9 +121,7 @@ export default function SearchResults() {
                 ))}
               </div>
             ) : (
-              <div className="py-10 text-center border border-border/40 rounded-lg bg-secondary/20">
-                <p className="text-muted-foreground text-sm">No photographs match &ldquo;{query}&rdquo;.</p>
-              </div>
+              <EmptyState message={`No photographs match \u201c${query}\u201d.`} />
             )}
           </section>
         </div>
@@ -104,13 +130,21 @@ export default function SearchResults() {
   );
 }
 
-function SectionSkeleton({ label, count, tall }: { label: string; count: number; tall: boolean }) {
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="py-10 text-center border border-border/40 rounded-lg bg-secondary/20">
+      <p className="text-muted-foreground text-sm">{message}</p>
+    </div>
+  );
+}
+
+function SectionSkeleton({ count, tall }: { count: number; tall: boolean }) {
   return (
     <section>
       <div className="h-8 bg-muted rounded w-48 mb-6 animate-pulse" />
       <div className={`grid gap-4 ${tall ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-3 sm:grid-cols-4 md:grid-cols-6"}`}>
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className={`animate-pulse bg-muted rounded-lg ${tall ? "aspect-[4/5]" : "h-24"}`} />
+          <div key={i} className={`animate-pulse bg-muted rounded-lg ${tall ? "aspect-[4/5]" : "h-20"}`} />
         ))}
       </div>
     </section>
