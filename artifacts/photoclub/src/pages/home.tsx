@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Image, TrendingUp, Users, Heart } from "lucide-react";
-import { useListRecentPhotos, useGetStats } from "@workspace/api-client-react";
+import { Search, Image, TrendingUp, Users, User } from "lucide-react";
+import { useListRecentPhotos, useGetStats, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,9 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { data: photos, isLoading: photosLoading } = useListRecentPhotos({ limit: 12 });
   const { data: stats, isLoading: statsLoading } = useGetStats();
+  const { data: photographers } = useListPhotographers();
+
+  const featuredPhotographers = photographers?.slice(0, 6) ?? [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +26,7 @@ export default function Home() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative overflow-hidden py-24 md:py-32 bg-secondary border-b border-border/50">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/50 via-background to-background"></div>
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/50 via-background to-background" />
         <div className="container relative z-10 mx-auto px-4 max-w-4xl text-center flex flex-col items-center gap-8">
           <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight">
             Curated. Deliberate. <span className="text-primary italic">Proud.</span>
@@ -31,13 +34,13 @@ export default function Home() {
           <p className="text-xl text-muted-foreground font-sans max-w-2xl">
             A digital darkroom for serious photographers. Share your craft within tight-knit communities.
           </p>
-          
+
           <form onSubmit={handleSearch} className="w-full max-w-md relative mt-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input 
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search photographs by title or description..." 
+              placeholder="Search photographs by title or description..."
               className="w-full pl-12 h-14 bg-background border-border/50 text-base focus-visible:ring-primary rounded-full shadow-lg"
             />
             <Button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6">
@@ -47,17 +50,63 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section — each card links to its page */}
       <section className="py-12 border-b border-border/50 bg-background/50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatCard icon={<Image className="w-5 h-5" />} label="Photographs" value={stats?.totalPhotos} loading={statsLoading} />
-            <StatCard icon={<Users className="w-5 h-5" />} label="Clubs" value={stats?.totalClubs} loading={statsLoading} />
-            <StatCard icon={<User className="w-5 h-5" />} label="Photographers" value={stats?.totalPhotographers} loading={statsLoading} />
-            <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Themes" value={stats?.totalThemes} loading={statsLoading} />
+            <StatCard href="/photos"        icon={<Image className="w-5 h-5" />}     label="Photographs"   value={stats?.totalPhotos}        loading={statsLoading} />
+            <StatCard href="/clubs"         icon={<Users className="w-5 h-5" />}     label="Clubs"         value={stats?.totalClubs}         loading={statsLoading} />
+            <StatCard href="/photographers" icon={<User className="w-5 h-5" />}      label="Photographers" value={stats?.totalPhotographers}  loading={statsLoading} />
+            <StatCard href="/themes"        icon={<TrendingUp className="w-5 h-5" />} label="Themes"       value={stats?.totalThemes}        loading={statsLoading} />
           </div>
         </div>
       </section>
+
+      {/* Photographers strip */}
+      {featuredPhotographers.length > 0 && (
+        <section className="py-16 border-b border-border/50">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-end mb-8">
+              <div>
+                <h2 className="font-serif text-3xl font-bold mb-1">Photographers</h2>
+                <p className="text-muted-foreground">The eyes behind the lens.</p>
+              </div>
+              <Link href="/photographers">
+                <Button variant="outline" className="border-border/50 hover:bg-secondary">
+                  View All
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+              {featuredPhotographers.map((p) => (
+                <Link key={p.id} href={`/photographers/${p.id}`}>
+                  <div className="flex flex-col items-center text-center gap-2 group">
+                    <div className="w-16 h-16 rounded-full bg-secondary border-2 border-border/50 group-hover:border-primary/60 transition-colors overflow-hidden flex items-center justify-center shrink-0">
+                      {p.avatarUrl ? (
+                        <img src={p.avatarUrl} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-7 h-7 text-muted-foreground" />
+                      )}
+                    </div>
+                    <span className="text-xs font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                      {p.name}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-8 text-center md:hidden">
+              <Link href="/photographers">
+                <Button variant="outline" className="w-full border-border/50">
+                  View All Photographers
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Recent Gallery */}
       <section className="py-20 container mx-auto px-4">
@@ -77,9 +126,9 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse flex flex-col gap-3">
-                <div className="aspect-[4/5] bg-muted rounded-sm"></div>
-                <div className="h-5 bg-muted rounded w-3/4"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
+                <div className="aspect-[4/5] bg-muted rounded-sm" />
+                <div className="h-5 bg-muted rounded w-3/4" />
+                <div className="h-4 bg-muted rounded w-1/2" />
               </div>
             ))}
           </div>
@@ -112,38 +161,32 @@ export default function Home() {
   );
 }
 
-function StatCard({ icon, label, value, loading }: { icon: React.ReactNode, label: string, value?: number, loading: boolean }) {
+function StatCard({
+  href,
+  icon,
+  label,
+  value,
+  loading,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  value?: number;
+  loading: boolean;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center p-6 text-center border border-border/50 rounded-lg bg-background hover:border-primary/50 transition-colors group">
-      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground mb-4 group-hover:text-primary group-hover:bg-primary/10 transition-colors">
-        {icon}
+    <Link href={href}>
+      <div className="flex flex-col items-center justify-center p-6 text-center border border-border/50 rounded-lg bg-background hover:border-primary/50 hover:bg-secondary/30 transition-colors group cursor-pointer">
+        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground mb-4 group-hover:text-primary group-hover:bg-primary/10 transition-colors">
+          {icon}
+        </div>
+        {loading ? (
+          <div className="h-8 w-16 bg-muted animate-pulse rounded mb-1" />
+        ) : (
+          <div className="text-3xl font-mono font-medium tracking-tight mb-1">{value || 0}</div>
+        )}
+        <div className="text-xs text-muted-foreground uppercase tracking-widest">{label}</div>
       </div>
-      {loading ? (
-        <div className="h-8 w-16 bg-muted animate-pulse rounded mb-1"></div>
-      ) : (
-        <div className="text-3xl font-mono font-medium tracking-tight mb-1">{value || 0}</div>
-      )}
-      <div className="text-xs text-muted-foreground uppercase tracking-widest">{label}</div>
-    </div>
+    </Link>
   );
-}
-
-function User(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  )
 }
