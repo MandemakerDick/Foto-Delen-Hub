@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -41,7 +41,6 @@ const clubSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  logoUrl: z.string().optional(),
 });
 
 const themeSchema = z.object({
@@ -99,7 +98,7 @@ export default function Manage() {
   // ── Forms ─────────────────────────────────────────────────
   const clubForm = useForm<ClubFormValues>({
     resolver: zodResolver(clubSchema),
-    defaultValues: { name: "", description: "", location: "", websiteUrl: "", logoUrl: "" },
+    defaultValues: { name: "", description: "", location: "", websiteUrl: "" },
   });
 
   const themeForm = useForm<ThemeFormValues>({
@@ -112,31 +111,26 @@ export default function Manage() {
     defaultValues: { name: "", bio: "" },
   });
 
-  // Keep logoUrl in sync with the form
-  useEffect(() => {
-    if (logoUrl !== null) clubForm.setValue("logoUrl", logoUrl);
-  }, [logoUrl, clubForm]);
-
   // ── Club handlers ─────────────────────────────────────────
   const startEditingClub = (clubId: number) => {
     const club = clubs?.find((c) => c.id === clubId);
     if (!club) return;
     setEditingClubId(clubId);
     setLogoUrl(club.logoUrl ?? null);
-    clubForm.reset({ name: club.name, description: club.description ?? "", location: club.location ?? "", websiteUrl: club.websiteUrl ?? "", logoUrl: club.logoUrl ?? "" });
+    clubForm.reset({ name: club.name, description: club.description ?? "", location: club.location ?? "", websiteUrl: club.websiteUrl ?? "" });
     setTimeout(() => clubFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
   const cancelEditingClub = () => {
     setEditingClubId(null);
     setLogoUrl(null);
-    clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", logoUrl: "" });
+    clubForm.reset({ name: "", description: "", location: "", websiteUrl: "" });
   };
 
   const onClubSubmit = (values: ClubFormValues) => {
-    const data = { ...values };
+    const data: ClubFormValues & { logoUrl?: string } = { ...values };
     if (!data.websiteUrl) delete data.websiteUrl;
-    if (logoUrl) data.logoUrl = logoUrl; else if (!data.logoUrl) delete data.logoUrl;
+    if (logoUrl) data.logoUrl = logoUrl;
 
     if (editingClubId !== null) {
       updateClubMutation.mutate({ id: editingClubId, data }, {
@@ -151,7 +145,7 @@ export default function Manage() {
       createClubMutation.mutate({ data }, {
         onSuccess: () => {
           toast({ title: "Community Established", description: `${values.name} has been created.` });
-          clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", logoUrl: "" });
+          clubForm.reset({ name: "", description: "", location: "", websiteUrl: "" });
           setLogoUrl(null);
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
