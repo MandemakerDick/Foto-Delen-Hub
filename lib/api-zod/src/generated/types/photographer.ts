@@ -17,6 +17,14 @@ export interface Photographer {
   clubId?: number | null;
   /** @nullable */
   clubName?: string | null;
+  /** @nullable */
+  themeId1?: number | null;
+  /** @nullable */
+  themeName1?: string | null;
+  /** @nullable */
+  themeId2?: number | null;
+  /** @nullable */
+  themeName2?: string | null;
   photoCount?: number;
   createdAt: string;
 }

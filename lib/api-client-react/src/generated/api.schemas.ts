@@ -54,6 +54,14 @@ export interface Photographer {
   clubId?: number | null;
   /** @nullable */
   clubName?: string | null;
+  /** @nullable */
+  themeId1?: number | null;
+  /** @nullable */
+  themeName1?: string | null;
+  /** @nullable */
+  themeId2?: number | null;
+  /** @nullable */
+  themeName2?: string | null;
   photoCount?: number;
   createdAt: string;
 }
@@ -64,6 +72,21 @@ export interface PhotographerInput {
   bio?: string;
   avatarUrl?: string;
   clubId?: number;
+  themeId1?: number;
+  themeId2?: number;
+}
+
+export interface PhotographerUpdate {
+  /** @minLength 1 */
+  name?: string;
+  bio?: string;
+  avatarUrl?: string;
+  /** @nullable */
+  clubId?: number | null;
+  /** @nullable */
+  themeId1?: number | null;
+  /** @nullable */
+  themeId2?: number | null;
 }
 
 export interface Photo {
@@ -172,6 +195,7 @@ search?: string;
 export type ListPhotographersParams = {
 search?: string;
 clubId?: number;
+themeId?: number;
 };
 
 export type ListPhotosParams = {

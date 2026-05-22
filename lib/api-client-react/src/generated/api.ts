@@ -37,6 +37,7 @@ import type {
   PhotoUpdate,
   Photographer,
   PhotographerInput,
+  PhotographerUpdate,
   Stats,
   Theme,
   ThemeInput,
@@ -752,6 +753,78 @@ export function useGetPhotographer<TData = Awaited<ReturnType<typeof getPhotogra
 
 
 
+
+export const getUpdatePhotographerUrl = (id: number,) => {
+
+
+
+
+  return `/api/photographers/${id}`
+}
+
+/**
+ * @summary Update a photographer profile
+ */
+export const updatePhotographer = async (id: number,
+    photographerUpdate: PhotographerUpdate, options?: RequestInit): Promise<Photographer> => {
+
+  return customFetch<Photographer>(getUpdatePhotographerUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      photographerUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdatePhotographerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePhotographer>>, TError,{id: number;data: BodyType<PhotographerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePhotographer>>, TError,{id: number;data: BodyType<PhotographerUpdate>}, TContext> => {
+
+const mutationKey = ['updatePhotographer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePhotographer>>, {id: number;data: BodyType<PhotographerUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePhotographer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePhotographerMutationResult = NonNullable<Awaited<ReturnType<typeof updatePhotographer>>>
+    export type UpdatePhotographerMutationBody = BodyType<PhotographerUpdate>
+    export type UpdatePhotographerMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a photographer profile
+ */
+export const useUpdatePhotographer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePhotographer>>, TError,{id: number;data: BodyType<PhotographerUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePhotographer>>,
+        TError,
+        {id: number;data: BodyType<PhotographerUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePhotographerMutationOptions(options));
+    }
 
 export const getListPhotosUrl = (params?: ListPhotosParams,) => {
   const normalizedParams = new URLSearchParams();

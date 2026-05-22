@@ -3,17 +3,21 @@ import { Link } from "wouter";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink } from "lucide-react";
+import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import {
   useListPhotos,
   getListPhotosQueryKey,
   useDeletePhoto,
   useListPhotographers,
+  useListThemes,
+  useUpdatePhotographer,
+  getGetPhotographerQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -36,6 +40,10 @@ type PhotographerProfile = {
   avatarUrl: string | null;
   clubId: number | null;
   clubName: string | null;
+  themeId1: number | null;
+  themeName1: string | null;
+  themeId2: number | null;
+  themeName2: string | null;
   createdAt: string;
 };
 
@@ -47,23 +55,34 @@ function useMyProfile() {
     setLoading(true);
     try {
       const res = await fetch("/api/me", { credentials: "include" });
-      if (res.status === 404) { setProfile(null); }
-      else if (res.ok) { setProfile(await res.json()); }
-    } catch { setProfile(null); }
-    finally { setLoading(false); }
+      if (res.status === 404) {
+        setProfile(null);
+      } else if (res.ok) {
+        setProfile(await res.json());
+      }
+    } catch {
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useState(() => { fetchProfile(); });
+  useState(() => {
+    fetchProfile();
+  });
 
   return { profile, loading, refetch: fetchProfile };
 }
 
 function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   const { data: photographers } = useListPhotographers();
+  const { data: themes } = useListThemes();
   const { toast } = useToast();
   const [mode, setMode] = useState<"link" | "create">("link");
   const [selectedId, setSelectedId] = useState("");
   const [newName, setNewName] = useState("");
+  const [theme1, setTheme1] = useState("none");
+  const [theme2, setTheme2] = useState("none");
   const [busy, setBusy] = useState(false);
 
   const handleLink = async () => {
@@ -88,11 +107,14 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     setBusy(true);
+    const body: Record<string, unknown> = { name: newName.trim() };
+    if (theme1 !== "none") body.themeId1 = Number(theme1);
+    if (theme2 !== "none") body.themeId2 = Number(theme2);
     const res = await fetch("/api/me/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ name: newName.trim() }),
+      body: JSON.stringify(body),
     });
     setBusy(false);
     if (res.ok) {
@@ -103,6 +125,9 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
       toast({ title: "Error", description: err.error, variant: "destructive" });
     }
   };
+
+  // Prevent picking the same theme twice
+  const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
 
   return (
     <div className="max-w-md mx-auto text-center py-16 px-4">
@@ -131,7 +156,9 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
             </SelectTrigger>
             <SelectContent>
               {photographers?.map((p) => (
-                <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                <SelectItem key={p.id} value={p.id.toString()}>
+                  {p.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -140,13 +167,52 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
           </Button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 text-left">
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Your photographer name"
             className="bg-secondary/20 border-border/50"
           />
+
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 pl-0.5">
+              Specialty theme 1 <span className="normal-case">(optional)</span>
+            </p>
+            <Select value={theme1} onValueChange={(v) => { setTheme1(v); if (v === theme2) setTheme2("none"); }}>
+              <SelectTrigger className="bg-secondary/20 border-border/50">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {themes?.map((t) => (
+                  <SelectItem key={t.id} value={t.id.toString()}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 pl-0.5">
+              Specialty theme 2 <span className="normal-case">(optional)</span>
+            </p>
+            <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
+              <SelectTrigger className="bg-secondary/20 border-border/50">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {theme2Options.map((t) => (
+                  <SelectItem key={t.id} value={t.id.toString()}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button onClick={handleCreate} disabled={!newName.trim() || busy} className="w-full">
             {busy ? "Creating..." : "Create profile"}
           </Button>
@@ -156,7 +222,139 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   );
 }
 
-function MyPhotosDashboard({ profile }: { profile: PhotographerProfile }) {
+function EditThemesPanel({
+  profile,
+  onSaved,
+}: {
+  profile: PhotographerProfile;
+  onSaved: () => void;
+}) {
+  const { data: themes } = useListThemes();
+  const updateMutation = useUpdatePhotographer();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [theme1, setTheme1] = useState(profile.themeId1?.toString() ?? "none");
+  const [theme2, setTheme2] = useState(profile.themeId2?.toString() ?? "none");
+  const [open, setOpen] = useState(false);
+
+  const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
+
+  const handleSave = () => {
+    updateMutation.mutate(
+      {
+        id: profile.id,
+        data: {
+          themeId1: theme1 !== "none" ? Number(theme1) : null,
+          themeId2: theme2 !== "none" ? Number(theme2) : null,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Themes updated", description: "Your specialty themes have been saved." });
+          queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
+          setOpen(false);
+          onSaved();
+        },
+        onError: () => {
+          toast({ title: "Error", description: "Could not update themes.", variant: "destructive" });
+        },
+      },
+    );
+  };
+
+  if (!open) {
+    const themeNames = [profile.themeName1, profile.themeName2].filter(Boolean) as string[];
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        {themeNames.length > 0 ? (
+          themeNames.map((n) => (
+            <Badge key={n} variant="secondary" className="font-mono">
+              {n}
+            </Badge>
+          ))
+        ) : (
+          <span className="text-xs text-muted-foreground">No specialty themes set</span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+          onClick={() => setOpen(true)}
+        >
+          <Pencil className="w-3 h-3" />
+          Edit
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+      <Select
+        value={theme1}
+        onValueChange={(v) => {
+          setTheme1(v);
+          if (v === theme2) setTheme2("none");
+        }}
+      >
+        <SelectTrigger className="w-44 bg-background border-border/50 h-8 text-sm">
+          <SelectValue placeholder="Theme 1" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">None</SelectItem>
+          {themes?.map((t) => (
+            <SelectItem key={t.id} value={t.id.toString()}>
+              {t.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
+        <SelectTrigger className="w-44 bg-background border-border/50 h-8 text-sm">
+          <SelectValue placeholder="Theme 2" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">None</SelectItem>
+          {theme2Options.map((t) => (
+            <SelectItem key={t.id} value={t.id.toString()}>
+              {t.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <div className="flex gap-1">
+        <Button
+          size="sm"
+          className="h-8 px-3 gap-1"
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+        >
+          <Check className="w-3.5 h-3.5" />
+          Save
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => setOpen(false)}
+        >
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function MyPhotosDashboard({
+  profile,
+  onProfileUpdated,
+}: {
+  profile: PhotographerProfile;
+  onProfileUpdated: () => void;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { signOut } = useClerk();
@@ -177,7 +375,8 @@ function MyPhotosDashboard({ profile }: { profile: PhotographerProfile }) {
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: profile.id }) });
           toast({ title: "Photograph removed", description: `"${title}" has been deleted.` });
         },
-        onError: () => toast({ title: "Error", description: "Could not delete the photograph.", variant: "destructive" }),
+        onError: () =>
+          toast({ title: "Error", description: "Could not delete the photograph.", variant: "destructive" }),
       },
     );
   };
@@ -185,7 +384,7 @@ function MyPhotosDashboard({ profile }: { profile: PhotographerProfile }) {
   return (
     <div className="container mx-auto px-4 py-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-secondary border border-border overflow-hidden flex items-center justify-center shrink-0">
             {profile.avatarUrl ? (
@@ -196,11 +395,11 @@ function MyPhotosDashboard({ profile }: { profile: PhotographerProfile }) {
           </div>
           <div>
             <h1 className="font-serif text-3xl font-bold">{profile.name}</h1>
-            {profile.clubName && (
-              <p className="text-sm text-muted-foreground">{profile.clubName}</p>
-            )}
+            {profile.clubName && <p className="text-sm text-muted-foreground">{profile.clubName}</p>}
             {user?.primaryEmailAddress && (
-              <p className="text-xs text-muted-foreground font-mono">{user.primaryEmailAddress.emailAddress}</p>
+              <p className="text-xs text-muted-foreground font-mono">
+                {user.primaryEmailAddress.emailAddress}
+              </p>
             )}
           </div>
         </div>
@@ -227,6 +426,12 @@ function MyPhotosDashboard({ profile }: { profile: PhotographerProfile }) {
             Sign out
           </Button>
         </div>
+      </div>
+
+      {/* Specialty themes row */}
+      <div className="mb-8 pb-6 border-b border-border/40">
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Specialty Themes</p>
+        <EditThemesPanel profile={profile} onSaved={onProfileUpdated} />
       </div>
 
       {/* Stats bar */}
@@ -368,7 +573,7 @@ export default function MyPhotos() {
       ) : profile === null ? (
         <LinkProfilePanel onLinked={refetch} />
       ) : profile ? (
-        <MyPhotosDashboard profile={profile} />
+        <MyPhotosDashboard profile={profile} onProfileUpdated={refetch} />
       ) : null}
     </Show>
   );

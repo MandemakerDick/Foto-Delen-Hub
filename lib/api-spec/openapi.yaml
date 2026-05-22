@@ -148,6 +148,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: themeId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of photographers
@@ -189,6 +193,31 @@ paths:
       responses:
         "200":
           description: Photographer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photographer"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePhotographer
+      tags: [photographers]
+      summary: Update a photographer profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotographerUpdate"
+      responses:
+        "200":
+          description: Updated
           content:
             application/json:
               schema:
@@ -558,6 +587,14 @@ components:
           type: ["integer", "null"]
         clubName:
           type: ["string", "null"]
+        themeId1:
+          type: ["integer", "null"]
+        themeName1:
+          type: ["string", "null"]
+        themeId2:
+          type: ["integer", "null"]
+        themeName2:
+          type: ["string", "null"]
         photoCount:
           type: integer
         createdAt:
@@ -576,6 +613,27 @@ components:
           type: string
         clubId:
           type: integer
+        themeId1:
+          type: integer
+        themeId2:
+          type: integer
+
+    PhotographerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        clubId:
+          type: ["integer", "null"]
+        themeId1:
+          type: ["integer", "null"]
+        themeId2:
+          type: ["integer", "null"]
 
     Photo:
       type: object

@@ -21,6 +21,7 @@ export * from './listThemesParams';
 export * from './photo';
 export * from './photographer';
 export * from './photographerInput';
+export * from './photographerUpdate';
 export * from './photoInput';
 export * from './photoUpdate';
 export * from './stats';

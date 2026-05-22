@@ -101,7 +101,8 @@ export const CreateThemeBody = zod.object({
  */
 export const ListPhotographersQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
-  "clubId": zod.coerce.number().optional()
+  "clubId": zod.coerce.number().optional(),
+  "themeId": zod.coerce.number().optional()
 })
 
 export const ListPhotographersResponseItem = zod.object({
@@ -111,6 +112,10 @@ export const ListPhotographersResponseItem = zod.object({
   "avatarUrl": zod.string().nullish(),
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
+  "themeId1": zod.number().nullish(),
+  "themeName1": zod.string().nullish(),
+  "themeId2": zod.number().nullish(),
+  "themeName2": zod.string().nullish(),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -127,7 +132,9 @@ export const CreatePhotographerBody = zod.object({
   "name": zod.string().min(1),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubId": zod.number().optional()
+  "clubId": zod.number().optional(),
+  "themeId1": zod.number().optional(),
+  "themeId2": zod.number().optional()
 })
 
 
@@ -145,6 +152,45 @@ export const GetPhotographerResponse = zod.object({
   "avatarUrl": zod.string().nullish(),
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
+  "themeId1": zod.number().nullish(),
+  "themeName1": zod.string().nullish(),
+  "themeId2": zod.number().nullish(),
+  "themeName2": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a photographer profile
+ */
+export const UpdatePhotographerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdatePhotographerBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "bio": zod.string().optional(),
+  "avatarUrl": zod.string().optional(),
+  "clubId": zod.number().nullish(),
+  "themeId1": zod.number().nullish(),
+  "themeId2": zod.number().nullish()
+})
+
+export const UpdatePhotographerResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "themeId1": zod.number().nullish(),
+  "themeName1": zod.string().nullish(),
+  "themeId2": zod.number().nullish(),
+  "themeName2": zod.string().nullish(),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })

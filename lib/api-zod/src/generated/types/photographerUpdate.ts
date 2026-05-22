@@ -6,12 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PhotographerInput {
+export interface PhotographerUpdate {
   /** @minLength 1 */
-  name: string;
+  name?: string;
   bio?: string;
   avatarUrl?: string;
-  clubId?: number;
-  themeId1?: number;
-  themeId2?: number;
+  /** @nullable */
+  clubId?: number | null;
+  /** @nullable */
+  themeId1?: number | null;
+  /** @nullable */
+  themeId2?: number | null;
 }

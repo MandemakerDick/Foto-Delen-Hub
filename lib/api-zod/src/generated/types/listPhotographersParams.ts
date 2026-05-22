@@ -9,4 +9,5 @@
 export type ListPhotographersParams = {
 search?: string;
 clubId?: number;
+themeId?: number;
 };
