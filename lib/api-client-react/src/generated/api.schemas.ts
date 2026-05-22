@@ -16,6 +16,8 @@ export interface Club {
   description?: string | null;
   /** @nullable */
   location?: string | null;
+  /** @nullable */
+  websiteUrl?: string | null;
   photoCount?: number;
   memberCount?: number;
   createdAt: string;
@@ -26,6 +28,7 @@ export interface ClubInput {
   name: string;
   description?: string;
   location?: string;
+  websiteUrl?: string;
 }
 
 export interface Theme {

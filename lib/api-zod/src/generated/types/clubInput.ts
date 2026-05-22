@@ -11,4 +11,5 @@ export interface ClubInput {
   name: string;
   description?: string;
   location?: string;
+  websiteUrl?: string;
 }

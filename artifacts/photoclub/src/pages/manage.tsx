@@ -34,6 +34,7 @@ const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   location: z.string().optional(),
+  websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 const themeSchema = z.object({
@@ -69,7 +70,7 @@ export default function Manage() {
 
   const clubForm = useForm<z.infer<typeof clubSchema>>({
     resolver: zodResolver(clubSchema),
-    defaultValues: { name: "", description: "", location: "" },
+    defaultValues: { name: "", description: "", location: "", websiteUrl: "" },
   });
 
   const themeForm = useForm<z.infer<typeof themeSchema>>({
@@ -83,8 +84,10 @@ export default function Manage() {
   });
 
   const onClubSubmit = (values: z.infer<typeof clubSchema>) => {
+    const data = { ...values };
+    if (!data.websiteUrl) delete data.websiteUrl;
     createClubMutation.mutate(
-      { data: values },
+      { data },
       {
         onSuccess: () => {
           toast({ title: "Community Established", description: `${values.name} has been created.` });
@@ -175,6 +178,13 @@ export default function Manage() {
                 <FormItem>
                   <FormLabel>Location</FormLabel>
                   <FormControl><Input {...field} className="bg-background" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={clubForm.control} name="websiteUrl" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Website URL</FormLabel>
+                  <FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

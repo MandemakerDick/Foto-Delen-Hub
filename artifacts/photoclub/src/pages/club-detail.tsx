@@ -1,5 +1,5 @@
 import { useParams, Link } from "wouter";
-import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon } from "lucide-react";
+import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, User } from "lucide-react";
 import { format } from "date-fns";
 import { useGetClub, getGetClubQueryKey, useListPhotos } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
@@ -69,6 +69,17 @@ export default function ClubDetail() {
                     <MapPin className="w-4 h-4" />
                     <span>{club.location}</span>
                   </div>
+                )}
+                {club.websiteUrl && (
+                  <a
+                    href={club.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span>{new URL(club.websiteUrl).hostname}</span>
+                  </a>
                 )}
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />

@@ -7,6 +7,7 @@ export const clubsTable = pgTable("clubs", {
   name: text("name").notNull(),
   description: text("description"),
   location: text("location"),
+  websiteUrl: text("website_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

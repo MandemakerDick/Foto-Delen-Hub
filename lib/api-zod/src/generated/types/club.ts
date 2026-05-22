@@ -13,6 +13,8 @@ export interface Club {
   description?: string | null;
   /** @nullable */
   location?: string | null;
+  /** @nullable */
+  websiteUrl?: string | null;
   photoCount?: number;
   memberCount?: number;
   createdAt: string;
