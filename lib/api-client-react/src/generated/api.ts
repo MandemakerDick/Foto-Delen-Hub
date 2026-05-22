@@ -671,6 +671,148 @@ export function useGetTheme<TData = Awaited<ReturnType<typeof getTheme>>, TError
 
 
 
+export const getUpdateThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/themes/${id}`
+}
+
+/**
+ * @summary Update a theme
+ */
+export const updateTheme = async (id: number,
+    themeInput: ThemeInput, options?: RequestInit): Promise<Theme> => {
+
+  return customFetch<Theme>(getUpdateThemeUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      themeInput,)
+  }
+);}
+
+
+
+
+export const getUpdateThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTheme>>, TError,{id: number;data: BodyType<ThemeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTheme>>, TError,{id: number;data: BodyType<ThemeInput>}, TContext> => {
+
+const mutationKey = ['updateTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTheme>>, {id: number;data: BodyType<ThemeInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTheme(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateThemeMutationResult = NonNullable<Awaited<ReturnType<typeof updateTheme>>>
+    export type UpdateThemeMutationBody = BodyType<ThemeInput>
+    export type UpdateThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a theme
+ */
+export const useUpdateTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTheme>>, TError,{id: number;data: BodyType<ThemeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTheme>>,
+        TError,
+        {id: number;data: BodyType<ThemeInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateThemeMutationOptions(options));
+    }
+
+export const getDeleteThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/themes/${id}`
+}
+
+/**
+ * @summary Delete a theme
+ */
+export const deleteTheme = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteThemeUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTheme>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTheme>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteTheme(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteThemeMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTheme>>>
+
+    export type DeleteThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a theme
+ */
+export const useDeleteTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTheme>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteThemeMutationOptions(options));
+    }
+
 export const getListPhotographersUrl = (params?: ListPhotographersParams,) => {
   const normalizedParams = new URLSearchParams();
 

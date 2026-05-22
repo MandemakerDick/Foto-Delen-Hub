@@ -150,6 +150,38 @@ export const GetThemeResponse = zod.object({
 
 
 /**
+ * @summary Update a theme
+ */
+export const UpdateThemeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdateThemeBody = zod.object({
+  "name": zod.string().min(1),
+  "description": zod.string().optional()
+})
+
+export const UpdateThemeResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a theme
+ */
+export const DeleteThemeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all photographers
  */
 export const ListPhotographersQueryParams = zod.object({

@@ -179,6 +179,46 @@ paths:
                 $ref: "#/components/schemas/Theme"
         "404":
           description: Not found
+    put:
+      operationId: updateTheme
+      tags: [themes]
+      summary: Update a theme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThemeInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Theme"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTheme
+      tags: [themes]
+      summary: Delete a theme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /photographers:
     get:
