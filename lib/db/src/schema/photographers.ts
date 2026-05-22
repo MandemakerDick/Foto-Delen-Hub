@@ -8,6 +8,7 @@ export const photographersTable = pgTable("photographers", {
   bio: text("bio"),
   avatarUrl: text("avatar_url"),
   clubId: integer("club_id"),
+  clerkUserId: text("clerk_user_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

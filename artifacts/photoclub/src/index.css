@@ -1,5 +1,9 @@
+@layer theme, base, clerk, components, utilities;
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Space+Mono&display=swap');
 @import "tailwindcss";
+@import "@clerk/themes/shadcn.css";
+
+.cl-formFieldInput::placeholder { color: #6b6560; opacity: 1; }
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 

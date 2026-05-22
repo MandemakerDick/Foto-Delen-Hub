@@ -6,6 +6,7 @@ import photographersRouter from "./photographers";
 import photosRouter from "./photos";
 import statsRouter from "./stats";
 import commentsRouter from "./comments";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(photographersRouter);
 router.use(photosRouter);
 router.use(statsRouter);
 router.use(commentsRouter);
+router.use(authRouter);
 
 export default router;
