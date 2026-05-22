@@ -266,9 +266,9 @@ export default function Manage() {
     }
   };
 
-  const isClubPending = editingClubId !== null ? updateClubMutation.isPending : createClubMutation.isPending;
+  const isClubPending = (editingClubId !== null ? updateClubMutation.isPending : createClubMutation.isPending) || logoUploading;
   const isThemePending = editingThemeId !== null ? updateThemeMutation.isPending : createThemeMutation.isPending;
-  const isPhotographerPending = editingPhotographerId !== null ? updatePhotographerMutation.isPending : createPhotographerMutation.isPending;
+  const isPhotographerPending = (editingPhotographerId !== null ? updatePhotographerMutation.isPending : createPhotographerMutation.isPending) || avatarUploading;
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
@@ -308,6 +308,7 @@ export default function Manage() {
               <form onSubmit={clubForm.handleSubmit(onClubSubmit)} className="space-y-4">
                 <div className="flex flex-col items-center gap-3 pb-2">
                   <ObjectUploader
+                    key={`club-logo-${editingClubId ?? "create"}`}
                     maxNumberOfFiles={1} maxFileSize={5 * 1024 * 1024}
                     onGetUploadParameters={async (file) => {
                       const res = await fetch("/api/storage/uploads/request-url", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }) });
@@ -321,6 +322,7 @@ export default function Manage() {
                       setLogoUploading(false);
                       if ((result.failed?.length ?? 0) > 0) { toast({ title: "Upload failed", description: "Could not upload logo.", variant: "destructive" }); return; }
                       const objectPath = pendingLogoPathRef.current;
+                      pendingLogoPathRef.current = null;
                       if (objectPath) setLogoUrl(`/api/storage${objectPath}`);
                     }}
                     buttonClassName="group relative w-24 h-24 rounded-xl bg-secondary border-2 border-dashed border-border hover:border-primary/60 overflow-hidden flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
@@ -466,6 +468,7 @@ export default function Manage() {
                 {/* Avatar upload */}
                 <div className="flex flex-col items-center gap-3">
                   <ObjectUploader
+                    key={`photographer-avatar-${editingPhotographerId ?? "create"}`}
                     maxNumberOfFiles={1} maxFileSize={5 * 1024 * 1024}
                     onGetUploadParameters={async (file) => {
                       const res = await fetch("/api/storage/uploads/request-url", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }) });
@@ -479,6 +482,7 @@ export default function Manage() {
                       setAvatarUploading(false);
                       if ((result.failed?.length ?? 0) > 0) { toast({ title: "Upload failed", description: "Could not upload avatar.", variant: "destructive" }); return; }
                       const objectPath = pendingObjectPathRef.current;
+                      pendingObjectPathRef.current = null;
                       if (objectPath) setAvatarUrl(`/api/storage${objectPath}`);
                     }}
                     buttonClassName="group relative w-24 h-24 rounded-full bg-secondary border-2 border-dashed border-border hover:border-primary/60 overflow-hidden flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
