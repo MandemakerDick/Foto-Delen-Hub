@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: PhotoClub API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: clubs
+    description: Photo club operations
+  - name: themes
+    description: Theme operations
+  - name: photographers
+    description: Photographer operations
+  - name: photos
+    description: Photo operations
+  - name: stats
+    description: Statistics operations
 paths:
   /healthz:
     get:
@@ -24,6 +34,329 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /clubs:
+    get:
+      operationId: listClubs
+      tags: [clubs]
+      summary: List all photo clubs
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of clubs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Club"
+    post:
+      operationId: createClub
+      tags: [clubs]
+      summary: Create a new photo club
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+
+  /clubs/{id}:
+    get:
+      operationId: getClub
+      tags: [clubs]
+      summary: Get a photo club by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Club detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+        "404":
+          description: Not found
+
+  /themes:
+    get:
+      operationId: listThemes
+      tags: [themes]
+      summary: List all themes
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of themes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Theme"
+    post:
+      operationId: createTheme
+      tags: [themes]
+      summary: Create a new theme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThemeInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Theme"
+
+  /photographers:
+    get:
+      operationId: listPhotographers
+      tags: [photographers]
+      summary: List all photographers
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of photographers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photographer"
+    post:
+      operationId: createPhotographer
+      tags: [photographers]
+      summary: Create a photographer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotographerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photographer"
+
+  /photographers/{id}:
+    get:
+      operationId: getPhotographer
+      tags: [photographers]
+      summary: Get a photographer by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Photographer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photographer"
+        "404":
+          description: Not found
+
+  /photos:
+    get:
+      operationId: listPhotos
+      tags: [photos]
+      summary: List photos with optional filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by title or description
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+        - name: themeId
+          in: query
+          schema:
+            type: integer
+        - name: photographerId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+    post:
+      operationId: createPhoto
+      tags: [photos]
+      summary: Upload a new photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+
+  /photos/recent:
+    get:
+      operationId: listRecentPhotos
+      tags: [photos]
+      summary: Get recent photos across all clubs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recent photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+
+  /photos/{id}:
+    get:
+      operationId: getPhoto
+      tags: [photos]
+      summary: Get a photo by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Photo detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePhoto
+      tags: [photos]
+      summary: Update a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+    delete:
+      operationId: deletePhoto
+      tags: [photos]
+      summary: Delete a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /photos/{id}/like:
+    post:
+      operationId: likePhoto
+      tags: [photos]
+      summary: Like a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LikeInput"
+      responses:
+        "200":
+          description: Liked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +367,175 @@ components:
       required:
         - status
 
+    Club:
+      type: object
+      required: [id, name, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        photoCount:
+          type: integer
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+
+    ClubInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        location:
+          type: string
+
+    Theme:
+      type: object
+      required: [id, name, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        photoCount:
+          type: integer
+        createdAt:
+          type: string
+
+    ThemeInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+
+    Photographer:
+      type: object
+      required: [id, name, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        bio:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        clubId:
+          type: ["integer", "null"]
+        clubName:
+          type: ["string", "null"]
+        photoCount:
+          type: integer
+        createdAt:
+          type: string
+
+    PhotographerInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        clubId:
+          type: integer
+
+    Photo:
+      type: object
+      required: [id, title, imageUrl, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        imageUrl:
+          type: string
+        photographerId:
+          type: ["integer", "null"]
+        photographerName:
+          type: ["string", "null"]
+        photographerAvatarUrl:
+          type: ["string", "null"]
+        clubId:
+          type: ["integer", "null"]
+        clubName:
+          type: ["string", "null"]
+        themeId:
+          type: ["integer", "null"]
+        themeName:
+          type: ["string", "null"]
+        likeCount:
+          type: integer
+        createdAt:
+          type: string
+
+    PhotoInput:
+      type: object
+      required: [title, imageUrl]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        imageUrl:
+          type: string
+        photographerId:
+          type: integer
+        clubId:
+          type: integer
+        themeId:
+          type: integer
+
+    PhotoUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        themeId:
+          type: ["integer", "null"]
+
+    LikeInput:
+      type: object
+      required: [photographerId]
+      properties:
+        photographerId:
+          type: integer
+
+    Stats:
+      type: object
+      required: [totalPhotos, totalClubs, totalPhotographers, totalThemes, recentUploads]
+      properties:
+        totalPhotos:
+          type: integer
+        totalClubs:
+          type: integer
+        totalPhotographers:
+          type: integer
+        totalThemes:
+          type: integer
+        recentUploads:
+          type: integer

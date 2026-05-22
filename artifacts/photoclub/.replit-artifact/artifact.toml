@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "PhotoClub"
+version = "1.0.0"
+id = "artifacts/photoclub"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22135
+
+[services.development]
+run = "pnpm --filter @workspace/photoclub run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/photoclub", "run", "build" ]
+publicDir = "artifacts/photoclub/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22135"
+BASE_PATH = "/"
