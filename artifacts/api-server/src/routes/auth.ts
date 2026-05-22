@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { db, photographersTable, clubsTable } from "@workspace/db";
+import { alias } from "drizzle-orm/pg-core";
+import { db, photographersTable, clubsTable, themesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+
+const t1 = alias(themesTable, "t1");
+const t2 = alias(themesTable, "t2");
 
 const router = Router();
 
@@ -24,11 +28,17 @@ async function getPhotographerByClerkId(clerkUserId: string) {
       avatarUrl: photographersTable.avatarUrl,
       clubId: photographersTable.clubId,
       clubName: clubsTable.name,
+      themeId1: photographersTable.themeId1,
+      themeName1: t1.name,
+      themeId2: photographersTable.themeId2,
+      themeName2: t2.name,
       clerkUserId: photographersTable.clerkUserId,
       createdAt: photographersTable.createdAt,
     })
     .from(photographersTable)
     .leftJoin(clubsTable, eq(photographersTable.clubId, clubsTable.id))
+    .leftJoin(t1, eq(photographersTable.themeId1, t1.id))
+    .leftJoin(t2, eq(photographersTable.themeId2, t2.id))
     .where(eq(photographersTable.clerkUserId, clerkUserId));
   return rows[0] ?? null;
 }
@@ -73,7 +83,7 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
 });
 
 router.post("/me/profile", requireAuth, async (req: any, res) => {
-  const { name, bio, avatarUrl, clubId } = req.body;
+  const { name, bio, avatarUrl, clubId, themeId1, themeId2 } = req.body;
   if (!name || typeof name !== "string") {
     res.status(400).json({ error: "name required" });
     return;
@@ -87,7 +97,7 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
 
   const [photographer] = await db
     .insert(photographersTable)
-    .values({ name, bio, avatarUrl, clubId, clerkUserId: req.clerkUserId })
+    .values({ name, bio, avatarUrl, clubId, themeId1, themeId2, clerkUserId: req.clerkUserId })
     .returning();
 
   const profile = await getPhotographerByClerkId(req.clerkUserId);
