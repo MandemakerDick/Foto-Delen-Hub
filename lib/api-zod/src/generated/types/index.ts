@@ -8,6 +8,8 @@
 
 export * from './club';
 export * from './clubInput';
+export * from './comment';
+export * from './commentInput';
 export * from './healthStatus';
 export * from './likeInput';
 export * from './listClubsParams';

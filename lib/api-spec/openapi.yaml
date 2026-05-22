@@ -20,6 +20,8 @@ tags:
     description: Photo operations
   - name: stats
     description: Statistics operations
+  - name: comments
+    description: Photo comment operations
 paths:
   /healthz:
     get:
@@ -344,6 +346,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/Photo"
 
+  /photos/{id}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments for a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Post a comment on a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /photos/{id}/comments/{commentId}:
+    delete:
+      operationId: deleteComment
+      tags: [comments]
+      summary: Delete a comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /stats:
     get:
       operationId: getStats
@@ -522,6 +588,35 @@ components:
       type: object
       required: [photographerId]
       properties:
+        photographerId:
+          type: integer
+
+    Comment:
+      type: object
+      required: [id, photoId, body, createdAt]
+      properties:
+        id:
+          type: integer
+        photoId:
+          type: integer
+        photographerId:
+          type: ["integer", "null"]
+        photographerName:
+          type: ["string", "null"]
+        photographerAvatarUrl:
+          type: ["string", "null"]
+        body:
+          type: string
+        createdAt:
+          type: string
+
+    CommentInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
         photographerId:
           type: integer
 

@@ -313,6 +313,50 @@ export const LikePhotoResponse = zod.object({
 
 
 /**
+ * @summary List comments for a photo
+ */
+export const ListCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "photoId": zod.number(),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListCommentsResponse = zod.array(ListCommentsResponseItem)
+
+
+/**
+ * @summary Post a comment on a photo
+ */
+export const CreateCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const CreateCommentBody = zod.object({
+  "body": zod.string().min(1),
+  "photographerId": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a comment
+ */
+export const DeleteCommentParams = zod.object({
+  "id": zod.coerce.number(),
+  "commentId": zod.coerce.number()
+})
+
+
+/**
  * @summary Get dashboard statistics
  */
 export const GetStatsResponse = zod.object({

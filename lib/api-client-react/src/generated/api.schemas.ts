@@ -112,6 +112,25 @@ export interface LikeInput {
   photographerId: number;
 }
 
+export interface Comment {
+  id: number;
+  photoId: number;
+  /** @nullable */
+  photographerId?: number | null;
+  /** @nullable */
+  photographerName?: string | null;
+  /** @nullable */
+  photographerAvatarUrl?: string | null;
+  body: string;
+  createdAt: string;
+}
+
+export interface CommentInput {
+  /** @minLength 1 */
+  body: string;
+  photographerId?: number;
+}
+
 export interface Stats {
   totalPhotos: number;
   totalClubs: number;

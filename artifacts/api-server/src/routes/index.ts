@@ -5,6 +5,7 @@ import themesRouter from "./themes";
 import photographersRouter from "./photographers";
 import photosRouter from "./photos";
 import statsRouter from "./stats";
+import commentsRouter from "./comments";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(themesRouter);
 router.use(photographersRouter);
 router.use(photosRouter);
 router.use(statsRouter);
+router.use(commentsRouter);
 
 export default router;
