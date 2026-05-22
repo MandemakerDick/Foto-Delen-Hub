@@ -522,6 +522,83 @@ export const useCreateTheme = <TError = ErrorType<unknown>,
       return useMutation(getCreateThemeMutationOptions(options));
     }
 
+export const getGetThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/themes/${id}`
+}
+
+/**
+ * @summary Get a single theme by ID
+ */
+export const getTheme = async (id: number, options?: RequestInit): Promise<Theme> => {
+
+  return customFetch<Theme>(getGetThemeUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetThemeQueryKey = (id: number,) => {
+    return [
+    `/api/themes/${id}`
+    ] as const;
+    }
+
+
+export const getGetThemeQueryOptions = <TData = Awaited<ReturnType<typeof getTheme>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTheme>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetThemeQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTheme>>> = ({ signal }) => getTheme(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTheme>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetThemeQueryResult = NonNullable<Awaited<ReturnType<typeof getTheme>>>
+export type GetThemeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single theme by ID
+ */
+
+export function useGetTheme<TData = Awaited<ReturnType<typeof getTheme>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTheme>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetThemeQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListPhotographersUrl = (params?: ListPhotographersParams,) => {
   const normalizedParams = new URLSearchParams();
 

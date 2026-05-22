@@ -19,6 +19,7 @@ import PhotographerDetail from "@/pages/photographer-detail";
 import Upload from "@/pages/upload";
 import Manage from "@/pages/manage";
 import MyPhotos from "@/pages/my-photos";
+import ThemeDetail from "@/pages/theme-detail";
 import Search from "@/pages/search";
 import NotFound from "@/pages/not-found";
 
@@ -139,6 +140,7 @@ function Router() {
         <Route path="/clubs" component={Clubs} />
         <Route path="/clubs/:id" component={ClubDetail} />
         <Route path="/themes" component={Themes} />
+        <Route path="/themes/:id" component={ThemeDetail} />
         <Route path="/photographers" component={Photographers} />
         <Route path="/photographers/:id" component={PhotographerDetail} />
         <Route path="/search" component={Search} />

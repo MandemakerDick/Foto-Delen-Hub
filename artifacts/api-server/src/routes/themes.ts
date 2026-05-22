@@ -30,6 +30,27 @@ router.get("/themes", async (req, res) => {
   res.json(themes.map((t) => ({ ...t, createdAt: t.createdAt.toISOString() })));
 });
 
+router.get("/themes/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [theme] = await db
+    .select({
+      id: themesTable.id,
+      name: themesTable.name,
+      description: themesTable.description,
+      createdAt: themesTable.createdAt,
+      photoCount: count(photosTable.id),
+    })
+    .from(themesTable)
+    .leftJoin(photosTable, eq(photosTable.themeId, themesTable.id))
+    .where(eq(themesTable.id, id))
+    .groupBy(themesTable.id);
+
+  if (!theme) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ...theme, createdAt: theme.createdAt.toISOString() });
+});
+
 router.post("/themes", async (req, res) => {
   const body = CreateThemeBody.safeParse(req.body);
   if (!body.success) {

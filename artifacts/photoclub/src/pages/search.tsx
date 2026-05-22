@@ -92,7 +92,7 @@ export default function SearchResults() {
             {themes && themes.length > 0 ? (
               <div className="flex flex-wrap gap-3">
                 {themes.map((t) => (
-                  <Link key={t.id} href={`/themes`}>
+                  <Link key={t.id} href={`/themes/${t.id}`}>
                     <div className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 bg-background hover:border-primary/60 hover:bg-secondary/40 transition-colors group cursor-pointer">
                       <Camera className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                       <span className="text-sm font-medium group-hover:text-primary transition-colors">{t.name}</span>

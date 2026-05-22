@@ -44,7 +44,7 @@ export default function Themes() {
       ) : filteredThemes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredThemes.map((theme) => (
-            <Link key={theme.id} href={`/photos?themeId=${theme.id}`}>
+            <Link key={theme.id} href={`/themes/${theme.id}`}>
               <div className="group h-full bg-background rounded-lg p-6 border border-border/50 hover:border-primary/50 hover:bg-secondary/20 transition-all flex flex-col relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110"></div>
                 

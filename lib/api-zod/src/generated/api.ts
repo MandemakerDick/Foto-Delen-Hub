@@ -97,6 +97,22 @@ export const CreateThemeBody = zod.object({
 
 
 /**
+ * @summary Get a single theme by ID
+ */
+export const GetThemeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetThemeResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary List all photographers
  */
 export const ListPhotographersQueryParams = zod.object({

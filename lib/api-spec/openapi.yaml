@@ -134,6 +134,27 @@ paths:
               schema:
                 $ref: "#/components/schemas/Theme"
 
+  /themes/{id}:
+    get:
+      operationId: getTheme
+      tags: [themes]
+      summary: Get a single theme by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Theme detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Theme"
+        "404":
+          description: Not found
+
   /photographers:
     get:
       operationId: listPhotographers
