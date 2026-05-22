@@ -359,9 +359,13 @@ export default function Manage() {
               <ul className="divide-y divide-border/50">
                 {clubs.map((club) => (
                   <li key={club.id} className="flex items-center gap-4 px-6 py-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 overflow-hidden shrink-0 flex items-center justify-center">
-                      {club.logoUrl ? <img src={club.logoUrl} alt={club.name} className="w-full h-full object-cover" /> : <Users className="w-4 h-4 text-primary/60" />}
-                    </div>
+                    {club.logoUrl ? (
+                      <img src={club.logoUrl} alt={club.name} className="h-10 w-auto max-w-[120px] object-contain shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 shrink-0 flex items-center justify-center">
+                        <Users className="w-4 h-4 text-primary/60" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{club.name}</p>
                       {club.location && <p className="text-xs text-muted-foreground truncate">{club.location}</p>}

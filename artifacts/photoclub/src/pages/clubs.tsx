@@ -47,10 +47,18 @@ export default function Clubs() {
           {filteredClubs.map((club) => (
             <Link key={club.id} href={`/clubs/${club.id}`}>
               <div className="group h-full bg-background rounded-lg p-6 border border-border/50 hover:border-primary/50 hover:bg-secondary/20 transition-all flex flex-col">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    <Users className="w-6 h-6" />
-                  </div>
+                <div className="flex items-start justify-between mb-4 gap-4">
+                  {club.logoUrl ? (
+                    <img
+                      src={club.logoUrl}
+                      alt={`${club.name} logo`}
+                      className="h-12 w-auto max-w-[60%] object-contain"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <Users className="w-6 h-6" />
+                    </div>
+                  )}
                   <div className="flex gap-4 text-xs font-mono text-muted-foreground">
                     <div className="flex items-center gap-1" title="Members">
                       <Users className="w-3 h-3" />
