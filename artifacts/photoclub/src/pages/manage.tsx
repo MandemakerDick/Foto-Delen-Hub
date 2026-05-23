@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -59,6 +60,7 @@ type ThemeFormValues = z.infer<typeof themeSchema>;
 type PhotographerFormValues = z.infer<typeof photographerSchema>;
 
 export default function Manage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: clubs } = useListClubs();
@@ -93,7 +95,7 @@ export default function Manage() {
   const pendingObjectPathRef = useRef<string | null>(null);
   const [theme1, setTheme1] = useState("none");
   const [theme2, setTheme2] = useState("none");
-  const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
+  const theme2Options = themes?.filter((th) => th.id.toString() !== theme1) ?? [];
 
   // ── Forms ─────────────────────────────────────────────────
   const clubForm = useForm<ClubFormValues>({
@@ -135,28 +137,28 @@ export default function Manage() {
     if (editingClubId !== null) {
       updateClubMutation.mutate({ id: editingClubId, data }, {
         onSuccess: () => {
-          toast({ title: "Club Updated", description: `${values.name} has been saved.` });
+          toast({ title: t("manage.club.toastUpdatedTitle"), description: t("manage.club.toastUpdatedDesc", { name: values.name }) });
           cancelEditingClub();
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to update club", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("manage.club.toastUpdateError"), variant: "destructive" }),
       });
     } else {
       createClubMutation.mutate({ data }, {
         onSuccess: () => {
-          toast({ title: "Community Established", description: `${values.name} has been created.` });
+          toast({ title: t("manage.club.toastCreatedTitle"), description: t("manage.club.toastCreatedDesc", { name: values.name }) });
           clubForm.reset({ name: "", description: "", location: "", websiteUrl: "" });
           setLogoUrl(null);
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to create club", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("manage.club.toastCreateError"), variant: "destructive" }),
       });
     }
   };
 
   // ── Theme handlers ────────────────────────────────────────
   const startEditingTheme = (themeId: number) => {
-    const theme = themes?.find((t) => t.id === themeId);
+    const theme = themes?.find((th) => th.id === themeId);
     if (!theme) return;
     setEditingThemeId(themeId);
     themeForm.reset({ name: theme.name, description: theme.description ?? "" });
@@ -172,33 +174,33 @@ export default function Manage() {
     if (editingThemeId !== null) {
       updateThemeMutation.mutate({ id: editingThemeId, data: values }, {
         onSuccess: () => {
-          toast({ title: "Theme Updated", description: `${values.name} has been saved.` });
+          toast({ title: t("manage.theme.toastUpdatedTitle"), description: t("manage.theme.toastUpdatedDesc", { name: values.name }) });
           cancelEditingTheme();
           queryClient.invalidateQueries({ queryKey: getListThemesQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to update theme", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("manage.theme.toastUpdateError"), variant: "destructive" }),
       });
     } else {
       createThemeMutation.mutate({ data: values }, {
         onSuccess: () => {
-          toast({ title: "Theme Created", description: `${values.name} is now available.` });
+          toast({ title: t("manage.theme.toastCreatedTitle"), description: t("manage.theme.toastCreatedDesc", { name: values.name }) });
           themeForm.reset();
           queryClient.invalidateQueries({ queryKey: getListThemesQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to create theme", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("manage.theme.toastCreateError"), variant: "destructive" }),
       });
     }
   };
 
   const deleteTheme = (themeId: number, name: string) => {
-    if (!confirm(`Delete theme "${name}"? This cannot be undone.`)) return;
+    if (!confirm(t("manage.theme.confirmDelete", { name }))) return;
     deleteThemeMutation.mutate({ id: themeId }, {
       onSuccess: () => {
-        toast({ title: "Theme Deleted", description: `${name} has been removed.` });
+        toast({ title: t("manage.theme.toastDeletedTitle"), description: t("manage.theme.toastDeletedDesc", { name }) });
         if (editingThemeId === themeId) cancelEditingTheme();
         queryClient.invalidateQueries({ queryKey: getListThemesQueryKey() });
       },
-      onError: () => toast({ title: "Error", description: "Failed to delete theme", variant: "destructive" }),
+      onError: () => toast({ title: t("common.error"), description: t("manage.theme.toastDeleteError"), variant: "destructive" }),
     });
   };
 
@@ -236,11 +238,11 @@ export default function Manage() {
       };
       updatePhotographerMutation.mutate({ id: editingPhotographerId, data }, {
         onSuccess: () => {
-          toast({ title: "Profile Updated", description: `${values.name} has been saved.` });
+          toast({ title: t("manage.photographer.toastUpdatedTitle"), description: t("manage.photographer.toastUpdatedDesc", { name: values.name }) });
           cancelEditingPhotographer();
           queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to update profile", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("manage.photographer.toastUpdateError"), variant: "destructive" }),
       });
     } else {
       const data = {
@@ -251,11 +253,11 @@ export default function Manage() {
       };
       createPhotographerMutation.mutate({ data }, {
         onSuccess: () => {
-          toast({ title: "Profile Created", description: `${values.name} has joined.` });
+          toast({ title: t("manage.photographer.toastCreatedTitle"), description: t("manage.photographer.toastCreatedDesc", { name: values.name }) });
           cancelEditingPhotographer();
           queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
         },
-        onError: () => toast({ title: "Error", description: "Failed to create profile", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("manage.photographer.toastCreateError"), variant: "destructive" }),
       });
     }
   };
@@ -267,20 +269,20 @@ export default function Manage() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <div className="mb-10 text-center">
-        <h1 className="font-serif text-4xl font-bold mb-4">Administration</h1>
-        <p className="text-muted-foreground text-lg">Manage the gallery's foundational data.</p>
+        <h1 className="font-serif text-4xl font-bold mb-4">{t("manage.title")}</h1>
+        <p className="text-muted-foreground text-lg">{t("manage.subtitle")}</p>
       </div>
 
       <Tabs defaultValue="club" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8 bg-secondary border border-border/50">
           <TabsTrigger value="club" className="data-[state=active]:bg-background">
-            <Users className="w-4 h-4 mr-2" />Club
+            <Users className="w-4 h-4 mr-2" />{t("manage.tabs.club")}
           </TabsTrigger>
           <TabsTrigger value="theme" className="data-[state=active]:bg-background">
-            <LayoutDashboard className="w-4 h-4 mr-2" />Theme
+            <LayoutDashboard className="w-4 h-4 mr-2" />{t("manage.tabs.theme")}
           </TabsTrigger>
           <TabsTrigger value="photographer" className="data-[state=active]:bg-background">
-            <User className="w-4 h-4 mr-2" />Photographer
+            <User className="w-4 h-4 mr-2" />{t("manage.tabs.photographer")}
           </TabsTrigger>
         </TabsList>
 
@@ -289,11 +291,11 @@ export default function Manage() {
           <div ref={clubFormRef} className="bg-secondary/20 p-6 rounded-lg border border-border/50 scroll-mt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-serif text-2xl font-medium">
-                {editingClubId !== null ? "Edit Community" : "Create Community"}
+                {editingClubId !== null ? t("manage.club.editTitle") : t("manage.club.createTitle")}
               </h2>
               {editingClubId !== null && (
                 <button type="button" onClick={cancelEditingClub} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="w-4 h-4" />Cancel
+                  <X className="w-4 h-4" />{t("common.cancel")}
                 </button>
               )}
             </div>
@@ -314,7 +316,7 @@ export default function Manage() {
                     }}
                     onComplete={(result) => {
                       setLogoUploading(false);
-                      if ((result.failed?.length ?? 0) > 0) { toast({ title: "Upload failed", description: "Could not upload logo.", variant: "destructive" }); return; }
+                      if ((result.failed?.length ?? 0) > 0) { toast({ title: t("manage.uploadFailedTitle"), description: t("manage.club.uploadFailedDesc"), variant: "destructive" }); return; }
                       const objectPath = pendingLogoPathRef.current;
                       pendingLogoPathRef.current = null;
                       if (objectPath) setLogoUrl(`/api/storage${objectPath}`);
@@ -323,28 +325,28 @@ export default function Manage() {
                   >
                     {logoUploading ? <div className="w-full h-full flex items-center justify-center"><div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
                       : logoUrl ? <><img src={logoUrl} alt="Logo preview" className="w-full h-full object-cover" /><div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Camera className="w-5 h-5 text-white" /></div></>
-                      : <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors"><Camera className="w-6 h-6" /><span className="text-[10px] uppercase tracking-wider">Logo</span></div>}
+                      : <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors"><Camera className="w-6 h-6" /><span className="text-[10px] uppercase tracking-wider">{t("manage.club.logoLabel")}</span></div>}
                   </ObjectUploader>
-                  <p className="text-xs text-muted-foreground">Click to upload a club logo (optional)</p>
+                  <p className="text-xs text-muted-foreground">{t("manage.club.logoHint")}</p>
                 </div>
 
                 <FormField control={clubForm.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Club Name *</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.club.nameLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={clubForm.control} name="location" render={({ field }) => (
-                  <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.club.locationLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={clubForm.control} name="websiteUrl" render={({ field }) => (
-                  <FormItem><FormLabel>Website URL</FormLabel><FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.club.websiteLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={clubForm.control} name="description" render={({ field }) => (
-                  <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.club.descriptionLabel")}</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
                 )} />
 
                 <div className="flex gap-3 pt-2">
-                  {editingClubId !== null && <Button type="button" variant="outline" onClick={cancelEditingClub} className="flex-1">Cancel</Button>}
+                  {editingClubId !== null && <Button type="button" variant="outline" onClick={cancelEditingClub} className="flex-1">{t("common.cancel")}</Button>}
                   <Button type="submit" disabled={isClubPending} className="flex-1">
-                    {editingClubId !== null ? "Save Changes" : "Establish Community"}
+                    {editingClubId !== null ? t("common.saveChanges") : t("manage.club.submitCreate")}
                   </Button>
                 </div>
               </form>
@@ -354,7 +356,7 @@ export default function Manage() {
           {clubs && clubs.length > 0 && (
             <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
               <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-serif text-lg font-medium">Existing Clubs</h3>
+                <h3 className="font-serif text-lg font-medium">{t("manage.club.existingHeading")}</h3>
               </div>
               <ul className="divide-y divide-border/50">
                 {clubs.map((club) => (
@@ -371,13 +373,13 @@ export default function Manage() {
                       {club.location && <p className="text-xs text-muted-foreground truncate">{club.location}</p>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono shrink-0">
-                      <span>{club.memberCount} members</span>
+                      <span>{club.memberCount} {t("manage.club.membersSuffix")}</span>
                       <Separator orientation="vertical" className="h-4" />
-                      <span>{club.photoCount} prints</span>
+                      <span>{club.photoCount} {t("manage.club.printsSuffix")}</span>
                     </div>
                     <Button type="button" variant={editingClubId === club.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingClub(club.id)}>
                       <Pencil className="w-3.5 h-3.5" />
-                      {editingClubId === club.id ? "Editing…" : "Edit"}
+                      {editingClubId === club.id ? t("common.editing") : t("common.edit")}
                     </Button>
                   </li>
                 ))}
@@ -391,11 +393,11 @@ export default function Manage() {
           <div ref={themeFormRef} className="bg-secondary/20 p-6 rounded-lg border border-border/50 scroll-mt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-serif text-2xl font-medium">
-                {editingThemeId !== null ? "Edit Theme" : "Create Theme"}
+                {editingThemeId !== null ? t("manage.theme.editTitle") : t("manage.theme.createTitle")}
               </h2>
               {editingThemeId !== null && (
                 <button type="button" onClick={cancelEditingTheme} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="w-4 h-4" />Cancel
+                  <X className="w-4 h-4" />{t("common.cancel")}
                 </button>
               )}
             </div>
@@ -403,15 +405,15 @@ export default function Manage() {
             <Form {...themeForm}>
               <form onSubmit={themeForm.handleSubmit(onThemeSubmit)} className="space-y-4">
                 <FormField control={themeForm.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Theme Name *</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.theme.nameLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={themeForm.control} name="description" render={({ field }) => (
-                  <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.theme.descriptionLabel")}</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <div className="flex gap-3 pt-2">
-                  {editingThemeId !== null && <Button type="button" variant="outline" onClick={cancelEditingTheme} className="flex-1">Cancel</Button>}
+                  {editingThemeId !== null && <Button type="button" variant="outline" onClick={cancelEditingTheme} className="flex-1">{t("common.cancel")}</Button>}
                   <Button type="submit" disabled={isThemePending} className="flex-1">
-                    {editingThemeId !== null ? "Save Changes" : "Define Theme"}
+                    {editingThemeId !== null ? t("common.saveChanges") : t("manage.theme.submitCreate")}
                   </Button>
                 </div>
               </form>
@@ -421,7 +423,7 @@ export default function Manage() {
           {themes && themes.length > 0 && (
             <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
               <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-serif text-lg font-medium">Existing Themes</h3>
+                <h3 className="font-serif text-lg font-medium">{t("manage.theme.existingHeading")}</h3>
               </div>
               <ul className="divide-y divide-border/50">
                 {themes.map((theme) => (
@@ -430,14 +432,14 @@ export default function Manage() {
                       <p className="font-medium truncate">{theme.name}</p>
                       {theme.description && <p className="text-xs text-muted-foreground truncate">{theme.description}</p>}
                     </div>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">{theme.photoCount} photos</span>
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">{theme.photoCount} {t("manage.theme.photosSuffix")}</span>
                     <Button type="button" variant={editingThemeId === theme.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingTheme(theme.id)}>
                       <Pencil className="w-3.5 h-3.5" />
-                      {editingThemeId === theme.id ? "Editing…" : "Edit"}
+                      {editingThemeId === theme.id ? t("common.editing") : t("common.edit")}
                     </Button>
                     <Button type="button" variant="ghost" size="sm" className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => deleteTheme(theme.id, theme.name)} disabled={deleteThemeMutation.isPending}>
                       <Trash2 className="w-3.5 h-3.5" />
-                      Delete
+                      {t("common.delete")}
                     </Button>
                   </li>
                 ))}
@@ -451,11 +453,11 @@ export default function Manage() {
           <div ref={photographerFormRef} className="bg-secondary/20 p-6 rounded-lg border border-border/50 scroll-mt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-serif text-2xl font-medium">
-                {editingPhotographerId !== null ? "Edit Photographer" : "Add Photographer"}
+                {editingPhotographerId !== null ? t("manage.photographer.editTitle") : t("manage.photographer.createTitle")}
               </h2>
               {editingPhotographerId !== null && (
                 <button type="button" onClick={cancelEditingPhotographer} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="w-4 h-4" />Cancel
+                  <X className="w-4 h-4" />{t("common.cancel")}
                 </button>
               )}
             </div>
@@ -478,7 +480,7 @@ export default function Manage() {
                     }}
                     onComplete={(result) => {
                       setAvatarUploading(false);
-                      if ((result.failed?.length ?? 0) > 0) { toast({ title: "Upload failed", description: "Could not upload avatar.", variant: "destructive" }); return; }
+                      if ((result.failed?.length ?? 0) > 0) { toast({ title: t("manage.uploadFailedTitle"), description: t("manage.photographer.uploadFailedDesc"), variant: "destructive" }); return; }
                       const objectPath = pendingObjectPathRef.current;
                       pendingObjectPathRef.current = null;
                       if (objectPath) setAvatarUrl(`/api/storage${objectPath}`);
@@ -487,21 +489,21 @@ export default function Manage() {
                   >
                     {avatarUploading ? <div className="w-full h-full flex items-center justify-center"><div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
                       : avatarUrl ? <><img src={avatarUrl} alt="Avatar preview" className="w-full h-full object-cover" /><div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><Camera className="w-5 h-5 text-white" /></div></>
-                      : <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors"><Camera className="w-6 h-6" /><span className="text-[10px] uppercase tracking-wider">Photo</span></div>}
+                      : <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors"><Camera className="w-6 h-6" /><span className="text-[10px] uppercase tracking-wider">{t("manage.photographer.photoLabel")}</span></div>}
                   </ObjectUploader>
-                  <p className="text-xs text-muted-foreground">Click to upload a profile picture (optional)</p>
+                  <p className="text-xs text-muted-foreground">{t("manage.photographer.avatarHint")}</p>
                 </div>
 
                 <FormField control={photographerForm.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Name *</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.photographer.nameLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
 
                 <FormField control={photographerForm.control} name="clubId" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Primary Club</FormLabel>
+                    <FormLabel>{t("manage.photographer.primaryClubLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value?.toString() ?? ""}>
                       <FormControl>
-                        <SelectTrigger className="bg-background"><SelectValue placeholder="Optional" /></SelectTrigger>
+                        <SelectTrigger className="bg-background"><SelectValue placeholder={t("manage.photographer.primaryClubPlaceholder")} /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {clubs?.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
@@ -513,35 +515,35 @@ export default function Manage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-sm font-medium mb-1.5">Specialty Theme 1</p>
+                    <p className="text-sm font-medium mb-1.5">{t("manage.photographer.specialty1")}</p>
                     <Select value={theme1} onValueChange={(v) => { setTheme1(v); if (v === theme2) setTheme2("none"); }}>
-                      <SelectTrigger className="bg-background"><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectTrigger className="bg-background"><SelectValue placeholder={t("common.none")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {themes?.map((t) => <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>)}
+                        <SelectItem value="none">{t("common.none")}</SelectItem>
+                        {themes?.map((th) => <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <p className="text-sm font-medium mb-1.5">Specialty Theme 2</p>
+                    <p className="text-sm font-medium mb-1.5">{t("manage.photographer.specialty2")}</p>
                     <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
-                      <SelectTrigger className="bg-background disabled:opacity-50"><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectTrigger className="bg-background disabled:opacity-50"><SelectValue placeholder={t("common.none")} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {theme2Options.map((t) => <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>)}
+                        <SelectItem value="none">{t("common.none")}</SelectItem>
+                        {theme2Options.map((th) => <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <FormField control={photographerForm.control} name="bio" render={({ field }) => (
-                  <FormItem><FormLabel>Biography</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.photographer.biographyLabel")}</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
                 )} />
 
                 <div className="flex gap-3 pt-2">
-                  {editingPhotographerId !== null && <Button type="button" variant="outline" onClick={cancelEditingPhotographer} className="flex-1">Cancel</Button>}
+                  {editingPhotographerId !== null && <Button type="button" variant="outline" onClick={cancelEditingPhotographer} className="flex-1">{t("common.cancel")}</Button>}
                   <Button type="submit" disabled={isPhotographerPending} className="flex-1">
-                    {editingPhotographerId !== null ? "Save Changes" : "Register Profile"}
+                    {editingPhotographerId !== null ? t("common.saveChanges") : t("manage.photographer.submitCreate")}
                   </Button>
                 </div>
               </form>
@@ -551,7 +553,7 @@ export default function Manage() {
           {photographers && photographers.length > 0 && (
             <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
               <div className="px-6 py-4 border-b border-border/50">
-                <h3 className="font-serif text-lg font-medium">Existing Photographers</h3>
+                <h3 className="font-serif text-lg font-medium">{t("manage.photographer.existingHeading")}</h3>
               </div>
               <ul className="divide-y divide-border/50">
                 {photographers.map((p) => (
@@ -563,10 +565,10 @@ export default function Manage() {
                       <p className="font-medium truncate">{p.name}</p>
                       {p.clubName && <p className="text-xs text-muted-foreground truncate">{p.clubName}</p>}
                     </div>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} prints</span>
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} {t("manage.photographer.printsSuffix")}</span>
                     <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>
                       <Pencil className="w-3.5 h-3.5" />
-                      {editingPhotographerId === p.id ? "Editing…" : "Edit"}
+                      {editingPhotographerId === p.id ? t("common.editing") : t("common.edit")}
                     </Button>
                   </li>
                 ))}

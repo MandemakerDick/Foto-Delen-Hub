@@ -120,7 +120,7 @@ export default function PhotoDetail() {
 
   const handleLike = () => {
     if (!selectedLiker) {
-      toast({ title: "Who are you?", description: "Select a photographer profile to like this photo.", variant: "destructive" });
+      toast({ title: t("toasts.whoAreYouTitle"), description: t("toasts.whoAreYouDesc"), variant: "destructive" });
       return;
     }
     likeMutation.mutate(
@@ -128,9 +128,9 @@ export default function PhotoDetail() {
       {
         onSuccess: (updatedPhoto) => {
           queryClient.setQueryData(getGetPhotoQueryKey(photoId), updatedPhoto);
-          toast({ title: "Photograph liked", description: "Your appreciation has been recorded." });
+          toast({ title: t("toasts.likedTitle"), description: t("toasts.likedDesc") });
         },
-        onError: () => toast({ title: "Error", description: "Could not like the photograph.", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("toasts.likeError"), variant: "destructive" }),
       },
     );
   };
@@ -140,10 +140,10 @@ export default function PhotoDetail() {
       { id: photoId },
       {
         onSuccess: () => {
-          toast({ title: "Photograph removed", description: "The print has been taken down." });
+          toast({ title: t("toasts.removedTitle"), description: t("toasts.removedDesc") });
           window.location.href = "/photos";
         },
-        onError: () => toast({ title: "Error", description: "Could not remove the photograph.", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("toasts.removeError"), variant: "destructive" }),
       },
     );
   };
@@ -171,16 +171,16 @@ export default function PhotoDetail() {
         onSuccess: (updated) => {
           queryClient.setQueryData(getGetPhotoQueryKey(photoId), updated);
           setEditOpen(false);
-          toast({ title: "Changes saved", description: "Your photograph details have been updated." });
+          toast({ title: t("toasts.savedTitle"), description: t("toasts.savedDesc") });
         },
-        onError: () => toast({ title: "Error", description: "Could not save changes.", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("toasts.saveError"), variant: "destructive" }),
       },
     );
   };
 
   const handleComment = () => {
     if (!commentBody.trim()) {
-      toast({ title: "Empty comment", description: "Write something before posting.", variant: "destructive" });
+      toast({ title: t("toasts.emptyCommentTitle"), description: t("toasts.emptyCommentDesc"), variant: "destructive" });
       return;
     }
     createCommentMutation.mutate(
@@ -195,9 +195,9 @@ export default function PhotoDetail() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(photoId) });
           setCommentBody("");
-          toast({ title: "Comment posted", description: "Your note has been added to this photograph." });
+          toast({ title: t("toasts.commentPostedTitle"), description: t("toasts.commentPostedDesc") });
         },
-        onError: () => toast({ title: "Error", description: "Could not post comment.", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("toasts.commentPostError"), variant: "destructive" }),
       },
     );
   };
@@ -208,9 +208,9 @@ export default function PhotoDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(photoId) });
-          toast({ title: "Comment removed" });
+          toast({ title: t("toasts.commentRemovedTitle") });
         },
-        onError: () => toast({ title: "Error", description: "Could not delete comment.", variant: "destructive" }),
+        onError: () => toast({ title: t("common.error"), description: t("toasts.commentDeleteError"), variant: "destructive" }),
       },
     );
   };

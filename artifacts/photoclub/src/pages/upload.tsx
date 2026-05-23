@@ -65,7 +65,7 @@ function UploadForm() {
 
   const onSubmit = (values: FormValues) => {
     if (!uploadedImageUrl) {
-      toast({ title: "No image", description: "Please upload a photo first.", variant: "destructive" });
+      toast({ title: t("toasts.noImageTitle"), description: t("toasts.noImageDesc"), variant: "destructive" });
       return;
     }
     createMutation.mutate(

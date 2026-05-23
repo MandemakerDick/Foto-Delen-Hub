@@ -83,6 +83,7 @@ function AvatarUploader({
   profile: PhotographerProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const updateMutation = useUpdatePhotographer();
   const pendingObjectPathRef = useRef<string | null>(null);
@@ -116,7 +117,7 @@ function AvatarUploader({
       onComplete={(result) => {
         setUploading(false);
         if ((result.failed?.length ?? 0) > 0) {
-          toast({ title: "Upload failed", description: "Could not upload avatar.", variant: "destructive" });
+          toast({ title: t("toasts.uploadFailedTitle"), description: t("toasts.avatarUploadFailedDesc"), variant: "destructive" });
           return;
         }
         const objectPath = pendingObjectPathRef.current;
@@ -126,10 +127,10 @@ function AvatarUploader({
           { id: profile.id, data: { avatarUrl } },
           {
             onSuccess: () => {
-              toast({ title: "Profile picture updated" });
+              toast({ title: t("toasts.avatarUpdatedTitle") });
               onSaved();
             },
-            onError: () => toast({ title: "Error", description: "Could not save profile picture.", variant: "destructive" }),
+            onError: () => toast({ title: t("common.error"), description: t("toasts.avatarSaveError"), variant: "destructive" }),
           },
         );
       }}
@@ -181,11 +182,11 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
     });
     setBusy(false);
     if (res.ok) {
-      toast({ title: "Profile linked", description: "Your account is now linked to your photographer profile." });
+      toast({ title: t("toasts.profileLinkedTitle"), description: t("toasts.profileLinkedDesc") });
       onLinked();
     } else {
       const err = await res.json();
-      toast({ title: "Error", description: err.error, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.error, variant: "destructive" });
     }
   };
 
@@ -203,11 +204,11 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
     });
     setBusy(false);
     if (res.ok) {
-      toast({ title: "Profile created", description: "Your photographer profile has been created." });
+      toast({ title: t("toasts.profileCreatedTitle"), description: t("toasts.profileCreatedDesc") });
       onLinked();
     } else {
       const err = await res.json();
-      toast({ title: "Error", description: err.error, variant: "destructive" });
+      toast({ title: t("common.error"), description: err.error, variant: "destructive" });
     }
   };
 
@@ -337,13 +338,13 @@ function EditThemesPanel({
       },
       {
         onSuccess: () => {
-          toast({ title: "Themes updated", description: "Your specialty themes have been saved." });
+          toast({ title: t("toasts.themesUpdatedTitle"), description: t("toasts.themesUpdatedDesc") });
           queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
           setOpen(false);
           onSaved();
         },
         onError: () => {
-          toast({ title: "Error", description: "Could not update themes.", variant: "destructive" });
+          toast({ title: t("common.error"), description: t("toasts.themesUpdateError"), variant: "destructive" });
         },
       },
     );
@@ -460,10 +461,10 @@ function MyPhotosDashboard({
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: profile.id }) });
-          toast({ title: "Photograph removed", description: `"${title}" has been deleted.` });
+          toast({ title: t("toasts.removedTitle"), description: t("toasts.removedDescNamed", { title }) });
         },
         onError: () =>
-          toast({ title: "Error", description: "Could not delete the photograph.", variant: "destructive" }),
+          toast({ title: t("common.error"), description: t("toasts.photoDeleteError"), variant: "destructive" }),
       },
     );
   };
