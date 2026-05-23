@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Search, Filter, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 
 export default function Gallery() {
+  const { t } = useTranslation();
   const [location] = useLocation();
   const searchParams = new URLSearchParams(location.split('?')[1] || "");
   const initialSearch = searchParams.get("search") || "";
@@ -50,9 +52,9 @@ export default function Gallery() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-10">
-        <h1 className="font-serif text-4xl font-bold mb-4">Gallery</h1>
+        <h1 className="font-serif text-4xl font-bold mb-4">{t("gallery.title")}</h1>
         <p className="text-muted-foreground text-lg max-w-2xl">
-          Browse the entire collection. Filter by community, theme, or the eye behind the lens.
+          {t("gallery.subtitle")}
         </p>
       </div>
 
@@ -62,7 +64,7 @@ export default function Gallery() {
           <Input 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search titles..." 
+            placeholder={t("gallery.searchPlaceholder")}
             className="pl-9 w-full bg-background border-border/50"
           />
         </div>
@@ -70,10 +72,10 @@ export default function Gallery() {
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
           <Select value={clubFilter} onValueChange={setClubFilter}>
             <SelectTrigger className="w-[160px] bg-background border-border/50">
-              <SelectValue placeholder="All Clubs" />
+              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.clubs")}`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Clubs</SelectItem>
+              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.clubs")}`}</SelectItem>
               {clubs?.map((club) => (
                 <SelectItem key={club.id} value={club.id.toString()}>{club.name}</SelectItem>
               ))}
@@ -82,10 +84,10 @@ export default function Gallery() {
 
           <Select value={themeFilter} onValueChange={setThemeFilter}>
             <SelectTrigger className="w-[160px] bg-background border-border/50">
-              <SelectValue placeholder="All Themes" />
+              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.themes")}`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Themes</SelectItem>
+              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.themes")}`}</SelectItem>
               {themes?.map((theme) => (
                 <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
               ))}
@@ -94,10 +96,10 @@ export default function Gallery() {
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
             <SelectTrigger className="w-[160px] bg-background border-border/50">
-              <SelectValue placeholder="All Photographers" />
+              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Photographers</SelectItem>
+              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.photographers")}`}</SelectItem>
               {photographers?.map((p) => (
                 <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
               ))}
@@ -107,7 +109,7 @@ export default function Gallery() {
           {activeFiltersCount > 0 && (
             <Button variant="ghost" onClick={clearFilters} className="px-3">
               <X className="w-4 h-4 mr-2" />
-              Clear
+              {t("gallery.clearFilters")}
             </Button>
           )}
         </div>
@@ -115,13 +117,13 @@ export default function Gallery() {
 
       <div className="mb-6 flex items-center justify-between">
         <div className="text-sm font-mono text-muted-foreground">
-          {filteredPhotos.length} {filteredPhotos.length === 1 ? 'print' : 'prints'} found
+          {filteredPhotos.length} {t("common.prints")}
         </div>
         {activeFiltersCount > 0 && (
           <div className="flex gap-2">
-            {clubFilter !== "all" && <Badge variant="secondary">Club: {clubs?.find(c => c.id.toString() === clubFilter)?.name}</Badge>}
-            {themeFilter !== "all" && <Badge variant="secondary">Theme: {themes?.find(t => t.id.toString() === themeFilter)?.name}</Badge>}
-            {photographerFilter !== "all" && <Badge variant="secondary">Photographer: {photographers?.find(p => p.id.toString() === photographerFilter)?.name}</Badge>}
+            {clubFilter !== "all" && <Badge variant="secondary">{t("gallery.filterClub")}: {clubs?.find(c => c.id.toString() === clubFilter)?.name}</Badge>}
+            {themeFilter !== "all" && <Badge variant="secondary">{t("gallery.filterTheme")}: {themes?.find(th => th.id.toString() === themeFilter)?.name}</Badge>}
+            {photographerFilter !== "all" && <Badge variant="secondary">{t("gallery.filterPhotographer")}: {photographers?.find(p => p.id.toString() === photographerFilter)?.name}</Badge>}
           </div>
         )}
       </div>
@@ -145,9 +147,9 @@ export default function Gallery() {
       ) : (
         <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
           <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="font-serif text-xl font-medium mb-2">No prints match your criteria</h3>
-          <p className="text-muted-foreground mb-6">Try adjusting your filters or search terms.</p>
-          <Button variant="outline" onClick={clearFilters}>Reset Filters</Button>
+          <h3 className="font-serif text-xl font-medium mb-2">{t("gallery.empty")}</h3>
+          <p className="text-muted-foreground mb-6">{t("home.recent.subheading")}</p>
+          <Button variant="outline" onClick={clearFilters}>{t("gallery.clearFilters")}</Button>
         </div>
       )}
     </div>

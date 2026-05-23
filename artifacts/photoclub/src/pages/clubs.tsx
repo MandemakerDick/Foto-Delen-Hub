@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Users, Search, MapPin, Image as ImageIcon } from "lucide-react";
 import { useListClubs } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function Clubs() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const { data: clubs, isLoading } = useListClubs();
 
@@ -19,9 +21,9 @@ export default function Clubs() {
     <div className="container mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
         <div>
-          <h1 className="font-serif text-4xl font-bold mb-4">Communities</h1>
+          <h1 className="font-serif text-4xl font-bold mb-4">{t("clubs.title")}</h1>
           <p className="text-muted-foreground text-lg max-w-2xl">
-            The heart of PhotoClub. Local groups and collectives sharing their vision.
+            {t("clubs.subtitle")}
           </p>
         </div>
         
@@ -30,7 +32,7 @@ export default function Clubs() {
           <Input 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Find a club..." 
+            placeholder={t("clubs.findPlaceholder")}
             className="pl-9 bg-background border-border/50"
           />
         </div>
@@ -60,11 +62,11 @@ export default function Clubs() {
                     </div>
                   )}
                   <div className="flex gap-4 text-xs font-mono text-muted-foreground">
-                    <div className="flex items-center gap-1" title="Members">
+                    <div className="flex items-center gap-1" title={t("clubDetail.members")}>
                       <Users className="w-3 h-3" />
                       {club.memberCount || 0}
                     </div>
-                    <div className="flex items-center gap-1" title="Photographs">
+                    <div className="flex items-center gap-1" title={t("common.photographs")}>
                       <ImageIcon className="w-3 h-3" />
                       {club.photoCount || 0}
                     </div>
@@ -81,7 +83,7 @@ export default function Clubs() {
                 )}
                 
                 <p className="text-muted-foreground line-clamp-3 text-sm flex-1 mt-auto">
-                  {club.description || "No description provided."}
+                  {club.description || t("common.noDescription")}
                 </p>
               </div>
             </Link>
@@ -90,10 +92,10 @@ export default function Clubs() {
       ) : (
         <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="font-serif text-xl font-medium mb-2">No communities found</h3>
-          <p className="text-muted-foreground mb-6">Start a new club to gather local photographers.</p>
+          <h3 className="font-serif text-xl font-medium mb-2">{t("clubs.empty")}</h3>
+          <p className="text-muted-foreground mb-6">{t("clubs.emptyCta")}</p>
           <Link href="/manage">
-            <Button>Create a Club</Button>
+            <Button>{t("clubs.createButton")}</Button>
           </Link>
         </div>
       )}

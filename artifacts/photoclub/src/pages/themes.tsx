@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { LayoutDashboard, Search, Image as ImageIcon } from "lucide-react";
 import { useListThemes } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function Themes() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const { data: themes, isLoading } = useListThemes();
 
@@ -18,9 +20,9 @@ export default function Themes() {
     <div className="container mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
         <div>
-          <h1 className="font-serif text-4xl font-bold mb-4">Themes</h1>
+          <h1 className="font-serif text-4xl font-bold mb-4">{t("themes.title")}</h1>
           <p className="text-muted-foreground text-lg max-w-2xl">
-            Curated collections exploring specific subjects, techniques, and emotions.
+            {t("themes.subtitle")}
           </p>
         </div>
         
@@ -29,7 +31,7 @@ export default function Themes() {
           <Input 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search themes..." 
+            placeholder={t("themes.findPlaceholder")}
             className="pl-9 bg-background border-border/50"
           />
         </div>
@@ -51,12 +53,12 @@ export default function Themes() {
                 <h3 className="font-serif text-2xl font-bold mb-2 group-hover:text-primary transition-colors">{theme.name}</h3>
                 
                 <p className="text-muted-foreground line-clamp-2 text-sm mb-6 flex-1">
-                  {theme.description || "An exploration."}
+                  {theme.description || t("common.noDescription")}
                 </p>
 
                 <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mt-auto">
                   <ImageIcon className="w-4 h-4" />
-                  <span>{theme.photoCount || 0} prints</span>
+                  <span>{theme.photoCount || 0} {t("common.prints")}</span>
                 </div>
               </div>
             </Link>
@@ -65,10 +67,10 @@ export default function Themes() {
       ) : (
         <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
           <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="font-serif text-xl font-medium mb-2">No themes found</h3>
-          <p className="text-muted-foreground mb-6">Create a new theme to organize the gallery.</p>
+          <h3 className="font-serif text-xl font-medium mb-2">{t("themes.empty")}</h3>
+          <p className="text-muted-foreground mb-6">{t("themes.emptyCta")}</p>
           <Link href="/manage">
-            <Button>Create a Theme</Button>
+            <Button>{t("themes.createButton")}</Button>
           </Link>
         </div>
       )}

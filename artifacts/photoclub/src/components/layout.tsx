@@ -1,20 +1,20 @@
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Camera, Users, LayoutDashboard, User, PlusSquare, Settings, LogIn, ImageIcon } from "lucide-react";
 import { Button } from "./ui/button";
-import { Show, useUser, useClerk } from "@clerk/react";
-
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { LanguageSwitcher } from "./language-switcher";
+import { Show, useUser } from "@clerk/react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
-  const { signOut } = useClerk();
+  const { t } = useTranslation();
 
   const navItems = [
-    { href: "/photos", label: "Gallery", icon: LayoutDashboard },
-    { href: "/clubs", label: "Clubs", icon: Users },
-    { href: "/themes", label: "Themes", icon: Camera },
-    { href: "/photographers", label: "Photographers", icon: User },
+    { href: "/photos", label: t("nav.gallery"), icon: LayoutDashboard },
+    { href: "/clubs", label: t("nav.clubs"), icon: Users },
+    { href: "/themes", label: t("nav.themes"), icon: Camera },
+    { href: "/photographers", label: t("nav.photographers"), icon: User },
   ];
 
   return (
@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/upload">
               <Button variant="ghost" size="sm" className="hidden sm:flex gap-2">
                 <PlusSquare className="w-4 h-4" />
-                Upload
+                {t("nav.upload")}
               </Button>
             </Link>
 
@@ -60,7 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   ) : (
                     <ImageIcon className="w-4 h-4" />
                   )}
-                  <span className="hidden sm:inline">My Photos</span>
+                  <span className="hidden sm:inline">{t("nav.myPhotos")}</span>
                 </Button>
               </Link>
             </Show>
@@ -69,10 +69,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/sign-in">
                 <Button variant="outline" size="sm" className="gap-2 border-border/50">
                   <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sign in</span>
+                  <span className="hidden sm:inline">{t("nav.signIn")}</span>
                 </Button>
               </Link>
             </Show>
+
+            <LanguageSwitcher />
 
             <Link href="/manage">
               <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
@@ -88,7 +90,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border/50 py-12 mt-20">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <Camera className="w-8 h-8 mx-auto mb-6 opacity-20" />
-          <p className="font-serif text-sm">&copy; {new Date().getFullYear()} PhotoClub. Curated with intention.</p>
+          <p className="font-serif text-sm">&copy; {new Date().getFullYear()} PhotoClub. {t("footer.tagline")}</p>
         </div>
       </footer>
     </div>

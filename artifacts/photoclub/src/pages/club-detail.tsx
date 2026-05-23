@@ -1,11 +1,13 @@
 import { useParams, Link } from "wouter";
-import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { useGetClub, getGetClubQueryKey, useListPhotos } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Separator } from "@/components/ui/separator";
 
 export default function ClubDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const clubId = Number(id);
 
@@ -32,8 +34,8 @@ export default function ClubDetail() {
   if (!club) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
-        <h2 className="font-serif text-3xl mb-4">Community not found</h2>
-        <Link href="/clubs" className="text-primary hover:underline">Return to Clubs</Link>
+        <h2 className="font-serif text-3xl mb-4">{t("clubDetail.notFound")}</h2>
+        <Link href="/clubs" className="text-primary hover:underline">{t("clubDetail.returnLink")}</Link>
       </div>
     );
   }
@@ -45,7 +47,7 @@ export default function ClubDetail() {
         <div className="container mx-auto px-4">
           <Link href="/clubs" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Clubs
+            {t("clubDetail.back")}
           </Link>
           
           <div className="flex flex-col md:flex-row gap-8 justify-between items-start md:items-end">
@@ -91,7 +93,7 @@ export default function ClubDetail() {
                 )}
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>Est. {format(new Date(club.createdAt), 'yyyy')}</span>
+                  <span>{t("clubDetail.established", { year: format(new Date(club.createdAt), 'yyyy') })}</span>
                 </div>
               </div>
             </div>
@@ -99,12 +101,12 @@ export default function ClubDetail() {
             <div className="flex gap-8 p-6 bg-background rounded-lg border border-border/50 shadow-sm w-full md:w-auto">
               <div className="text-center">
                 <div className="text-3xl font-mono font-medium mb-1">{club.memberCount || 0}</div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">Members</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{t("clubDetail.members")}</div>
               </div>
               <Separator orientation="vertical" className="h-12" />
               <div className="text-center">
                 <div className="text-3xl font-mono font-medium mb-1">{club.photoCount || 0}</div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">Prints</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{t("clubDetail.prints")}</div>
               </div>
             </div>
           </div>
@@ -113,7 +115,7 @@ export default function ClubDetail() {
 
       {/* Club Gallery */}
       <section className="py-16 container mx-auto px-4">
-        <h2 className="font-serif text-3xl font-bold mb-10">Collection</h2>
+        <h2 className="font-serif text-3xl font-bold mb-10">{t("clubDetail.collection")}</h2>
         
         {photosLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
@@ -133,8 +135,8 @@ export default function ClubDetail() {
         ) : (
           <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
             <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="font-serif text-xl font-medium mb-2">No photographs yet</h3>
-            <p className="text-muted-foreground mb-6">This community hasn't shared any prints.</p>
+            <h3 className="font-serif text-xl font-medium mb-2">{t("clubDetail.noPhotos")}</h3>
+            <p className="text-muted-foreground mb-6">{t("clubDetail.noPhotosBody")}</p>
           </div>
         )}
       </section>

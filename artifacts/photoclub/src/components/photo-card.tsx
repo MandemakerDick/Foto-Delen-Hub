@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Heart, MessageCircle } from "lucide-react";
 import type { Photo } from "@workspace/api-client-react";
 
 export function PhotoCard({ photo, index }: { photo: Photo; index?: number }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -44,7 +46,7 @@ export function PhotoCard({ photo, index }: { photo: Photo; index?: number }) {
 
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <Link href={`/photographers/${photo.photographerId}`} className="hover:text-primary transition-colors">
-            {photo.photographerName || "Unknown"}
+            {photo.photographerName || t("common.unknown")}
           </Link>
           {photo.clubName && (
             <Link href={`/clubs/${photo.clubId}`} className="text-xs uppercase tracking-wider hover:text-foreground transition-colors">

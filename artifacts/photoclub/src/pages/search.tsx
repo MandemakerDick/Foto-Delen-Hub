@@ -1,9 +1,11 @@
 import { Link, useSearch } from "wouter";
+import { useTranslation } from "react-i18next";
 import { User, Image as ImageIcon, Search, Camera } from "lucide-react";
 import { useListPhotographers, useListPhotos, useListThemes } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 
 export default function SearchResults() {
+  const { t } = useTranslation();
   const qs = useSearch();
   const params = new URLSearchParams(qs);
   const query = params.get("q") ?? "";
@@ -26,8 +28,8 @@ export default function SearchResults() {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-40" />
-        <h2 className="font-serif text-2xl font-bold mb-2">Start searching</h2>
-        <p className="text-muted-foreground">Use the search bar on the home page to find photographs, photographers, and themes.</p>
+        <h2 className="font-serif text-2xl font-bold mb-2">{t("search.startTitle")}</h2>
+        <p className="text-muted-foreground">{t("search.startBody")}</p>
       </div>
     );
   }
@@ -35,7 +37,7 @@ export default function SearchResults() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-10">
-        <p className="text-muted-foreground text-sm uppercase tracking-widest mb-1">Search results for</p>
+        <p className="text-muted-foreground text-sm uppercase tracking-widest mb-1">{t("search.resultsFor")}</p>
         <h1 className="font-serif text-4xl font-bold">&ldquo;{query}&rdquo;</h1>
       </div>
 
@@ -51,10 +53,10 @@ export default function SearchResults() {
           <section>
             <h2 className="font-serif text-2xl font-bold mb-1 flex items-center gap-2">
               <User className="w-5 h-5 text-primary" />
-              Photographers
+              {t("search.photographersSection")}
               <span className="text-base font-mono text-muted-foreground ml-1">({photographers?.length ?? 0})</span>
             </h2>
-            <p className="text-muted-foreground text-sm mb-6">People whose name or bio matches.</p>
+            <p className="text-muted-foreground text-sm mb-6">{t("search.photographersHint")}</p>
 
             {photographers && photographers.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -76,7 +78,7 @@ export default function SearchResults() {
                 ))}
               </div>
             ) : (
-              <EmptyState message={`No photographers match \u201c${query}\u201d.`} />
+              <EmptyState message={t("search.noPhotographers", { q: query })} />
             )}
           </section>
 
@@ -84,24 +86,24 @@ export default function SearchResults() {
           <section>
             <h2 className="font-serif text-2xl font-bold mb-1 flex items-center gap-2">
               <Camera className="w-5 h-5 text-primary" />
-              Themes
+              {t("search.themesSection")}
               <span className="text-base font-mono text-muted-foreground ml-1">({themes?.length ?? 0})</span>
             </h2>
-            <p className="text-muted-foreground text-sm mb-6">Collections whose name matches.</p>
+            <p className="text-muted-foreground text-sm mb-6">{t("search.themesHint")}</p>
 
             {themes && themes.length > 0 ? (
               <div className="flex flex-wrap gap-3">
-                {themes.map((t) => (
-                  <Link key={t.id} href={`/themes/${t.id}`}>
+                {themes.map((theme) => (
+                  <Link key={theme.id} href={`/themes/${theme.id}`}>
                     <div className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 bg-background hover:border-primary/60 hover:bg-secondary/40 transition-colors group cursor-pointer">
                       <Camera className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                      <span className="text-sm font-medium group-hover:text-primary transition-colors">{t.name}</span>
+                      <span className="text-sm font-medium group-hover:text-primary transition-colors">{theme.name}</span>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <EmptyState message={`No themes match \u201c${query}\u201d.`} />
+              <EmptyState message={t("search.noThemes", { q: query })} />
             )}
           </section>
 
@@ -109,10 +111,10 @@ export default function SearchResults() {
           <section>
             <h2 className="font-serif text-2xl font-bold mb-1 flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-primary" />
-              Photographs
+              {t("search.photosSection")}
               <span className="text-base font-mono text-muted-foreground ml-1">({photos?.length ?? 0})</span>
             </h2>
-            <p className="text-muted-foreground text-sm mb-6">Images whose title or description matches.</p>
+            <p className="text-muted-foreground text-sm mb-6">{t("search.photosHint")}</p>
 
             {photos && photos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
@@ -121,7 +123,7 @@ export default function SearchResults() {
                 ))}
               </div>
             ) : (
-              <EmptyState message={`No photographs match \u201c${query}\u201d.`} />
+              <EmptyState message={t("search.noPhotos", { q: query })} />
             )}
           </section>
         </div>

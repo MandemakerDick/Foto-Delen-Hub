@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { User, Search, Users, Image as ImageIcon, Palette } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { User, Search, Users, Image as ImageIcon } from "lucide-react";
 import { useListPhotographers, useListClubs, useListThemes } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 export default function Photographers() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [clubFilter, setClubFilter] = useState("all");
   const [themeFilter, setThemeFilter] = useState("all");
@@ -33,9 +35,9 @@ export default function Photographers() {
     <div className="container mx-auto px-4 py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
         <div>
-          <h1 className="font-serif text-4xl font-bold mb-4">Photographers</h1>
+          <h1 className="font-serif text-4xl font-bold mb-4">{t("photographers.title")}</h1>
           <p className="text-muted-foreground text-lg max-w-2xl">
-            The eyes behind the lens. Discover artists and their portfolios.
+            {t("photographers.subtitle")}
           </p>
         </div>
 
@@ -45,17 +47,17 @@ export default function Photographers() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search names..."
+              placeholder={t("photographers.findPlaceholder")}
               className="pl-9 bg-background border-border/50"
             />
           </div>
 
           <Select value={clubFilter} onValueChange={setClubFilter}>
             <SelectTrigger className="w-full sm:w-[160px] bg-background border-border/50">
-              <SelectValue placeholder="All Clubs" />
+              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.clubs")}`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Clubs</SelectItem>
+              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.clubs")}`}</SelectItem>
               {clubs?.map((club) => (
                 <SelectItem key={club.id} value={club.id.toString()}>
                   {club.name}
@@ -66,10 +68,10 @@ export default function Photographers() {
 
           <Select value={themeFilter} onValueChange={setThemeFilter}>
             <SelectTrigger className="w-full sm:w-[160px] bg-background border-border/50">
-              <SelectValue placeholder="All Themes" />
+              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.themes")}`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Themes</SelectItem>
+              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.themes")}`}</SelectItem>
               {themes?.map((theme) => (
                 <SelectItem key={theme.id} value={theme.id.toString()}>
                   {theme.name}
@@ -138,7 +140,7 @@ export default function Photographers() {
 
                 <div className="flex items-center gap-1.5 text-sm font-mono text-foreground mt-auto bg-secondary/50 px-3 py-1 rounded-full">
                   <ImageIcon className="w-4 h-4 text-primary" />
-                  <span>{photographer.photoCount || 0} prints</span>
+                  <span>{photographer.photoCount || 0} {t("common.prints")}</span>
                 </div>
               </div>
             </Link>
@@ -147,12 +149,8 @@ export default function Photographers() {
       ) : (
         <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
           <User className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="font-serif text-xl font-medium mb-2">No photographers found</h3>
-          <p className="text-muted-foreground mb-6">
-            {themeFilter !== "all"
-              ? "No photographers specialise in this theme."
-              : "There are no photographers matching your search."}
-          </p>
+          <h3 className="font-serif text-xl font-medium mb-2">{t("photographers.empty")}</h3>
+          <p className="text-muted-foreground mb-6">{t("photographers.emptyCta")}</p>
         </div>
       )}
     </div>

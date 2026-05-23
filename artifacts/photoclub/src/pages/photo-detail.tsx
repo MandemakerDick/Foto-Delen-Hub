@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Heart, Calendar, ArrowLeft, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
@@ -55,6 +56,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function PhotoDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const photoId = Number(id);
   const { toast } = useToast();
@@ -107,10 +109,10 @@ export default function PhotoDetail() {
   if (error || !photo) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
-        <h2 className="font-serif text-3xl mb-4">Photograph not found</h2>
-        <p className="text-muted-foreground mb-8">This print may have been removed from the darkroom.</p>
+        <h2 className="font-serif text-3xl mb-4">{t("photoDetail.notFound")}</h2>
+        <p className="text-muted-foreground mb-8">{t("photoDetail.notFoundBody")}</p>
         <Link href="/photos">
-          <Button variant="outline">Return to Gallery</Button>
+          <Button variant="outline">{t("photoDetail.returnLink")}</Button>
         </Link>
       </div>
     );
@@ -217,7 +219,7 @@ export default function PhotoDetail() {
     <div className="container mx-auto px-4 py-8">
       <Link href="/photos" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Gallery
+        {t("photoDetail.back")}
       </Link>
 
       <div className="flex flex-col lg:flex-row gap-12">
@@ -237,8 +239,8 @@ export default function PhotoDetail() {
               <MessageCircle className="w-5 h-5 text-primary" />
               <h2 className="font-serif text-2xl">
                 {comments.length === 0
-                  ? "No notes yet"
-                  : `${comments.length} ${comments.length === 1 ? "Note" : "Notes"}`}
+                  ? t("photoDetail.notesNone")
+                  : `${comments.length} ${comments.length === 1 ? t("photoDetail.noteOne") : t("photoDetail.noteOther")}`}
               </h2>
             </div>
 
@@ -277,7 +279,7 @@ export default function PhotoDetail() {
                       <div className="flex-1 bg-secondary/30 border border-border/40 rounded-lg px-4 py-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-medium">
-                            {comment.photographerName || "Anonymous"}
+                            {comment.photographerName || t("common.anonymous")}
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground font-mono">
@@ -303,11 +305,11 @@ export default function PhotoDetail() {
 
             {/* Post a comment */}
             <div className="border border-border/50 rounded-lg p-4 bg-secondary/10 space-y-3">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest">Leave a note</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest">{t("photoDetail.leaveNote")}</p>
               <Textarea
                 value={commentBody}
                 onChange={(e) => setCommentBody(e.target.value)}
-                placeholder="Write your thoughts on this photograph..."
+                placeholder={t("photoDetail.writePlaceholder")}
                 className="resize-none bg-background border-border/50 min-h-[80px] text-sm"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleComment();
@@ -316,7 +318,7 @@ export default function PhotoDetail() {
               <div className="flex items-center gap-3">
                 <Select value={selectedCommenter} onValueChange={setSelectedCommenter}>
                   <SelectTrigger className="flex-1 bg-background border-border/50 text-sm">
-                    <SelectValue placeholder="Posting as... (optional)" />
+                    <SelectValue placeholder={t("photoDetail.postingAs")} />
                   </SelectTrigger>
                   <SelectContent>
                     {photographers?.map((p) => (
@@ -330,10 +332,10 @@ export default function PhotoDetail() {
                   className="gap-2 shrink-0"
                 >
                   <Send className="w-4 h-4" />
-                  Post
+                  {t("photoDetail.post")}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Tip: Cmd+Enter to post quickly</p>
+              <p className="text-xs text-muted-foreground">{t("photoDetail.postTip")}</p>
             </div>
           </div>
         </div>
@@ -349,11 +351,11 @@ export default function PhotoDetail() {
                 <Dialog open={editOpen} onOpenChange={setEditOpen}>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                      <DialogTitle className="font-serif text-xl">Edit Photograph</DialogTitle>
+                      <DialogTitle className="font-serif text-xl">{t("photoDetail.editTitle")}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
                       <div className="space-y-1.5">
-                        <Label htmlFor="edit-title">Title</Label>
+                        <Label htmlFor="edit-title">{t("photoDetail.title")}</Label>
                         <Input
                           id="edit-title"
                           value={editTitle}
@@ -362,24 +364,24 @@ export default function PhotoDetail() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="edit-desc">Description</Label>
+                        <Label htmlFor="edit-desc">{t("photoDetail.description")}</Label>
                         <Textarea
                           id="edit-desc"
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           className="resize-none h-24 bg-background font-serif"
-                          placeholder="Artist statement or caption..."
+                          placeholder={t("photoDetail.artistStatement")}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label>Community</Label>
+                          <Label>{t("photoDetail.community")}</Label>
                           <Select value={editClubId} onValueChange={setEditClubId}>
                             <SelectTrigger className="bg-background">
-                              <SelectValue placeholder="None" />
+                              <SelectValue placeholder={t("photoDetail.none")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">None</SelectItem>
+                              <SelectItem value="">{t("photoDetail.none")}</SelectItem>
                               {clubs?.map((c) => (
                                 <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                               ))}
@@ -387,15 +389,15 @@ export default function PhotoDetail() {
                           </Select>
                         </div>
                         <div className="space-y-1.5">
-                          <Label>Theme</Label>
+                          <Label>{t("photoDetail.theme")}</Label>
                           <Select value={editThemeId} onValueChange={setEditThemeId}>
                             <SelectTrigger className="bg-background">
-                              <SelectValue placeholder="None" />
+                              <SelectValue placeholder={t("photoDetail.none")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">None</SelectItem>
-                              {themes?.map((t) => (
-                                <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                              <SelectItem value="">{t("photoDetail.none")}</SelectItem>
+                              {themes?.map((theme) => (
+                                <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -403,9 +405,9 @@ export default function PhotoDetail() {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                      <Button variant="outline" onClick={() => setEditOpen(false)}>{t("common.cancel")}</Button>
                       <Button onClick={handleEdit} disabled={updateMutation.isPending || !editTitle.trim()}>
-                        {updateMutation.isPending ? "Saving..." : "Save changes"}
+                        {updateMutation.isPending ? t("photoDetail.saving") : t("photoDetail.saveChanges")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -422,13 +424,13 @@ export default function PhotoDetail() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={openEdit} className="cursor-pointer gap-2">
                         <Pencil className="h-3.5 w-3.5" />
-                        Edit details
+                        {t("photoDetail.edit")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer gap-2">
                           <Trash2 className="h-3.5 w-3.5" />
-                          Remove photograph
+                          {t("photoDetail.remove")}
                         </DropdownMenuItem>
                       </AlertDialogTrigger>
                     </DropdownMenuContent>
@@ -436,15 +438,15 @@ export default function PhotoDetail() {
 
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("photoDetail.areYouSure")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete "{photo.title}" from the gallery. This action cannot be undone.
+                        {t("photoDetail.deleteBody", { title: photo.title })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete
+                        {t("common.delete")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -463,7 +465,7 @@ export default function PhotoDetail() {
             <div className="flex-1">
               <Select value={selectedLiker} onValueChange={setSelectedLiker}>
                 <SelectTrigger className="bg-background border-border/50">
-                  <SelectValue placeholder="Select profile to like as..." />
+                  <SelectValue placeholder={t("photoDetail.likeSelect")} />
                 </SelectTrigger>
                 <SelectContent>
                   {photographers?.map((p) => (
@@ -502,9 +504,9 @@ export default function PhotoDetail() {
                 )}
               </div>
               <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Photographer</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.photographer")}</div>
                 <Link href={`/photographers/${photo.photographerId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
-                  {photo.photographerName || "Unknown"}
+                  {photo.photographerName || t("common.unknown")}
                 </Link>
               </div>
             </div>
@@ -516,7 +518,7 @@ export default function PhotoDetail() {
                   <Users className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Community</div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.community")}</div>
                   <Link href={`/clubs/${photo.clubId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
                     {photo.clubName}
                   </Link>
@@ -531,7 +533,7 @@ export default function PhotoDetail() {
                   <Tag className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Theme</div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.theme")}</div>
                   <Link href={`/photos?themeId=${photo.themeId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
                     <Badge variant="outline" className="text-sm font-normal py-1 border-primary/30 text-foreground">
                       {photo.themeName}

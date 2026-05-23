@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { User, Users, Calendar, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useGetPhotographer, getGetPhotographerQueryKey, useListPhotos } from "@workspace/api-client-react";
@@ -6,6 +7,7 @@ import { PhotoCard } from "@/components/photo-card";
 import { Badge } from "@/components/ui/badge";
 
 export default function PhotographerDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const photographerId = Number(id);
 
@@ -32,9 +34,9 @@ export default function PhotographerDetail() {
   if (!photographer) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
-        <h2 className="font-serif text-3xl mb-4">Photographer not found</h2>
+        <h2 className="font-serif text-3xl mb-4">{t("photographerDetail.notFound")}</h2>
         <Link href="/photographers" className="text-primary hover:underline">
-          Return to Directory
+          {t("photographerDetail.returnLink")}
         </Link>
       </div>
     );
@@ -52,7 +54,7 @@ export default function PhotographerDetail() {
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Directory
+            {t("photographerDetail.back")}
           </Link>
 
           <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -101,11 +103,11 @@ export default function PhotographerDetail() {
                 )}
                 <div className="flex items-center gap-2 font-mono">
                   <ImageIcon className="w-4 h-4" />
-                  <span>{photographer.photoCount || 0} prints</span>
+                  <span>{photographer.photoCount || 0} {t("common.prints")}</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
                   <Calendar className="w-4 h-4" />
-                  <span>Joined {format(new Date(photographer.createdAt), "MMM yyyy")}</span>
+                  <span>{t("photographerDetail.joined", { date: format(new Date(photographer.createdAt), "MMM yyyy") })}</span>
                 </div>
               </div>
             </div>
@@ -115,7 +117,7 @@ export default function PhotographerDetail() {
 
       {/* Portfolio Gallery */}
       <section className="py-16 container mx-auto px-4">
-        <h2 className="font-serif text-3xl font-bold mb-10 text-center">Portfolio</h2>
+        <h2 className="font-serif text-3xl font-bold mb-10 text-center">{t("photographerDetail.portfolio")}</h2>
 
         {photosLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
@@ -134,8 +136,8 @@ export default function PhotographerDetail() {
         ) : (
           <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
             <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="font-serif text-xl font-medium mb-2">No portfolio yet</h3>
-            <p className="text-muted-foreground">This photographer hasn't uploaded any prints.</p>
+            <h3 className="font-serif text-xl font-medium mb-2">{t("photographerDetail.noPortfolio")}</h3>
+            <p className="text-muted-foreground">{t("photographerDetail.noPortfolioBody")}</p>
           </div>
         )}
       </section>

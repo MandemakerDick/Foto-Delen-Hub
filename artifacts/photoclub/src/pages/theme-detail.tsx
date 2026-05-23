@@ -1,10 +1,12 @@
 import { useParams, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Camera, Image as ImageIcon, User, ArrowLeft } from "lucide-react";
 import { useGetTheme, getGetThemeQueryKey, useListPhotos, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Separator } from "@/components/ui/separator";
 
 export default function ThemeDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const themeId = Number(id);
 
@@ -32,8 +34,8 @@ export default function ThemeDetail() {
   if (!theme) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
-        <h2 className="font-serif text-3xl mb-4">Theme not found</h2>
-        <Link href="/themes" className="text-primary hover:underline">Return to Themes</Link>
+        <h2 className="font-serif text-3xl mb-4">{t("themeDetail.notFound")}</h2>
+        <Link href="/themes" className="text-primary hover:underline">{t("themeDetail.returnLink")}</Link>
       </div>
     );
   }
@@ -45,7 +47,7 @@ export default function ThemeDetail() {
         <div className="container mx-auto px-4">
           <Link href="/themes" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Themes
+            {t("themeDetail.back")}
           </Link>
 
           <div className="flex flex-col md:flex-row gap-8 justify-between items-start md:items-end">
@@ -66,12 +68,12 @@ export default function ThemeDetail() {
             <div className="flex gap-8 p-6 bg-background rounded-lg border border-border/50 shadow-sm w-full md:w-auto">
               <div className="text-center">
                 <div className="text-3xl font-mono font-medium mb-1">{theme.photoCount ?? 0}</div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">Prints</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{t("themeDetail.prints")}</div>
               </div>
               <Separator orientation="vertical" className="h-12" />
               <div className="text-center">
                 <div className="text-3xl font-mono font-medium mb-1">{photographers?.length ?? 0}</div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">Photographers</div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{t("themeDetail.photographers")}</div>
               </div>
             </div>
           </div>
@@ -84,7 +86,7 @@ export default function ThemeDetail() {
           <div className="container mx-auto px-4">
             <h2 className="font-serif text-2xl font-bold mb-6 flex items-center gap-2">
               <User className="w-5 h-5 text-primary" />
-              Photographers
+              {t("themeDetail.photographers")}
             </h2>
 
             {pgLoading ? (
@@ -121,7 +123,7 @@ export default function ThemeDetail() {
       <section className="py-16 container mx-auto px-4">
         <h2 className="font-serif text-3xl font-bold mb-10 flex items-center gap-2">
           <ImageIcon className="w-6 h-6 text-primary" />
-          Collection
+          {t("themeDetail.collection")}
         </h2>
 
         {photosLoading ? (
@@ -142,8 +144,8 @@ export default function ThemeDetail() {
         ) : (
           <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
             <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="font-serif text-xl font-medium mb-2">No photographs yet</h3>
-            <p className="text-muted-foreground">No prints have been tagged with this theme.</p>
+            <h3 className="font-serif text-xl font-medium mb-2">{t("themeDetail.noPhotos")}</h3>
+            <p className="text-muted-foreground">{t("themeDetail.noPhotosBody")}</p>
           </div>
         )}
       </section>

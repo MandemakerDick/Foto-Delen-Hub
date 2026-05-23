@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -158,6 +159,7 @@ function AvatarUploader({
 }
 
 function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
+  const { t } = useTranslation();
   const { data: photographers } = useListPhotographers();
   const { data: themes } = useListThemes();
   const { toast } = useToast();
@@ -217,17 +219,17 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
       <div className="w-16 h-16 rounded-full bg-secondary border border-border flex items-center justify-center mx-auto mb-6">
         <Link2 className="w-7 h-7 text-primary" />
       </div>
-      <h2 className="font-serif text-2xl mb-2">Connect your profile</h2>
+      <h2 className="font-serif text-2xl mb-2">{t("myPhotos.connectTitle")}</h2>
       <p className="text-muted-foreground text-sm mb-8">
-        Link your account to an existing photographer profile, or create a new one.
+        {t("myPhotos.connectBody")}
       </p>
 
       <div className="flex gap-2 justify-center mb-8">
         <Button variant={mode === "link" ? "default" : "outline"} size="sm" onClick={() => setMode("link")}>
-          Link existing
+          {t("myPhotos.linkExisting")}
         </Button>
         <Button variant={mode === "create" ? "default" : "outline"} size="sm" onClick={() => setMode("create")}>
-          Create new
+          {t("myPhotos.createNew")}
         </Button>
       </div>
 
@@ -235,7 +237,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
         <div className="space-y-3">
           <Select value={selectedId} onValueChange={setSelectedId}>
             <SelectTrigger className="bg-secondary/20 border-border/50">
-              <SelectValue placeholder="Select your photographer profile..." />
+              <SelectValue placeholder={t("myPhotos.selectProfile")} />
             </SelectTrigger>
             <SelectContent>
               {photographers?.map((p) => (
@@ -246,7 +248,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
             </SelectContent>
           </Select>
           <Button onClick={handleLink} disabled={!selectedId || busy} className="w-full">
-            {busy ? "Linking..." : "Link profile"}
+            {busy ? t("myPhotos.linking") : t("myPhotos.linkProfile")}
           </Button>
         </div>
       ) : (
@@ -254,23 +256,23 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Your photographer name"
+            placeholder={t("myPhotos.yourName")}
             className="bg-secondary/20 border-border/50"
           />
 
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 pl-0.5">
-              Specialty theme 1 <span className="normal-case">(optional)</span>
+              {t("myPhotos.specialty1")} <span className="normal-case">({t("common.optional")})</span>
             </p>
             <Select value={theme1} onValueChange={(v) => { setTheme1(v); if (v === theme2) setTheme2("none"); }}>
               <SelectTrigger className="bg-secondary/20 border-border/50">
-                <SelectValue placeholder="None" />
+                <SelectValue placeholder={t("common.none")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {themes?.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.name}
+                <SelectItem value="none">{t("common.none")}</SelectItem>
+                {themes?.map((theme) => (
+                  <SelectItem key={theme.id} value={theme.id.toString()}>
+                    {theme.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -279,17 +281,17 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
 
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 pl-0.5">
-              Specialty theme 2 <span className="normal-case">(optional)</span>
+              {t("myPhotos.specialty2")} <span className="normal-case">({t("common.optional")})</span>
             </p>
             <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
               <SelectTrigger className="bg-secondary/20 border-border/50">
-                <SelectValue placeholder="None" />
+                <SelectValue placeholder={t("common.none")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {theme2Options.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.name}
+                <SelectItem value="none">{t("common.none")}</SelectItem>
+                {theme2Options.map((theme) => (
+                  <SelectItem key={theme.id} value={theme.id.toString()}>
+                    {theme.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -297,7 +299,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
           </div>
 
           <Button onClick={handleCreate} disabled={!newName.trim() || busy} className="w-full">
-            {busy ? "Creating..." : "Create profile"}
+            {busy ? t("myPhotos.creating") : t("myPhotos.createProfile")}
           </Button>
         </div>
       )}
@@ -312,6 +314,7 @@ function EditThemesPanel({
   profile: PhotographerProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const { data: themes } = useListThemes();
   const updateMutation = useUpdatePhotographer();
   const { toast } = useToast();
@@ -321,7 +324,7 @@ function EditThemesPanel({
   const [theme2, setTheme2] = useState(profile.themeId2?.toString() ?? "none");
   const [open, setOpen] = useState(false);
 
-  const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
+  const theme2Options = themes?.filter((th) => th.id.toString() !== theme1) ?? [];
 
   const handleSave = () => {
     updateMutation.mutate(
@@ -357,7 +360,7 @@ function EditThemesPanel({
             </Badge>
           ))
         ) : (
-          <span className="text-xs text-muted-foreground">No specialty themes set</span>
+          <span className="text-xs text-muted-foreground">{t("myPhotos.noSpecialty")}</span>
         )}
         <Button
           variant="ghost"
@@ -366,7 +369,7 @@ function EditThemesPanel({
           onClick={() => setOpen(true)}
         >
           <Pencil className="w-3 h-3" />
-          Edit
+          {t("common.edit")}
         </Button>
       </div>
     );
@@ -382,13 +385,13 @@ function EditThemesPanel({
         }}
       >
         <SelectTrigger className="w-44 bg-background border-border/50 h-8 text-sm">
-          <SelectValue placeholder="Theme 1" />
+          <SelectValue placeholder={t("myPhotos.themeSlot1")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="none">None</SelectItem>
-          {themes?.map((t) => (
-            <SelectItem key={t.id} value={t.id.toString()}>
-              {t.name}
+          <SelectItem value="none">{t("common.none")}</SelectItem>
+          {themes?.map((th) => (
+            <SelectItem key={th.id} value={th.id.toString()}>
+              {th.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -396,13 +399,13 @@ function EditThemesPanel({
 
       <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
         <SelectTrigger className="w-44 bg-background border-border/50 h-8 text-sm">
-          <SelectValue placeholder="Theme 2" />
+          <SelectValue placeholder={t("myPhotos.themeSlot2")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="none">None</SelectItem>
-          {theme2Options.map((t) => (
-            <SelectItem key={t.id} value={t.id.toString()}>
-              {t.name}
+          <SelectItem value="none">{t("common.none")}</SelectItem>
+          {theme2Options.map((th) => (
+            <SelectItem key={th.id} value={th.id.toString()}>
+              {th.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -416,7 +419,7 @@ function EditThemesPanel({
           disabled={updateMutation.isPending}
         >
           <Check className="w-3.5 h-3.5" />
-          Save
+          {t("common.save")}
         </Button>
         <Button
           variant="ghost"
@@ -438,6 +441,7 @@ function MyPhotosDashboard({
   profile: PhotographerProfile;
   onProfileUpdated: () => void;
 }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { signOut } = useClerk();
@@ -484,13 +488,13 @@ function MyPhotosDashboard({
           <Link href={`/photographers/${profile.id}`}>
             <Button variant="outline" size="sm" className="gap-2 border-border/50">
               <ExternalLink className="w-3.5 h-3.5" />
-              Public profile
+              {t("myPhotos.publicProfile")}
             </Button>
           </Link>
           <Link href="/upload">
             <Button size="sm" className="gap-2">
               <PlusCircle className="w-4 h-4" />
-              Upload photo
+              {t("myPhotos.uploadPhoto")}
             </Button>
           </Link>
           <Button
@@ -500,14 +504,14 @@ function MyPhotosDashboard({
             onClick={() => signOut({ redirectUrl: basePath || "/" })}
           >
             <LogOut className="w-4 h-4" />
-            Sign out
+            {t("nav.signOut")}
           </Button>
         </div>
       </div>
 
       {/* Specialty themes row */}
       <div className="mb-8 pb-6 border-b border-border/40">
-        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Specialty Themes</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.specialtyThemes")}</p>
         <EditThemesPanel profile={profile} onSaved={onProfileUpdated} />
       </div>
 
@@ -515,19 +519,19 @@ function MyPhotosDashboard({
       <div className="flex gap-8 mb-10 pb-8 border-b border-border/40">
         <div>
           <div className="text-3xl font-serif font-bold">{photos.length}</div>
-          <div className="text-xs text-muted-foreground uppercase tracking-widest">Photographs</div>
+          <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("search.photosSection")}</div>
         </div>
         <div>
           <div className="text-3xl font-serif font-bold">
             {photos.reduce((sum, p) => sum + (p.likeCount || 0), 0)}
           </div>
-          <div className="text-xs text-muted-foreground uppercase tracking-widest">Total likes</div>
+          <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("myPhotos.totalLikes")}</div>
         </div>
         <div>
           <div className="text-3xl font-serif font-bold">
             {photos.reduce((sum, p) => sum + (p.commentCount ?? 0), 0)}
           </div>
-          <div className="text-xs text-muted-foreground uppercase tracking-widest">Comments received</div>
+          <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("myPhotos.commentsReceived")}</div>
         </div>
       </div>
 
@@ -541,12 +545,12 @@ function MyPhotosDashboard({
       ) : photos.length === 0 ? (
         <div className="text-center py-20">
           <Camera className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="font-serif text-xl text-muted-foreground mb-2">No photographs yet</p>
-          <p className="text-sm text-muted-foreground mb-6">Your darkroom is empty. Start uploading your work.</p>
+          <p className="font-serif text-xl text-muted-foreground mb-2">{t("myPhotos.noPhotosTitle")}</p>
+          <p className="text-sm text-muted-foreground mb-6">{t("myPhotos.noPhotosBody")}</p>
           <Link href="/upload">
             <Button className="gap-2">
               <PlusCircle className="w-4 h-4" />
-              Upload your first photo
+              {t("myPhotos.uploadFirst")}
             </Button>
           </Link>
         </div>
@@ -583,18 +587,18 @@ function MyPhotosDashboard({
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this photograph?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("myPhotos.deleteTitle")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        "{photo.title}" will be permanently removed from the gallery.
+                        {t("myPhotos.deleteBody", { title: photo.title })}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(photo.id, photo.title)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Delete
+                        {t("common.delete")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -615,22 +619,27 @@ function MyPhotosDashboard({
   );
 }
 
+function SignInFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="container mx-auto px-4 py-24 text-center">
+      <Camera className="w-12 h-12 text-muted-foreground/30 mx-auto mb-6" />
+      <h2 className="font-serif text-3xl mb-3">{t("myPhotos.signInTitle")}</h2>
+      <p className="text-muted-foreground mb-8">{t("myPhotos.signInBody")}</p>
+      <Link href="/sign-in">
+        <Button>{t("upload.signInButton")}</Button>
+      </Link>
+    </div>
+  );
+}
+
 export default function MyPhotos() {
   const { profile, loading, refetch } = useMyProfile();
 
   return (
     <Show
       when="signed-in"
-      fallback={
-        <div className="container mx-auto px-4 py-24 text-center">
-          <Camera className="w-12 h-12 text-muted-foreground/30 mx-auto mb-6" />
-          <h2 className="font-serif text-3xl mb-3">Sign in to manage your photos</h2>
-          <p className="text-muted-foreground mb-8">Access your personal darkroom and manage your work.</p>
-          <Link href="/sign-in">
-            <Button>Sign in</Button>
-          </Link>
-        </div>
-      }
+      fallback={<SignInFallback />}
     >
       {loading ? (
         <div className="container mx-auto px-4 py-16">
