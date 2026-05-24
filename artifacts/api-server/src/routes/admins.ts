@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { getAuth } from "@clerk/express";
 import { db, adminsTable } from "@workspace/db";
-import { eq, isNull } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { requireAuth } from "./auth";
 
 const router = Router();
@@ -38,8 +38,8 @@ async function getAdminById(id: number) {
 }
 
 async function getTotalAdmins(): Promise<number> {
-  const rows = await db.select({ id: adminsTable.id }).from(adminsTable);
-  return rows.length;
+  const [{ value }] = await db.select({ value: count() }).from(adminsTable);
+  return value;
 }
 
 // Accepts either a Clerk-authenticated admin OR a session-based admin
@@ -65,7 +65,7 @@ async function requireAdmin(req: any, res: any, next: any) {
     }
   }
 
-  res.status(userId || sessionAdminId ? 403 : 401).json({ error: "Unauthorized" });
+  res.status(401).json({ error: "Unauthorized" });
 }
 
 // POST /api/admins/login — email + password sign-in
