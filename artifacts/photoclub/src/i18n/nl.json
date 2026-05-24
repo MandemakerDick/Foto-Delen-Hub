@@ -143,7 +143,10 @@
       "toastUpdateError": "Kon beheerder niet bijwerken.",
       "displayNameRequired": "Weergavenaam is verplicht",
       "invitesTitle": "Uitnodigingslinks",
-      "invitesDesc": "Maak links aan zodat anderen clubs, fotografen en foto’s kunnen toevoegen — geen account nodig.",
+      "invitesDesc": "Deel een link met een fotograaf zodat die foto’s kan uploaden — geen Replit-account nodig. Ze openen de link, klikken op Deelnemen en kunnen meteen uploaden.",
+      "invitesStep1": "Maak een link aan en kopieer hem",
+      "invitesStep2": "Stuur hem door (e-mail, WhatsApp, enz.)",
+      "invitesStep3": "De fotograaf opent hem, klikt op Deelnemen en kan direct foto’s uploaden",
       "inviteLabelLabel": "Label",
       "inviteLabelPlaceholder": "Bijv. Fotoclub leden",
       "inviteMaxUsesLabel": "Max. gebruik (leeg = onbeperkt)",
@@ -415,8 +418,8 @@
     "nl": "Nederlands"
   },
   "join": {
-    "heading": "Je bent uitgenodigd",
-    "desc": "Met deze link kun je clubs, fotografen en foto’s toevoegen.",
+    "heading": "Je bent uitgenodigd om foto’s te uploaden",
+    "desc": "Klik op Deelnemen om uploadtoegang te krijgen. Geen account of wachtwoord nodig — deze link is jouw toegangsbewijs.",
     "enterToken": "Of voer je uitnodigingscode handmatig in:",
     "tokenPlaceholder": "Plak uitnodigingscode hier",
     "joinBtn": "Deelnemen",

@@ -996,6 +996,22 @@ export default function Manage() {
                 </h2>
                 <p className="text-sm text-muted-foreground">{t("manage.admins.invitesDesc")}</p>
 
+                {/* How it works steps */}
+                <ol className="space-y-1.5">
+                  {[
+                    t("manage.admins.invitesStep1"),
+                    t("manage.admins.invitesStep2"),
+                    t("manage.admins.invitesStep3"),
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+
                 {/* Create invite form */}
                 <div className="space-y-3 pt-1">
                   <div>

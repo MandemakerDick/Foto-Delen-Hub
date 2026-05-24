@@ -146,7 +146,10 @@
       "toastUpdateError": "Could not update admin.",
       "displayNameRequired": "Display name is required",
       "invitesTitle": "Invite Links",
-      "invitesDesc": "Generate links for others to add clubs, photographers and photos — no account needed.",
+      "invitesDesc": "Share a link with a photographer so they can upload photos — no Replit account needed. They simply open the link, click Join, and can start uploading straight away.",
+      "invitesStep1": "Create a link below and copy it",
+      "invitesStep2": "Send it to the photographer (email, WhatsApp, etc.)",
+      "invitesStep3": "They open it, click Join, and can upload photos immediately",
       "inviteLabelLabel": "Label",
       "inviteLabelPlaceholder": "e.g. Photography club members",
       "inviteMaxUsesLabel": "Max uses (leave empty for unlimited)",
@@ -415,8 +418,8 @@
     "nl": "Nederlands"
   },
   "join": {
-    "heading": "You have been invited",
-    "desc": "This link gives you access to add clubs, photographers and photos.",
+    "heading": "You've been invited to upload photos",
+    "desc": "Click Join below to get upload access. No account or password needed — this link is your pass.",
     "enterToken": "Or enter your invite code manually:",
     "tokenPlaceholder": "Paste invite code here",
     "joinBtn": "Join",
