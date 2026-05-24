@@ -1,8 +1,23 @@
 import { Router } from "express";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { db, adminsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "./auth";
+
+async function fetchClerkUser(clerkUserId: string) {
+  try {
+    const user = await clerkClient.users.getUser(clerkUserId);
+    const displayName =
+      [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+      user.username ||
+      user.emailAddresses[0]?.emailAddress?.split("@")[0] ||
+      "Unknown";
+    const email = user.emailAddresses[0]?.emailAddress ?? null;
+    return { displayName, email };
+  } catch {
+    return null;
+  }
+}
 
 const router = Router();
 
@@ -53,7 +68,7 @@ router.get("/admins", requireAdmin, async (_req, res) => {
 
 // POST /api/admins — add admin (admin only)
 router.post("/admins", requireAdmin, async (req: any, res) => {
-  const { clerkUserId, displayName, email } = req.body as {
+  const { clerkUserId, displayName: manualDisplayName, email: manualEmail } = req.body as {
     clerkUserId?: string;
     displayName?: string;
     email?: string;
@@ -61,10 +76,6 @@ router.post("/admins", requireAdmin, async (req: any, res) => {
 
   if (!clerkUserId || typeof clerkUserId !== "string") {
     res.status(400).json({ error: "clerkUserId required" });
-    return;
-  }
-  if (!displayName || typeof displayName !== "string") {
-    res.status(400).json({ error: "displayName required" });
     return;
   }
 
@@ -79,9 +90,19 @@ router.post("/admins", requireAdmin, async (req: any, res) => {
     return;
   }
 
+  // Try to resolve name/email from Clerk; fall back to manually provided values
+  const clerkUser = await fetchClerkUser(clerkUserId);
+  if (!clerkUser && !manualDisplayName) {
+    res.status(400).json({ error: "User not found in Clerk and no displayName provided" });
+    return;
+  }
+
+  const displayName = clerkUser?.displayName ?? manualDisplayName!;
+  const email = clerkUser?.email ?? manualEmail ?? null;
+
   const [row] = await db
     .insert(adminsTable)
-    .values({ clerkUserId, displayName, email: email ?? null })
+    .values({ clerkUserId, displayName, email })
     .returning();
 
   res.status(201).json({ ...row, addedAt: row.addedAt.toISOString() });
@@ -106,9 +127,14 @@ router.post("/admins/bootstrap", requireAuth, async (req: any, res) => {
     return;
   }
 
+  const clerkUser = await fetchClerkUser(req.clerkUserId);
   const [row] = await db
     .insert(adminsTable)
-    .values({ clerkUserId: req.clerkUserId, displayName: "Admin", email: null })
+    .values({
+      clerkUserId: req.clerkUserId,
+      displayName: clerkUser?.displayName ?? "Admin",
+      email: clerkUser?.email ?? null,
+    })
     .returning();
 
   res.status(201).json({ ...row, addedAt: row.addedAt.toISOString() });
