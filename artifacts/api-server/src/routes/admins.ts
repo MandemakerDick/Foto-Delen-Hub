@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { db, adminsTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { requireAuth } from "./auth";
@@ -28,6 +28,41 @@ async function getAdminByClerkId(clerkUserId: string) {
   return rows[0] ?? null;
 }
 
+async function getAdminByEmail(email: string) {
+  const rows = await db
+    .select()
+    .from(adminsTable)
+    .where(eq(adminsTable.email, email))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+// Look up a Clerk user's primary email address via the Clerk backend API
+async function getClerkUserEmail(userId: string): Promise<string | null> {
+  try {
+    const user = await clerkClient.users.getUser(userId);
+    return user.emailAddresses[0]?.emailAddress ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Find admin by Clerk ID, falling back to email match and auto-linking the Clerk ID
+async function resolveClerkAdmin(userId: string) {
+  const byId = await getAdminByClerkId(userId);
+  if (byId) return byId;
+
+  const email = await getClerkUserEmail(userId);
+  if (!email) return null;
+
+  const byEmail = await getAdminByEmail(email);
+  if (!byEmail) return null;
+
+  // Auto-link this Clerk ID to the existing admin record so future lookups are instant
+  await db.update(adminsTable).set({ clerkUserId: userId }).where(eq(adminsTable.id, byEmail.id));
+  return { ...byEmail, clerkUserId: userId };
+}
+
 async function getAdminById(id: number) {
   const rows = await db
     .select()
@@ -47,7 +82,7 @@ async function requireAdmin(req: any, res: any, next: any) {
   // Option 1: Clerk session
   const { userId } = getAuth(req);
   if (userId) {
-    const admin = await getAdminByClerkId(userId);
+    const admin = await resolveClerkAdmin(userId);
     if (admin) {
       req.clerkUserId = userId;
       req.adminId = admin.id;
@@ -111,7 +146,7 @@ router.get("/admins/me", async (req: any, res) => {
   // Check Clerk
   const { userId } = getAuth(req);
   if (userId) {
-    const admin = await getAdminByClerkId(userId);
+    const admin = await resolveClerkAdmin(userId);
     res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null });
     return;
   }
