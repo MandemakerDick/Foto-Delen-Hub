@@ -8,8 +8,10 @@
 
 export interface AdminUser {
   id: number;
-  clerkUserId: string;
+  clerkUserId?: string | null;
   displayName: string;
   email?: string | null;
+  isOwner: boolean;
+  hasPassword: boolean;
   addedAt: Date;
 }

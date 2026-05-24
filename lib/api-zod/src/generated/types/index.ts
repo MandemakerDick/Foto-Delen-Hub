@@ -7,6 +7,8 @@
  */
 
 export * from './addAdminRequest';
+export * from './adminLoginRequest';
+export * from './adminLoginResult';
 export * from './adminStatusResponse';
 export * from './adminUser';
 export * from './club';
@@ -32,6 +34,7 @@ export * from './photographerUpdate';
 export * from './photoInput';
 export * from './photoUpdate';
 export * from './redeemInviteRequest';
+export * from './setAdminPasswordRequest';
 export * from './stats';
 export * from './theme';
 export * from './themeInput';

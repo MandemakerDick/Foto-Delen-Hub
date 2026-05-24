@@ -552,6 +552,19 @@ export const GetStorageObjectParams = zod.object({
 
 
 /**
+ * @summary Sign in as admin with email and password
+ */
+export const AdminLoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const AdminLoginResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
  * @summary Check if current user is admin
  */
 export const GetAdminStatusResponse = zod.object({
@@ -565,9 +578,11 @@ export const GetAdminStatusResponse = zod.object({
  */
 export const ListAdminsResponseItem = zod.object({
   "id": zod.number(),
-  "clerkUserId": zod.string(),
+  "clerkUserId": zod.string().nullish(),
   "displayName": zod.string(),
   "email": zod.string().nullish(),
+  "isOwner": zod.boolean(),
+  "hasPassword": zod.boolean(),
   "addedAt": zod.coerce.date()
 })
 export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
@@ -577,9 +592,10 @@ export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
  * @summary Add a new admin (admin only)
  */
 export const AddAdminBody = zod.object({
-  "clerkUserId": zod.string(),
-  "displayName": zod.string().optional(),
-  "email": zod.string().nullish()
+  "displayName": zod.string(),
+  "email": zod.string().nullish(),
+  "password": zod.string().optional(),
+  "clerkUserId": zod.string().nullish()
 })
 
 
@@ -597,9 +613,11 @@ export const UpdateAdminBody = zod.object({
 
 export const UpdateAdminResponse = zod.object({
   "id": zod.number(),
-  "clerkUserId": zod.string(),
+  "clerkUserId": zod.string().nullish(),
   "displayName": zod.string(),
   "email": zod.string().nullish(),
+  "isOwner": zod.boolean(),
+  "hasPassword": zod.boolean(),
   "addedAt": zod.coerce.date()
 })
 
@@ -609,6 +627,18 @@ export const UpdateAdminResponse = zod.object({
  */
 export const RemoveAdminParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Set or update password for an admin (admin only)
+ */
+export const SetAdminPasswordParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetAdminPasswordBody = zod.object({
+  "password": zod.string()
 })
 
 

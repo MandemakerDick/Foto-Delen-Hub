@@ -188,9 +188,11 @@ export interface UploadUrlResponse {
 
 export interface AdminUser {
   id: number;
-  clerkUserId: string;
+  clerkUserId?: string | null;
   displayName: string;
   email?: string | null;
+  isOwner: boolean;
+  hasPassword: boolean;
   addedAt: string;
 }
 
@@ -200,9 +202,23 @@ export interface AdminStatusResponse {
 }
 
 export interface AddAdminRequest {
-  clerkUserId: string;
-  displayName?: string;
+  displayName: string;
   email?: string | null;
+  password?: string;
+  clerkUserId?: string | null;
+}
+
+export interface AdminLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AdminLoginResult {
+  ok: boolean;
+}
+
+export interface SetAdminPasswordRequest {
+  password: string;
 }
 
 export interface UpdateAdminRequest {

@@ -20,6 +20,7 @@ import {
   useAddAdmin,
   useUpdateAdmin,
   useRemoveAdmin,
+  useSetAdminPassword,
   useListInvites,
   useCreateInvite,
   useRevokeInvite,
@@ -81,22 +82,28 @@ export default function Manage() {
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
   const { data: photographers } = useListPhotographers();
-  const { data: adminStatus } = useGetAdminStatus({ query: { enabled: !!isSignedIn, retry: false, queryKey: getGetAdminStatusQueryKey() } });
+  const { data: adminStatus } = useGetAdminStatus({ query: { retry: false, queryKey: getGetAdminStatusQueryKey() } });
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
 
   // Add admin form state
-  const [newAdminClerkId, setNewAdminClerkId] = useState("");
   const [newAdminName, setNewAdminName] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
 
   // Edit admin state
   const [editingAdminId, setEditingAdminId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
 
+  // Set-password state
+  const [settingPasswordAdminId, setSettingPasswordAdminId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+
   // Admin mutations
   const addAdminMutation = useAddAdmin();
   const updateAdminMutation = useUpdateAdmin();
   const removeAdminMutation = useRemoveAdmin();
+  const setPasswordMutation = useSetAdminPassword();
 
   // Invite state
   const { data: inviteList } = useListInvites({ query: { enabled: !!adminStatus?.isAdmin, queryKey: getListInvitesQueryKey() } });
@@ -175,17 +182,34 @@ export default function Manage() {
   };
 
   const handleAddAdmin = () => {
-    if (!newAdminClerkId.trim()) return;
+    if (!newAdminName.trim() || !newAdminEmail.trim() || !newAdminPassword.trim()) return;
     addAdminMutation.mutate(
-      { data: { clerkUserId: newAdminClerkId.trim(), displayName: newAdminName.trim() || undefined } },
+      { data: { displayName: newAdminName.trim(), email: newAdminEmail.trim(), password: newAdminPassword } },
       {
         onSuccess: (added) => {
           toast({ title: t("manage.admins.toastAddedTitle"), description: t("manage.admins.toastAddedDesc", { name: added.displayName }) });
-          setNewAdminClerkId("");
           setNewAdminName("");
+          setNewAdminEmail("");
+          setNewAdminPassword("");
           queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
         },
         onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastAddError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleSetPassword = (id: number) => {
+    if (!newPassword.trim()) return;
+    setPasswordMutation.mutate(
+      { id, data: { password: newPassword } },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.admins.toastPasswordSetTitle") });
+          setSettingPasswordAdminId(null);
+          setNewPassword("");
+          queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastPasswordSetError"), variant: "destructive" }),
       },
     );
   };
@@ -768,11 +792,15 @@ export default function Manage() {
 
         {/* ── Admins tab ────────────────────────────────────── */}
         <TabsContent value="admins" className="space-y-6">
-          {/* Not signed in */}
-          {!isSignedIn && (
-            <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center">
-              <ShieldCheck className="w-10 h-10 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">{t("manage.admins.signInRequired")}</p>
+          {/* Not authenticated — show sign-in options */}
+          {!adminStatus?.isAdmin && !isSignedIn && adminStatus && adminStatus.totalAdmins > 0 && (
+            <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center space-y-4">
+              <ShieldCheck className="w-10 h-10 mx-auto text-muted-foreground" />
+              <h2 className="font-serif text-xl font-medium">{t("manage.admins.notAdminHeading")}</h2>
+              <p className="text-muted-foreground">{t("manage.admins.notAdminDesc")}</p>
+              <a href="/admin/login">
+                <Button variant="outline">{t("adminLogin.heading")}</Button>
+              </a>
             </div>
           )}
 
@@ -786,34 +814,15 @@ export default function Manage() {
             </div>
           )}
 
-          {/* Not an admin, but admins exist */}
-          {isSignedIn && adminStatus && adminStatus.totalAdmins > 0 && !adminStatus.isAdmin && (
-            <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center space-y-2">
-              <ShieldCheck className="w-10 h-10 mx-auto text-muted-foreground" />
-              <h2 className="font-serif text-xl font-medium">{t("manage.admins.notAdminHeading")}</h2>
-              <p className="text-muted-foreground">{t("manage.admins.notAdminDesc")}</p>
-            </div>
-          )}
-
           {/* Admin panel */}
-          {isSignedIn && adminStatus?.isAdmin && (
+          {adminStatus?.isAdmin && (
             <>
               {/* Add admin form */}
               <div className="bg-secondary/20 p-6 rounded-lg border border-border/50 space-y-4">
                 <h2 className="font-serif text-2xl font-medium flex items-center gap-2">
-                  <UserPlus className="w-5 h-5" />{t("manage.admins.addTitle")}
+                  <UserPlus className="w-5 h-5" />{t("manage.admins.addDirectTitle")}
                 </h2>
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">{t("manage.admins.clerkUserIdLabel")}</label>
-                    <Input
-                      value={newAdminClerkId}
-                      onChange={(e) => setNewAdminClerkId(e.target.value)}
-                      placeholder={t("manage.admins.clerkUserIdPlaceholder")}
-                      className="bg-background font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">{t("manage.admins.clerkUserIdHint")}</p>
-                  </div>
                   <div>
                     <label className="text-sm font-medium block mb-1.5">{t("manage.admins.displayNameLabel")}</label>
                     <Input
@@ -823,9 +832,29 @@ export default function Manage() {
                       className="bg-background"
                     />
                   </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">{t("manage.admins.loginEmailLabel")}</label>
+                    <Input
+                      type="email"
+                      value={newAdminEmail}
+                      onChange={(e) => setNewAdminEmail(e.target.value)}
+                      placeholder={t("manage.admins.loginEmailPlaceholder")}
+                      className="bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">{t("manage.admins.passwordLabel")}</label>
+                    <Input
+                      type="password"
+                      value={newAdminPassword}
+                      onChange={(e) => setNewAdminPassword(e.target.value)}
+                      placeholder={t("manage.admins.passwordPlaceholder")}
+                      className="bg-background"
+                    />
+                  </div>
                   <Button
                     onClick={handleAddAdmin}
-                    disabled={!newAdminClerkId.trim() || !newAdminName.trim() || addAdminMutation.isPending}
+                    disabled={!newAdminName.trim() || !newAdminEmail.trim() || !newAdminPassword.trim() || addAdminMutation.isPending}
                     className="w-full"
                   >
                     {t("manage.admins.addBtn")}
@@ -841,14 +870,10 @@ export default function Manage() {
                   </div>
                   <ul className="divide-y divide-border/50">
                     {adminList.map((admin) => (
-                      <li key={admin.id} className="px-6 py-4">
+                      <li key={admin.id} className="px-6 py-4 space-y-3">
                         {editingAdminId === admin.id ? (
                           /* ── Inline edit form ── */
                           <div className="space-y-3">
-                            <div className="flex items-center gap-2 mb-1">
-                              <ShieldCheck className="w-4 h-4 text-primary/60 shrink-0" />
-                              <span className="text-xs text-muted-foreground font-mono truncate">{admin.clerkUserId}</span>
-                            </div>
                             <Input
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
@@ -875,6 +900,30 @@ export default function Manage() {
                               </Button>
                             </div>
                           </div>
+                        ) : settingPasswordAdminId === admin.id ? (
+                          /* ── Set-password form ── */
+                          <div className="space-y-3">
+                            <p className="text-sm font-medium">{t("manage.admins.setPasswordTitle", { name: admin.displayName })}</p>
+                            <Input
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder={t("manage.admins.passwordPlaceholder")}
+                              className="bg-background"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleSetPassword(admin.id)}
+                                disabled={!newPassword.trim() || setPasswordMutation.isPending}
+                              >
+                                {t("manage.admins.setPasswordBtn")}
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => { setSettingPasswordAdminId(null); setNewPassword(""); }}>
+                                <X className="w-3.5 h-3.5 mr-1" />{t("common.cancel")}
+                              </Button>
+                            </div>
+                          </div>
                         ) : (
                           /* ── Normal row ── */
                           <div className="flex items-center gap-4">
@@ -882,25 +931,43 @@ export default function Manage() {
                               <ShieldCheck className="w-4 h-4 text-primary/60" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">
+                              <p className="font-medium truncate flex items-center gap-2 flex-wrap">
                                 {admin.displayName}
                                 {admin.clerkUserId === userId && (
-                                  <span className="ml-2 text-xs text-muted-foreground">{t("manage.admins.youSuffix")}</span>
+                                  <span className="text-xs text-muted-foreground">{t("manage.admins.youSuffix")}</span>
+                                )}
+                                {admin.isOwner && (
+                                  <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">{t("manage.admins.ownerBadge")}</span>
+                                )}
+                                {!admin.clerkUserId && (
+                                  <span className="text-xs bg-secondary text-muted-foreground px-1.5 py-0.5 rounded">{t("manage.admins.directLoginBadge")}</span>
                                 )}
                               </p>
                               {admin.email && <p className="text-xs text-muted-foreground truncate">{admin.email}</p>}
                             </div>
+                            {!admin.clerkUserId && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="shrink-0 gap-1.5"
+                                onClick={() => { setSettingPasswordAdminId(admin.id); setNewPassword(""); setEditingAdminId(null); }}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                {t("manage.admins.setPasswordBtn")}
+                              </Button>
+                            )}
                             <Button
                               type="button"
-                              variant={editingAdminId === admin.id ? "default" : "ghost"}
+                              variant="ghost"
                               size="sm"
                               className="shrink-0 gap-1.5"
-                              onClick={() => startEditAdmin(admin)}
+                              onClick={() => { startEditAdmin(admin); setSettingPasswordAdminId(null); }}
                             >
                               <Pencil className="w-3.5 h-3.5" />
                               {t("manage.admins.editBtn")}
                             </Button>
-                            {admin.clerkUserId !== userId && (
+                            {!admin.isOwner && admin.clerkUserId !== userId && (
                               <Button
                                 type="button"
                                 variant="ghost"

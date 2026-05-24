@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AddAdminRequest {
-  displayName: string;
-  email?: string | null;
-  password?: string;
-  clerkUserId?: string | null;
+export interface SetAdminPasswordRequest {
+  password: string;
 }

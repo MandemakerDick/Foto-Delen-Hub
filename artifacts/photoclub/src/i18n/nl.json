@@ -161,7 +161,18 @@
       "toastInviteCreatedTitle": "Uitnodigingslink aangemaakt",
       "toastInviteCreateError": "Kon uitnodigingslink niet aanmaken.",
       "toastInviteRevokedTitle": "Uitnodigingslink ingetrokken",
-      "toastInviteRevokeError": "Kon uitnodigingslink niet intrekken."
+      "toastInviteRevokeError": "Kon uitnodigingslink niet intrekken.",
+      "addDirectTitle": "Beheerder toevoegen (direct aanmelden)",
+      "loginEmailLabel": "E-mail (gebruikt om aan te melden)",
+      "loginEmailPlaceholder": "beheerder@voorbeeld.nl",
+      "passwordLabel": "Wachtwoord",
+      "passwordPlaceholder": "Stel een wachtwoord in",
+      "setPasswordBtn": "Wachtwoord instellen",
+      "setPasswordTitle": "Wachtwoord instellen voor {{name}}",
+      "toastPasswordSetTitle": "Wachtwoord bijgewerkt",
+      "toastPasswordSetError": "Kon wachtwoord niet instellen.",
+      "ownerBadge": "Eigenaar",
+      "directLoginBadge": "Directe login"
     }
   },
   "toasts": {
@@ -416,5 +427,18 @@
     "goManage": "Naar beheer",
     "invalidToken": "Deze uitnodigingslink is ongeldig, verlopen of al volledig gebruikt.",
     "errorGeneric": "Er is iets misgegaan. Probeer opnieuw."
+  },
+  "adminLogin": {
+    "heading": "Beheerder aanmelden",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "jij@email.nl",
+    "passwordLabel": "Wachtwoord",
+    "passwordPlaceholder": "Jouw wachtwoord",
+    "signInBtn": "Aanmelden",
+    "signingIn": "Bezig met aanmelden…",
+    "ownerLink": "Aanmelden als eigenaar (Replit-account)",
+    "invalidCredentials": "E-mail of wachtwoord is onjuist.",
+    "errorGeneric": "Er is iets misgegaan. Probeer het opnieuw.",
+    "logoutBtn": "Afmelden"
   }
 }

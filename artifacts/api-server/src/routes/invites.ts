@@ -1,41 +1,10 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
-import { db, inviteTokensTable, adminsTable } from "@workspace/db";
+import { db, inviteTokensTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth } from "./auth";
-import { getAuth } from "@clerk/express";
+import { requireAdmin } from "./admins";
 
 const router = Router();
-
-async function isAdmin(clerkUserId: string): Promise<boolean> {
-  const row = await db
-    .select({ id: adminsTable.id })
-    .from(adminsTable)
-    .where(eq(adminsTable.clerkUserId, clerkUserId))
-    .limit(1);
-  return row.length > 0;
-}
-
-async function requireAdmin(req: any, res: any, next: any) {
-  const { userId } = getAuth(req);
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  const admin = await isAdmin(userId);
-  if (!admin) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-  req.clerkUserId = userId;
-  req.adminRow = await db
-    .select()
-    .from(adminsTable)
-    .where(eq(adminsTable.clerkUserId, userId))
-    .limit(1)
-    .then((r) => r[0]);
-  next();
-}
 
 function serializeToken(t: typeof inviteTokensTable.$inferSelect) {
   return {
@@ -82,7 +51,7 @@ router.post("/invites", requireAdmin, async (req: any, res) => {
       useCount: 0,
       expiresAt,
       revoked: false,
-      createdByAdminId: req.adminRow?.id ?? null,
+      createdByAdminId: req.adminId ?? null,
     })
     .returning();
 
@@ -150,13 +119,11 @@ router.post("/invites/redeem", async (req: any, res) => {
     return;
   }
 
-  // Increment use count
   await db
     .update(inviteTokensTable)
     .set({ useCount: row.useCount + 1 })
     .where(eq(inviteTokensTable.id, row.id));
 
-  // Grant access in session
   req.session.inviteGranted = true;
   req.session.inviteTokenId = row.id;
 
