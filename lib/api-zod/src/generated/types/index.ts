@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addAdminRequest';
+export * from './adminStatusResponse';
+export * from './adminUser';
 export * from './club';
 export * from './clubInput';
 export * from './comment';

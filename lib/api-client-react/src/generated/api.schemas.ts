@@ -186,6 +186,25 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export interface AdminUser {
+  id: number;
+  clerkUserId: string;
+  displayName: string;
+  email?: string | null;
+  addedAt: string;
+}
+
+export interface AdminStatusResponse {
+  isAdmin: boolean;
+  totalAdmins: number;
+}
+
+export interface AddAdminRequest {
+  clerkUserId: string;
+  displayName: string;
+  email?: string | null;
+}
+
 export interface ErrorEnvelope {
   error: string;
 }

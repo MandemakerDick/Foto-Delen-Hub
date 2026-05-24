@@ -42,7 +42,8 @@
     "tabs": {
       "club": "Club",
       "theme": "Theme",
-      "photographer": "Photographer"
+      "photographer": "Photographer",
+      "admins": "Admins"
     },
     "club": {
       "createTitle": "Create Community",
@@ -105,6 +106,35 @@
       "toastUpdatedDesc": "{{name}} has been updated.",
       "toastCreateError": "Could not create photographer.",
       "toastUpdateError": "Could not update photographer."
+    },
+    "admins": {
+      "heading": "Admin Users",
+      "subheading": "People who can manage clubs, themes, and photographers.",
+      "bootstrapHeading": "Claim Admin Access",
+      "bootstrapDesc": "No admins exist yet. As the first signed-in user, you can claim admin access.",
+      "bootstrapBtn": "Become the first admin",
+      "notAdminHeading": "Access Restricted",
+      "notAdminDesc": "You need admin access to manage this hub.",
+      "addTitle": "Add Admin",
+      "clerkUserIdLabel": "Clerk User ID",
+      "clerkUserIdPlaceholder": "user_...",
+      "clerkUserIdHint": "Ask the user to share their Clerk user ID from their account settings.",
+      "displayNameLabel": "Display Name",
+      "displayNamePlaceholder": "Full name",
+      "addBtn": "Add Admin",
+      "existingHeading": "Current Admins",
+      "youSuffix": "(you)",
+      "removeBtn": "Remove",
+      "removeConfirm": "Remove {{name}} as admin?",
+      "toastAddedTitle": "Admin added",
+      "toastAddedDesc": "{{name}} can now manage the hub.",
+      "toastAddError": "Could not add admin.",
+      "toastRemovedTitle": "Admin removed",
+      "toastRemoveError": "Could not remove admin.",
+      "toastBootstrapTitle": "Admin access granted",
+      "toastBootstrapDesc": "You are now the admin. Add others from this tab.",
+      "toastBootstrapError": "Could not claim admin access.",
+      "signInRequired": "Sign in to access the admin panel."
     }
   },
   "toasts": {

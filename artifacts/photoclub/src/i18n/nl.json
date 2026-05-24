@@ -39,7 +39,8 @@
     "tabs": {
       "club": "Club",
       "theme": "Thema",
-      "photographer": "Fotograaf"
+      "photographer": "Fotograaf",
+      "admins": "Beheerders"
     },
     "club": {
       "createTitle": "Club aanmaken",
@@ -102,6 +103,35 @@
       "toastUpdatedDesc": "{{name}} is bijgewerkt.",
       "toastCreateError": "Kon fotograaf niet aanmaken.",
       "toastUpdateError": "Kon fotograaf niet bijwerken."
+    },
+    "admins": {
+      "heading": "Beheerders",
+      "subheading": "Personen die clubs, thema's en fotografen kunnen beheren.",
+      "bootstrapHeading": "Beheerderstoegang claimen",
+      "bootstrapDesc": "Er zijn nog geen beheerders. Als eerste ingelogde gebruiker kun je beheerderstoegang claimen.",
+      "bootstrapBtn": "Word de eerste beheerder",
+      "notAdminHeading": "Toegang beperkt",
+      "notAdminDesc": "Je hebt beheerderstoegang nodig om deze hub te beheren.",
+      "addTitle": "Beheerder toevoegen",
+      "clerkUserIdLabel": "Clerk gebruikers-ID",
+      "clerkUserIdPlaceholder": "user_...",
+      "clerkUserIdHint": "Vraag de gebruiker zijn Clerk gebruikers-ID te delen vanuit zijn accountinstellingen.",
+      "displayNameLabel": "Weergavenaam",
+      "displayNamePlaceholder": "Volledige naam",
+      "addBtn": "Beheerder toevoegen",
+      "existingHeading": "Huidige beheerders",
+      "youSuffix": "(jij)",
+      "removeBtn": "Verwijderen",
+      "removeConfirm": "{{name}} als beheerder verwijderen?",
+      "toastAddedTitle": "Beheerder toegevoegd",
+      "toastAddedDesc": "{{name}} kan de hub nu beheren.",
+      "toastAddError": "Kon beheerder niet toevoegen.",
+      "toastRemovedTitle": "Beheerder verwijderd",
+      "toastRemoveError": "Kon beheerder niet verwijderen.",
+      "toastBootstrapTitle": "Beheerderstoegang verleend",
+      "toastBootstrapDesc": "Je bent nu de beheerder. Voeg anderen toe via dit tabblad.",
+      "toastBootstrapError": "Kon beheerderstoegang niet claimen.",
+      "signInRequired": "Meld je aan om toegang te krijgen tot het beheerderspaneel."
     }
   },
   "toasts": {

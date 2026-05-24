@@ -543,3 +543,43 @@ export const GetStorageObjectParams = zod.object({
 })
 
 
+/**
+ * @summary Check if current user is admin
+ */
+export const GetAdminStatusResponse = zod.object({
+  "isAdmin": zod.boolean(),
+  "totalAdmins": zod.number()
+})
+
+
+/**
+ * @summary List all admins (admin only)
+ */
+export const ListAdminsResponseItem = zod.object({
+  "id": zod.number(),
+  "clerkUserId": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string().nullish(),
+  "addedAt": zod.coerce.date()
+})
+export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
+
+
+/**
+ * @summary Add a new admin (admin only)
+ */
+export const AddAdminBody = zod.object({
+  "clerkUserId": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string().nullish()
+})
+
+
+/**
+ * @summary Remove an admin (admin only, cannot remove self)
+ */
+export const RemoveAdminParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+

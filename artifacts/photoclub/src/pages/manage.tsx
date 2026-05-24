@@ -14,11 +14,18 @@ import {
   useListClubs,
   useListThemes,
   useListPhotographers,
+  useGetAdminStatus,
+  useListAdmins,
+  useAddAdmin,
+  useRemoveAdmin,
   getListClubsQueryKey,
   getListThemesQueryKey,
   getListPhotographersQueryKey,
+  getListAdminsQueryKey,
+  getGetAdminStatusQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/react";
 import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -63,9 +70,63 @@ export default function Manage() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userId, isSignedIn } = useAuth();
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
   const { data: photographers } = useListPhotographers();
+  const { data: adminStatus } = useGetAdminStatus({ query: { enabled: !!isSignedIn, retry: false, queryKey: getGetAdminStatusQueryKey() } });
+  const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
+
+  // Admin form state
+  const [newAdminClerkId, setNewAdminClerkId] = useState("");
+  const [newAdminName, setNewAdminName] = useState("");
+
+  // Admin mutations
+  const addAdminMutation = useAddAdmin();
+  const removeAdminMutation = useRemoveAdmin();
+
+  const handleBootstrap = async () => {
+    try {
+      const res = await fetch("/api/admins/bootstrap", { method: "POST", credentials: "include" });
+      if (!res.ok) throw new Error();
+      toast({ title: t("manage.admins.toastBootstrapTitle"), description: t("manage.admins.toastBootstrapDesc") });
+      queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
+    } catch {
+      toast({ title: t("common.error"), description: t("manage.admins.toastBootstrapError"), variant: "destructive" });
+    }
+  };
+
+  const handleAddAdmin = () => {
+    if (!newAdminClerkId.trim() || !newAdminName.trim()) return;
+    addAdminMutation.mutate(
+      { data: { clerkUserId: newAdminClerkId.trim(), displayName: newAdminName.trim() } },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.admins.toastAddedTitle"), description: t("manage.admins.toastAddedDesc", { name: newAdminName.trim() }) });
+          setNewAdminClerkId("");
+          setNewAdminName("");
+          queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastAddError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleRemoveAdmin = (id: number, name: string) => {
+    if (!confirm(t("manage.admins.removeConfirm", { name }))) return;
+    removeAdminMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.admins.toastRemovedTitle") });
+          queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastRemoveError"), variant: "destructive" }),
+      },
+    );
+  };
 
   // Mutations
   const createClubMutation = useCreateClub();
@@ -274,7 +335,7 @@ export default function Manage() {
       </div>
 
       <Tabs defaultValue="club" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-secondary border border-border/50">
+        <TabsList className="grid w-full grid-cols-4 mb-8 bg-secondary border border-border/50">
           <TabsTrigger value="club" className="data-[state=active]:bg-background">
             <Users className="w-4 h-4 mr-2" />{t("manage.tabs.club")}
           </TabsTrigger>
@@ -283,6 +344,9 @@ export default function Manage() {
           </TabsTrigger>
           <TabsTrigger value="photographer" className="data-[state=active]:bg-background">
             <User className="w-4 h-4 mr-2" />{t("manage.tabs.photographer")}
+          </TabsTrigger>
+          <TabsTrigger value="admins" className="data-[state=active]:bg-background">
+            <ShieldCheck className="w-4 h-4 mr-2" />{t("manage.tabs.admins")}
           </TabsTrigger>
         </TabsList>
 
@@ -574,6 +638,117 @@ export default function Manage() {
                 ))}
               </ul>
             </div>
+          )}
+        </TabsContent>
+
+        {/* ── Admins tab ────────────────────────────────────── */}
+        <TabsContent value="admins" className="space-y-6">
+          {/* Not signed in */}
+          {!isSignedIn && (
+            <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center">
+              <ShieldCheck className="w-10 h-10 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">{t("manage.admins.signInRequired")}</p>
+            </div>
+          )}
+
+          {/* Bootstrap — no admins yet */}
+          {isSignedIn && adminStatus && adminStatus.totalAdmins === 0 && (
+            <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center space-y-4">
+              <ShieldCheck className="w-10 h-10 mx-auto text-primary" />
+              <h2 className="font-serif text-2xl font-medium">{t("manage.admins.bootstrapHeading")}</h2>
+              <p className="text-muted-foreground max-w-sm mx-auto">{t("manage.admins.bootstrapDesc")}</p>
+              <Button onClick={handleBootstrap}>{t("manage.admins.bootstrapBtn")}</Button>
+            </div>
+          )}
+
+          {/* Not an admin, but admins exist */}
+          {isSignedIn && adminStatus && adminStatus.totalAdmins > 0 && !adminStatus.isAdmin && (
+            <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center space-y-2">
+              <ShieldCheck className="w-10 h-10 mx-auto text-muted-foreground" />
+              <h2 className="font-serif text-xl font-medium">{t("manage.admins.notAdminHeading")}</h2>
+              <p className="text-muted-foreground">{t("manage.admins.notAdminDesc")}</p>
+            </div>
+          )}
+
+          {/* Admin panel */}
+          {isSignedIn && adminStatus?.isAdmin && (
+            <>
+              {/* Add admin form */}
+              <div className="bg-secondary/20 p-6 rounded-lg border border-border/50 space-y-4">
+                <h2 className="font-serif text-2xl font-medium flex items-center gap-2">
+                  <UserPlus className="w-5 h-5" />{t("manage.admins.addTitle")}
+                </h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">{t("manage.admins.clerkUserIdLabel")}</label>
+                    <Input
+                      value={newAdminClerkId}
+                      onChange={(e) => setNewAdminClerkId(e.target.value)}
+                      placeholder={t("manage.admins.clerkUserIdPlaceholder")}
+                      className="bg-background font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{t("manage.admins.clerkUserIdHint")}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">{t("manage.admins.displayNameLabel")}</label>
+                    <Input
+                      value={newAdminName}
+                      onChange={(e) => setNewAdminName(e.target.value)}
+                      placeholder={t("manage.admins.displayNamePlaceholder")}
+                      className="bg-background"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddAdmin}
+                    disabled={!newAdminClerkId.trim() || !newAdminName.trim() || addAdminMutation.isPending}
+                    className="w-full"
+                  >
+                    {t("manage.admins.addBtn")}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Current admins list */}
+              {adminList && adminList.length > 0 && (
+                <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-border/50">
+                    <h3 className="font-serif text-lg font-medium">{t("manage.admins.existingHeading")}</h3>
+                  </div>
+                  <ul className="divide-y divide-border/50">
+                    {adminList.map((admin) => (
+                      <li key={admin.id} className="flex items-center gap-4 px-6 py-4">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-primary/60" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">
+                            {admin.displayName}
+                            {admin.clerkUserId === userId && (
+                              <span className="ml-2 text-xs text-muted-foreground">{t("manage.admins.youSuffix")}</span>
+                            )}
+                          </p>
+                          {admin.email && <p className="text-xs text-muted-foreground truncate">{admin.email}</p>}
+                          <p className="text-xs text-muted-foreground font-mono truncate">{admin.clerkUserId}</p>
+                        </div>
+                        {admin.clerkUserId !== userId && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleRemoveAdmin(admin.id, admin.displayName)}
+                            disabled={removeAdminMutation.isPending}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {t("manage.admins.removeBtn")}
+                          </Button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
       </Tabs>
