@@ -295,7 +295,11 @@
     "prints": "Afdrukken",
     "collection": "Collectie",
     "noPhotos": "Nog geen foto's",
-    "noPhotosBody": "Deze gemeenschap heeft nog geen afdrukken gedeeld."
+    "noPhotosBody": "Deze gemeenschap heeft nog geen afdrukken gedeeld.",
+    "membersHeading": "Leden",
+    "allPhotos": "Alle foto's",
+    "filteringBy": "Foto's van {{name}}",
+    "noMembersYet": "Nog geen leden."
   },
   "photoDetail": {
     "back": "Terug naar galerij",
