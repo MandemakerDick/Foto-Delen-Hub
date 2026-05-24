@@ -10,9 +10,14 @@ import {
   useCreatePhoto,
   useListClubs,
   useListThemes,
+  useListPhotographers,
+  getListPhotographersQueryKey,
+  useGetAdminStatus,
+  getGetAdminStatusQueryKey,
 } from "@workspace/api-client-react";
 import { ObjectUploader } from "@workspace/object-storage-web";
 import { useMyProfile } from "@/hooks/use-my-profile";
+import { useAuth } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -38,11 +43,12 @@ const formSchema = z.object({
   description: z.string().optional(),
   clubId: z.coerce.number().optional(),
   themeId: z.coerce.number().optional(),
+  photographerId: z.coerce.number().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-function UploadForm() {
+function UploadForm({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -50,12 +56,14 @@ function UploadForm() {
 
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
+  const { data: photographers } = useListPhotographers(
+    {},
+    { query: { enabled: isAdmin, queryKey: getListPhotographersQueryKey() } },
+  );
   const createMutation = useCreatePhoto();
 
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedObjectPath, setUploadedObjectPath] = useState<string | null>(null);
-
-  // Hold the objectPath returned from the presign request so it's available in onComplete
   const pendingObjectPathRef = useRef<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -63,9 +71,16 @@ function UploadForm() {
     defaultValues: { title: "", description: "" },
   });
 
+  const selectedPhotographerId = form.watch("photographerId");
+  const selectedPhotographer = photographers?.find((p) => p.id === selectedPhotographerId);
+
   const onSubmit = (values: FormValues) => {
     if (!uploadedImageUrl) {
       toast({ title: t("toasts.noImageTitle"), description: t("toasts.noImageDesc"), variant: "destructive" });
+      return;
+    }
+    if (isAdmin && !values.photographerId) {
+      toast({ title: "Select a photographer", description: "Choose which photographer this photo belongs to.", variant: "destructive" });
       return;
     }
     createMutation.mutate(
@@ -101,7 +116,8 @@ function UploadForm() {
     pendingObjectPathRef.current = null;
   };
 
-  if (loading) {
+  // Clerk user: wait for profile to load
+  if (!isAdmin && loading) {
     return (
       <div className="flex justify-center items-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -109,7 +125,8 @@ function UploadForm() {
     );
   }
 
-  if (!profile) {
+  // Clerk user: must link a photographer profile first
+  if (!isAdmin && !profile) {
     return (
       <div className="max-w-md mx-auto text-center py-20 px-4">
         <div className="w-14 h-14 rounded-full bg-secondary border border-border flex items-center justify-center mx-auto mb-6">
@@ -126,14 +143,20 @@ function UploadForm() {
     );
   }
 
+  const uploadingAsName = isAdmin
+    ? (selectedPhotographer?.name ?? null)
+    : profile?.name ?? null;
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
       <div className="mb-10 text-center">
         <h1 className="font-serif text-4xl font-bold mb-4">{t("upload.title")}</h1>
         <p className="text-muted-foreground text-lg">{t("upload.subtitle")}</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          {t("upload.uploadingAs")} <span className="text-foreground font-medium">{profile.name}</span>
-        </p>
+        {uploadingAsName && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {t("upload.uploadingAs")} <span className="text-foreground font-medium">{uploadingAsName}</span>
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-12">
@@ -141,6 +164,33 @@ function UploadForm() {
         <div className="w-full lg:w-1/2 order-2 lg:order-1">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+              {/* Photographer picker — admins only */}
+              {isAdmin && (
+                <FormField
+                  control={form.control}
+                  name="photographerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Photographer</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Select photographer…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {photographers?.map((p) => (
+                            <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={form.control}
                 name="title"
@@ -329,7 +379,7 @@ function SignedOutUpload() {
       </div>
       <h2 className="font-serif text-3xl mb-3">{t("upload.signInTitle")}</h2>
       <p className="text-muted-foreground mb-8">{t("upload.signInBody")}</p>
-      <Link href="/sign-in">
+      <Link href="/admin/login">
         <Button size="lg">{t("upload.signInButton")}</Button>
       </Link>
     </div>
@@ -337,10 +387,22 @@ function SignedOutUpload() {
 }
 
 export default function Upload() {
+  const { isSignedIn } = useAuth();
+  const { data: adminStatus } = useGetAdminStatus({
+    query: { retry: false, queryKey: getGetAdminStatusQueryKey() },
+  });
+
+  const isSessionAdmin = !!adminStatus?.isAdmin && !isSignedIn;
+
+  // Session admin — show upload form with photographer picker
+  if (isSessionAdmin) {
+    return <UploadForm isAdmin={true} />;
+  }
+
   return (
     <>
       <Show when="signed-in">
-        <UploadForm />
+        <UploadForm isAdmin={false} />
       </Show>
       <Show when="signed-out">
         <SignedOutUpload />

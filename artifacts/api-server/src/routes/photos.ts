@@ -100,16 +100,30 @@ router.get("/photos", async (req, res) => {
   res.json(photos.map(mapPhoto));
 });
 
-router.post("/photos", async (req, res) => {
+router.post("/photos", async (req: any, res) => {
   const { userId } = getAuth(req);
-  if (!userId) {
-    res.status(401).json({ error: "Sign in to upload photos" });
-    return;
-  }
+  const sessionAdminId = req.session?.adminId as number | undefined;
 
-  const photographerId = await getPhotographerIdForClerkUser(userId);
-  if (!photographerId) {
-    res.status(403).json({ error: "Link a photographer profile before uploading" });
+  let photographerId: number | undefined;
+
+  if (userId) {
+    // Clerk owner path — infer photographer from Clerk account
+    const pid = await getPhotographerIdForClerkUser(userId);
+    if (!pid) {
+      res.status(403).json({ error: "Link a photographer profile before uploading" });
+      return;
+    }
+    photographerId = pid;
+  } else if (sessionAdminId) {
+    // Session admin path — photographerId must be supplied in the body
+    const pid = Number(req.body?.photographerId);
+    if (!pid || isNaN(pid)) {
+      res.status(400).json({ error: "photographerId is required when uploading as admin" });
+      return;
+    }
+    photographerId = pid;
+  } else {
+    res.status(401).json({ error: "Sign in to upload photos" });
     return;
   }
 
