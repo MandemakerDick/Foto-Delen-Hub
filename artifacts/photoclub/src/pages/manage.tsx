@@ -805,7 +805,7 @@ export default function Manage() {
           )}
 
           {/* Bootstrap — no admins yet */}
-          {isSignedIn && adminStatus && adminStatus.totalAdmins === 0 && (
+          {adminStatus && adminStatus.totalAdmins === 0 && (
             <div className="bg-secondary/20 p-8 rounded-lg border border-border/50 text-center space-y-4">
               <ShieldCheck className="w-10 h-10 mx-auto text-primary" />
               <h2 className="font-serif text-2xl font-medium">{t("manage.admins.bootstrapHeading")}</h2>
