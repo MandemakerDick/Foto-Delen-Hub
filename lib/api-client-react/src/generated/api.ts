@@ -1126,6 +1126,76 @@ export const useUpdatePhotographer = <TError = ErrorType<void>,
       return useMutation(getUpdatePhotographerMutationOptions(options));
     }
 
+export const getDeletePhotographerUrl = (id: number,) => {
+
+
+
+
+  return `/api/photographers/${id}`
+}
+
+/**
+ * @summary Delete a photographer and all their photos
+ */
+export const deletePhotographer = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePhotographerUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePhotographerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePhotographer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePhotographer>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePhotographer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePhotographer>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePhotographer(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePhotographerMutationResult = NonNullable<Awaited<ReturnType<typeof deletePhotographer>>>
+
+    export type DeletePhotographerMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a photographer and all their photos
+ */
+export const useDeletePhotographer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePhotographer>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePhotographer>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePhotographerMutationOptions(options));
+    }
+
 export const getListPhotosUrl = (params?: ListPhotosParams,) => {
   const normalizedParams = new URLSearchParams();
 

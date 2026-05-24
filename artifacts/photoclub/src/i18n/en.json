@@ -105,7 +105,11 @@
       "toastUpdatedTitle": "Profile Updated",
       "toastUpdatedDesc": "{{name}} has been updated.",
       "toastCreateError": "Could not create photographer.",
-      "toastUpdateError": "Could not update photographer."
+      "toastUpdateError": "Could not update photographer.",
+      "deleteBtn": "Delete",
+      "deleteConfirm": "Delete {{name}} and all their photos? This cannot be undone.",
+      "toastDeletedTitle": "Photographer deleted",
+      "toastDeleteError": "Could not delete photographer."
     },
     "admins": {
       "heading": "Admin Users",

@@ -200,3 +200,29 @@ router.patch("/photographers/:id", async (req, res) => {
 });
 
 export default router;
+
+// DELETE /photographers/:id — delete photographer and all their photos
+router.delete("/photographers/:id", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const existing = await db
+    .select({ id: photographersTable.id })
+    .from(photographersTable)
+    .where(eq(photographersTable.id, id))
+    .limit(1);
+
+  if (!existing[0]) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  // Delete photos first (no DB cascade), then the photographer
+  await db.delete(photosTable).where(eq(photosTable.photographerId, id));
+  await db.delete(photographersTable).where(eq(photographersTable.id, id));
+
+  res.status(204).end();
+});

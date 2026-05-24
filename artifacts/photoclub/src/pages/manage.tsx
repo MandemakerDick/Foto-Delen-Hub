@@ -11,6 +11,7 @@ import {
   useDeleteTheme,
   useCreatePhotographer,
   useUpdatePhotographer,
+  useDeletePhotographer,
   useListClubs,
   useListThemes,
   useListPhotographers,
@@ -239,6 +240,7 @@ export default function Manage() {
   const deleteThemeMutation = useDeleteTheme();
   const createPhotographerMutation = useCreatePhotographer();
   const updatePhotographerMutation = useUpdatePhotographer();
+  const deletePhotographerMutation = useDeletePhotographer();
 
   // ── Club state ────────────────────────────────────────────
   const [editingClubId, setEditingClubId] = useState<number | null>(null);
@@ -736,6 +738,26 @@ export default function Manage() {
                     <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>
                       <Pencil className="w-3.5 h-3.5" />
                       {editingPhotographerId === p.id ? t("common.editing") : t("common.edit")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={deletePhotographerMutation.isPending}
+                      onClick={() => {
+                        if (!confirm(t("manage.photographer.deleteConfirm", { name: p.name }))) return;
+                        deletePhotographerMutation.mutate({ id: p.id }, {
+                          onSuccess: () => {
+                            toast({ title: t("manage.photographer.toastDeletedTitle") });
+                            queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
+                          },
+                          onError: () => toast({ title: t("common.error"), description: t("manage.photographer.toastDeleteError"), variant: "destructive" }),
+                        });
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {t("manage.photographer.deleteBtn")}
                     </Button>
                   </li>
                 ))}

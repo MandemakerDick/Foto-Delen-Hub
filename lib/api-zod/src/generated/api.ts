@@ -282,6 +282,14 @@ export const UpdatePhotographerResponse = zod.object({
 
 
 /**
+ * @summary Delete a photographer and all their photos
+ */
+export const DeletePhotographerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List photos with optional filters
  */
 export const ListPhotosQueryParams = zod.object({

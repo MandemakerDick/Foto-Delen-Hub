@@ -102,7 +102,11 @@
       "toastUpdatedTitle": "Profiel bijgewerkt",
       "toastUpdatedDesc": "{{name}} is bijgewerkt.",
       "toastCreateError": "Kon fotograaf niet aanmaken.",
-      "toastUpdateError": "Kon fotograaf niet bijwerken."
+      "toastUpdateError": "Kon fotograaf niet bijwerken.",
+      "deleteBtn": "Verwijderen",
+      "deleteConfirm": "{{name}} en al zijn/haar foto’s verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "toastDeletedTitle": "Fotograaf verwijderd",
+      "toastDeleteError": "Kon fotograaf niet verwijderen."
     },
     "admins": {
       "heading": "Beheerders",

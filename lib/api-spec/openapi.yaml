@@ -312,6 +312,21 @@ paths:
                 $ref: "#/components/schemas/Photographer"
         "404":
           description: Not found
+    delete:
+      operationId: deletePhotographer
+      tags: [photographers]
+      summary: Delete a photographer and all their photos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /photos:
     get:
