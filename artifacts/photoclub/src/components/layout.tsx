@@ -116,7 +116,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             <LanguageSwitcher />
 
-            {adminStatus?.isAdmin && (
+            {(adminStatus?.isAdmin || (isSignedIn && adminStatus?.totalAdmins === 0)) && (
               <Link href="/manage">
                 <Button
                   variant={location.startsWith("/manage") ? "default" : "ghost"}
