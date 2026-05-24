@@ -131,7 +131,13 @@
       "toastBootstrapTitle": "Beheerderstoegang verleend",
       "toastBootstrapDesc": "Je bent nu de beheerder. Voeg anderen toe via dit tabblad.",
       "toastBootstrapError": "Kon beheerderstoegang niet claimen.",
-      "signInRequired": "Meld je aan om toegang te krijgen tot het beheerderspaneel."
+      "signInRequired": "Meld je aan om toegang te krijgen tot het beheerderspaneel.",
+      "editTitle": "Beheerder bewerken",
+      "editBtn": "Bewerken",
+      "saveBtn": "Opslaan",
+      "toastUpdatedTitle": "Beheerder bijgewerkt",
+      "toastUpdateError": "Kon beheerder niet bijwerken.",
+      "displayNameRequired": "Weergavenaam is verplicht"
     }
   },
   "toasts": {

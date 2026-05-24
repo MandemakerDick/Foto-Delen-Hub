@@ -570,8 +570,29 @@ export const ListAdminsResponse = zod.array(ListAdminsResponseItem)
  */
 export const AddAdminBody = zod.object({
   "clerkUserId": zod.string(),
-  "displayName": zod.string(),
+  "displayName": zod.string().optional(),
   "email": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update an admin's display name or email (admin only)
+ */
+export const UpdateAdminParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminBody = zod.object({
+  "displayName": zod.string().optional(),
+  "email": zod.string().nullish()
+})
+
+export const UpdateAdminResponse = zod.object({
+  "id": zod.number(),
+  "clerkUserId": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string().nullish(),
+  "addedAt": zod.coerce.date()
 })
 
 

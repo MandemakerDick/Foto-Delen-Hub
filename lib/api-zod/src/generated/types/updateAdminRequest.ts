@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AddAdminRequest {
-  clerkUserId: string;
+export interface UpdateAdminRequest {
   displayName?: string;
   email?: string | null;
 }

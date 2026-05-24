@@ -134,7 +134,13 @@
       "toastBootstrapTitle": "Admin access granted",
       "toastBootstrapDesc": "You are now the admin. Add others from this tab.",
       "toastBootstrapError": "Could not claim admin access.",
-      "signInRequired": "Sign in to access the admin panel."
+      "signInRequired": "Sign in to access the admin panel.",
+      "editTitle": "Edit Admin",
+      "editBtn": "Edit",
+      "saveBtn": "Save",
+      "toastUpdatedTitle": "Admin updated",
+      "toastUpdateError": "Could not update admin.",
+      "displayNameRequired": "Display name is required"
     }
   },
   "toasts": {

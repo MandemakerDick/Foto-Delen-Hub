@@ -653,6 +653,35 @@ paths:
           description: Already an admin
 
   /admins/{id}:
+    patch:
+      operationId: updateAdmin
+      tags: [admins]
+      summary: Update an admin's display name or email (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminRequest'
+      responses:
+        '200':
+          description: Updated admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
     delete:
       operationId: removeAdmin
       tags: [admins]
@@ -982,10 +1011,19 @@ components:
 
     AddAdminRequest:
       type: object
-      required: [clerkUserId, displayName]
+      required: [clerkUserId]
       properties:
         clerkUserId:
           type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          nullable: true
+
+    UpdateAdminRequest:
+      type: object
+      properties:
         displayName:
           type: string
         email:

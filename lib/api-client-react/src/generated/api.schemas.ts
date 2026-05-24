@@ -201,7 +201,12 @@ export interface AdminStatusResponse {
 
 export interface AddAdminRequest {
   clerkUserId: string;
-  displayName: string;
+  displayName?: string;
+  email?: string | null;
+}
+
+export interface UpdateAdminRequest {
+  displayName?: string;
   email?: string | null;
 }
 

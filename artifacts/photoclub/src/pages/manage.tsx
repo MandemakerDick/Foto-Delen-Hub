@@ -17,6 +17,7 @@ import {
   useGetAdminStatus,
   useListAdmins,
   useAddAdmin,
+  useUpdateAdmin,
   useRemoveAdmin,
   getListClubsQueryKey,
   getListThemesQueryKey,
@@ -25,7 +26,7 @@ import {
   getGetAdminStatusQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/react";
+import { useAuth, useUser } from "@clerk/react";
 import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,23 +72,43 @@ export default function Manage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { userId, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
   const { data: photographers } = useListPhotographers();
   const { data: adminStatus } = useGetAdminStatus({ query: { enabled: !!isSignedIn, retry: false, queryKey: getGetAdminStatusQueryKey() } });
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
 
-  // Admin form state
+  // Add admin form state
   const [newAdminClerkId, setNewAdminClerkId] = useState("");
   const [newAdminName, setNewAdminName] = useState("");
 
+  // Edit admin state
+  const [editingAdminId, setEditingAdminId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+
   // Admin mutations
   const addAdminMutation = useAddAdmin();
+  const updateAdminMutation = useUpdateAdmin();
   const removeAdminMutation = useRemoveAdmin();
 
   const handleBootstrap = async () => {
     try {
-      const res = await fetch("/api/admins/bootstrap", { method: "POST", credentials: "include" });
+      // Send real name/email from Clerk frontend session — no secret key needed
+      const displayName =
+        [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ").trim() ||
+        clerkUser?.username ||
+        clerkUser?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
+        "Admin";
+      const email = clerkUser?.emailAddresses?.[0]?.emailAddress ?? null;
+
+      const res = await fetch("/api/admins/bootstrap", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName, email }),
+      });
       if (!res.ok) throw new Error();
       toast({ title: t("manage.admins.toastBootstrapTitle"), description: t("manage.admins.toastBootstrapDesc") });
       queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
@@ -98,17 +119,44 @@ export default function Manage() {
   };
 
   const handleAddAdmin = () => {
-    if (!newAdminClerkId.trim() || !newAdminName.trim()) return;
+    if (!newAdminClerkId.trim()) return;
     addAdminMutation.mutate(
-      { data: { clerkUserId: newAdminClerkId.trim(), displayName: newAdminName.trim() } },
+      { data: { clerkUserId: newAdminClerkId.trim(), displayName: newAdminName.trim() || undefined } },
       {
-        onSuccess: () => {
-          toast({ title: t("manage.admins.toastAddedTitle"), description: t("manage.admins.toastAddedDesc", { name: newAdminName.trim() }) });
+        onSuccess: (added) => {
+          toast({ title: t("manage.admins.toastAddedTitle"), description: t("manage.admins.toastAddedDesc", { name: added.displayName }) });
           setNewAdminClerkId("");
           setNewAdminName("");
           queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
         },
         onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastAddError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const startEditAdmin = (admin: { id: number; displayName: string; email?: string | null }) => {
+    setEditingAdminId(admin.id);
+    setEditName(admin.displayName);
+    setEditEmail(admin.email ?? "");
+  };
+
+  const cancelEditAdmin = () => {
+    setEditingAdminId(null);
+    setEditName("");
+    setEditEmail("");
+  };
+
+  const handleUpdateAdmin = (id: number) => {
+    if (!editName.trim()) return;
+    updateAdminMutation.mutate(
+      { id, data: { displayName: editName.trim(), email: editEmail.trim() || null } },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.admins.toastUpdatedTitle") });
+          cancelEditAdmin();
+          queryClient.invalidateQueries({ queryKey: getListAdminsQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastUpdateError"), variant: "destructive" }),
       },
     );
   };
@@ -716,32 +764,80 @@ export default function Manage() {
                   </div>
                   <ul className="divide-y divide-border/50">
                     {adminList.map((admin) => (
-                      <li key={admin.id} className="flex items-center gap-4 px-6 py-4">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                          <ShieldCheck className="w-4 h-4 text-primary/60" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {admin.displayName}
-                            {admin.clerkUserId === userId && (
-                              <span className="ml-2 text-xs text-muted-foreground">{t("manage.admins.youSuffix")}</span>
+                      <li key={admin.id} className="px-6 py-4">
+                        {editingAdminId === admin.id ? (
+                          /* ── Inline edit form ── */
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <ShieldCheck className="w-4 h-4 text-primary/60 shrink-0" />
+                              <span className="text-xs text-muted-foreground font-mono truncate">{admin.clerkUserId}</span>
+                            </div>
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              placeholder={t("manage.admins.displayNamePlaceholder")}
+                              className="bg-background"
+                            />
+                            <Input
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              placeholder="email@example.com"
+                              className="bg-background"
+                              type="email"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleUpdateAdmin(admin.id)}
+                                disabled={!editName.trim() || updateAdminMutation.isPending}
+                              >
+                                {t("manage.admins.saveBtn")}
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={cancelEditAdmin}>
+                                <X className="w-3.5 h-3.5 mr-1" />{t("common.cancel")}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* ── Normal row ── */
+                          <div className="flex items-center gap-4">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                              <ShieldCheck className="w-4 h-4 text-primary/60" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">
+                                {admin.displayName}
+                                {admin.clerkUserId === userId && (
+                                  <span className="ml-2 text-xs text-muted-foreground">{t("manage.admins.youSuffix")}</span>
+                                )}
+                              </p>
+                              {admin.email && <p className="text-xs text-muted-foreground truncate">{admin.email}</p>}
+                              <p className="text-xs text-muted-foreground font-mono truncate">{admin.clerkUserId}</p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant={editingAdminId === admin.id ? "default" : "ghost"}
+                              size="sm"
+                              className="shrink-0 gap-1.5"
+                              onClick={() => startEditAdmin(admin)}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              {t("manage.admins.editBtn")}
+                            </Button>
+                            {admin.clerkUserId !== userId && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveAdmin(admin.id, admin.displayName)}
+                                disabled={removeAdminMutation.isPending}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                {t("manage.admins.removeBtn")}
+                              </Button>
                             )}
-                          </p>
-                          {admin.email && <p className="text-xs text-muted-foreground truncate">{admin.email}</p>}
-                          <p className="text-xs text-muted-foreground font-mono truncate">{admin.clerkUserId}</p>
-                        </div>
-                        {admin.clerkUserId !== userId && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRemoveAdmin(admin.id, admin.displayName)}
-                            disabled={removeAdminMutation.isPending}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            {t("manage.admins.removeBtn")}
-                          </Button>
+                          </div>
                         )}
                       </li>
                     ))}

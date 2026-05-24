@@ -30,5 +30,6 @@ export * from './photoUpdate';
 export * from './stats';
 export * from './theme';
 export * from './themeInput';
+export * from './updateAdminRequest';
 export * from './uploadUrlRequest';
 export * from './uploadUrlResponse';

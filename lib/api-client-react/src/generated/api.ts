@@ -44,6 +44,7 @@ import type {
   Stats,
   Theme,
   ThemeInput,
+  UpdateAdminRequest,
   UploadUrlRequest,
   UploadUrlResponse
 } from './api.schemas';
@@ -2319,6 +2320,78 @@ export const useAddAdmin = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAddAdminMutationOptions(options));
+    }
+
+export const getUpdateAdminUrl = (id: number,) => {
+
+
+
+
+  return `/api/admins/${id}`
+}
+
+/**
+ * @summary Update an admin's display name or email (admin only)
+ */
+export const updateAdmin = async (id: number,
+    updateAdminRequest: UpdateAdminRequest, options?: RequestInit): Promise<AdminUser> => {
+
+  return customFetch<AdminUser>(getUpdateAdminUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateAdminRequest,)
+  }
+);}
+
+
+
+
+export const getUpdateAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdmin>>, TError,{id: number;data: BodyType<UpdateAdminRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdmin>>, TError,{id: number;data: BodyType<UpdateAdminRequest>}, TContext> => {
+
+const mutationKey = ['updateAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdmin>>, {id: number;data: BodyType<UpdateAdminRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdmin(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdmin>>>
+    export type UpdateAdminMutationBody = BodyType<UpdateAdminRequest>
+    export type UpdateAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Update an admin's display name or email (admin only)
+ */
+export const useUpdateAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdmin>>, TError,{id: number;data: BodyType<UpdateAdminRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdmin>>,
+        TError,
+        {id: number;data: BodyType<UpdateAdminRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminMutationOptions(options));
     }
 
 export const getRemoveAdminUrl = (id: number,) => {

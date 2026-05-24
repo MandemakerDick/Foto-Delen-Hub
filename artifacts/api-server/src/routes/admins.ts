@@ -127,17 +127,63 @@ router.post("/admins/bootstrap", requireAuth, async (req: any, res) => {
     return;
   }
 
+  // Frontend passes displayName/email; fall back to Clerk lookup then placeholder
+  const bodyName: string | undefined = req.body?.displayName;
+  const bodyEmail: string | undefined = req.body?.email;
   const clerkUser = await fetchClerkUser(req.clerkUserId);
+
   const [row] = await db
     .insert(adminsTable)
     .values({
       clerkUserId: req.clerkUserId,
-      displayName: clerkUser?.displayName ?? "Admin",
-      email: clerkUser?.email ?? null,
+      displayName: bodyName || clerkUser?.displayName || "Admin",
+      email: bodyEmail || clerkUser?.email || null,
     })
     .returning();
 
   res.status(201).json({ ...row, addedAt: row.addedAt.toISOString() });
+});
+
+// PATCH /api/admins/:id — update display name / email (admin only)
+router.patch("/admins/:id", requireAdmin, async (req: any, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const { displayName, email } = req.body as {
+    displayName?: string;
+    email?: string | null;
+  };
+
+  const [target] = await db
+    .select()
+    .from(adminsTable)
+    .where(eq(adminsTable.id, id))
+    .limit(1);
+
+  if (!target) {
+    res.status(404).json({ error: "Admin not found" });
+    return;
+  }
+
+  const updates: Partial<typeof adminsTable.$inferInsert> = {};
+  if (displayName !== undefined && displayName.trim()) updates.displayName = displayName.trim();
+  if (email !== undefined) updates.email = email || null;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No valid fields to update" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(adminsTable)
+    .set(updates)
+    .where(eq(adminsTable.id, id))
+    .returning();
+
+  res.json({ ...updated, addedAt: updated.addedAt.toISOString() });
 });
 
 // DELETE /api/admins/:id — remove admin (admin only, cannot remove self)
