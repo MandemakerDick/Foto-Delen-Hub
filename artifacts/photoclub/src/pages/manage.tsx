@@ -867,7 +867,6 @@ export default function Manage() {
                                 )}
                               </p>
                               {admin.email && <p className="text-xs text-muted-foreground truncate">{admin.email}</p>}
-                              <p className="text-xs text-muted-foreground font-mono truncate">{admin.clerkUserId}</p>
                             </div>
                             <Button
                               type="button"
