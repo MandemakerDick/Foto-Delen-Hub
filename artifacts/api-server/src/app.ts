@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { clerkMiddleware } from "@clerk/express";
+import pg from "pg";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -45,11 +46,26 @@ app.use(express.urlencoded({ extended: true }));
 const PgStore = connectPgSimple(session);
 const isProduction = process.env["NODE_ENV"] === "production";
 
+const sessionPool = new pg.Pool({ connectionString: process.env["DATABASE_URL"] });
+
+// Create the session table manually — avoids connect-pg-simple reading a .sql file
+// from disk (which breaks in esbuild bundles where package assets are not co-located).
+export async function ensureSessionTable() {
+  await sessionPool.query(`
+    CREATE TABLE IF NOT EXISTS "session" (
+      "sid"    varchar      NOT NULL COLLATE "default",
+      "sess"   json         NOT NULL,
+      "expire" timestamp(6) NOT NULL,
+      CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
+    );
+    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+  `);
+}
+
 app.use(
   session({
     store: new PgStore({
-      conString: process.env["DATABASE_URL"],
-      createTableIfMissing: true,
+      pool: sessionPool,
       tableName: "session",
     }),
     secret: process.env["SESSION_SECRET"] || "dev-secret-change-me",
