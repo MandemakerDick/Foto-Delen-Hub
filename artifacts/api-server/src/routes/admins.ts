@@ -112,7 +112,7 @@ router.get("/admins/me", async (req: any, res) => {
   const { userId } = getAuth(req);
   if (userId) {
     const admin = await getAdminByClerkId(userId);
-    res.json({ isAdmin: !!admin, totalAdmins: total });
+    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null });
     return;
   }
 
@@ -120,12 +120,12 @@ router.get("/admins/me", async (req: any, res) => {
   const sessionAdminId = req.session?.adminId as number | undefined;
   if (sessionAdminId) {
     const admin = await getAdminById(sessionAdminId);
-    res.json({ isAdmin: !!admin, totalAdmins: total });
+    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null });
     return;
   }
 
   // Not authenticated at all — still return total so bootstrap check works
-  res.json({ isAdmin: false, totalAdmins: total });
+  res.json({ isAdmin: false, totalAdmins: total, displayName: null });
 });
 
 // GET /api/admins — list all admins (admin only)

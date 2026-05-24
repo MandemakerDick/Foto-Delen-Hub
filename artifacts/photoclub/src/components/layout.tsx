@@ -88,7 +88,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
                   <ShieldCheck className="w-4 h-4" />
-                  <span className="hidden sm:inline">Admin</span>
+                  <span className="hidden sm:inline">{adminStatus?.displayName ?? "Admin"}</span>
                 </div>
                 <Button
                   variant="ghost"

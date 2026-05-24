@@ -199,6 +199,7 @@ export interface AdminUser {
 export interface AdminStatusResponse {
   isAdmin: boolean;
   totalAdmins: number;
+  displayName?: string | null;
 }
 
 export interface AddAdminRequest {

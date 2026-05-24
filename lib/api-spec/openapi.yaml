@@ -1182,6 +1182,9 @@ components:
           type: boolean
         totalAdmins:
           type: integer
+        displayName:
+          type: string
+          nullable: true
 
     AddAdminRequest:
       type: object
