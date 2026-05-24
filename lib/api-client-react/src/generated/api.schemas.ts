@@ -210,6 +210,35 @@ export interface UpdateAdminRequest {
   email?: string | null;
 }
 
+export interface InviteToken {
+  id: number;
+  token: string;
+  label: string;
+  maxUses?: number | null;
+  useCount: number;
+  expiresAt?: string | null;
+  revoked: boolean;
+  createdAt: string;
+}
+
+export interface CreateInviteRequest {
+  label: string;
+  maxUses?: number | null;
+  expiresInDays?: number | null;
+}
+
+export interface RedeemInviteRequest {
+  token: string;
+}
+
+export interface InviteRedeemResult {
+  ok: boolean;
+}
+
+export interface InviteSessionResponse {
+  hasAccess: boolean;
+}
+
 export interface ErrorEnvelope {
   error: string;
 }

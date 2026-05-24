@@ -140,7 +140,27 @@
       "saveBtn": "Save",
       "toastUpdatedTitle": "Admin updated",
       "toastUpdateError": "Could not update admin.",
-      "displayNameRequired": "Display name is required"
+      "displayNameRequired": "Display name is required",
+      "invitesTitle": "Invite Links",
+      "invitesDesc": "Generate links for others to add clubs, photographers and photos — no account needed.",
+      "inviteLabelLabel": "Label",
+      "inviteLabelPlaceholder": "e.g. Photography club members",
+      "inviteMaxUsesLabel": "Max uses (leave empty for unlimited)",
+      "inviteExpiryLabel": "Expires in days (leave empty for no expiry)",
+      "inviteCreateBtn": "Create invite link",
+      "inviteCopyBtn": "Copy link",
+      "inviteCopiedBtn": "Copied!",
+      "inviteRevokeBtn": "Revoke",
+      "inviteRevokedBadge": "Revoked",
+      "inviteUsed": "{{count}} uses",
+      "inviteUnlimited": "unlimited",
+      "inviteExpires": "Expires {{date}}",
+      "inviteExpired": "Expired",
+      "inviteNoTokens": "No invite links yet.",
+      "toastInviteCreatedTitle": "Invite link created",
+      "toastInviteCreateError": "Could not create invite link.",
+      "toastInviteRevokedTitle": "Invite link revoked",
+      "toastInviteRevokeError": "Could not revoke invite link."
     }
   },
   "toasts": {
@@ -378,5 +398,19 @@
     "label": "Language",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "join": {
+    "heading": "You have been invited",
+    "desc": "This link gives you access to add clubs, photographers and photos.",
+    "enterToken": "Or enter your invite code manually:",
+    "tokenPlaceholder": "Paste invite code here",
+    "joinBtn": "Join",
+    "joining": "Joining…",
+    "successHeading": "Access granted!",
+    "successDesc": "You can now add clubs, photographers and photos.",
+    "goUpload": "Upload a photo",
+    "goManage": "Go to manage",
+    "invalidToken": "This invite link is invalid, expired or has already been used up.",
+    "errorGeneric": "Something went wrong. Please try again."
   }
 }

@@ -19,11 +19,15 @@ import {
   useAddAdmin,
   useUpdateAdmin,
   useRemoveAdmin,
+  useListInvites,
+  useCreateInvite,
+  useRevokeInvite,
   getListClubsQueryKey,
   getListThemesQueryKey,
   getListPhotographersQueryKey,
   getListAdminsQueryKey,
   getGetAdminStatusQueryKey,
+  getListInvitesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/react";
@@ -43,7 +47,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -92,6 +96,57 @@ export default function Manage() {
   const addAdminMutation = useAddAdmin();
   const updateAdminMutation = useUpdateAdmin();
   const removeAdminMutation = useRemoveAdmin();
+
+  // Invite state
+  const { data: inviteList } = useListInvites({ query: { enabled: !!adminStatus?.isAdmin, queryKey: getListInvitesQueryKey() } });
+  const [inviteLabel, setInviteLabel] = useState("");
+  const [inviteMaxUses, setInviteMaxUses] = useState("");
+  const [inviteExpiryDays, setInviteExpiryDays] = useState("");
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const createInviteMutation = useCreateInvite();
+  const revokeInviteMutation = useRevokeInvite();
+
+  const handleCreateInvite = () => {
+    createInviteMutation.mutate(
+      {
+        data: {
+          label: inviteLabel.trim() || "Invite",
+          maxUses: inviteMaxUses ? parseInt(inviteMaxUses, 10) : null,
+          expiresInDays: inviteExpiryDays ? parseInt(inviteExpiryDays, 10) : null,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.admins.toastInviteCreatedTitle") });
+          setInviteLabel("");
+          setInviteMaxUses("");
+          setInviteExpiryDays("");
+          queryClient.invalidateQueries({ queryKey: getListInvitesQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastInviteCreateError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleRevokeInvite = (id: number) => {
+    revokeInviteMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.admins.toastInviteRevokedTitle") });
+          queryClient.invalidateQueries({ queryKey: getListInvitesQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.admins.toastInviteRevokeError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const copyInviteLink = (tokenId: number, token: string) => {
+    const url = `${window.location.origin}/join/${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(tokenId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleBootstrap = async () => {
     try {
@@ -843,6 +898,122 @@ export default function Manage() {
                     ))}
                   </ul>
                 </div>
+              )}
+
+              {/* ── Invite links section ── */}
+              <Separator />
+              <div className="bg-secondary/20 p-6 rounded-lg border border-border/50 space-y-4">
+                <h2 className="font-serif text-2xl font-medium flex items-center gap-2">
+                  <Link2 className="w-5 h-5" />{t("manage.admins.invitesTitle")}
+                </h2>
+                <p className="text-sm text-muted-foreground">{t("manage.admins.invitesDesc")}</p>
+
+                {/* Create invite form */}
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">{t("manage.admins.inviteLabelLabel")}</label>
+                    <Input
+                      value={inviteLabel}
+                      onChange={(e) => setInviteLabel(e.target.value)}
+                      placeholder={t("manage.admins.inviteLabelPlaceholder")}
+                      className="bg-background"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">{t("manage.admins.inviteMaxUsesLabel")}</label>
+                      <Input
+                        value={inviteMaxUses}
+                        onChange={(e) => setInviteMaxUses(e.target.value.replace(/\D/g, ""))}
+                        placeholder="∞"
+                        className="bg-background"
+                        type="number"
+                        min={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium block mb-1.5">{t("manage.admins.inviteExpiryLabel")}</label>
+                      <Input
+                        value={inviteExpiryDays}
+                        onChange={(e) => setInviteExpiryDays(e.target.value.replace(/\D/g, ""))}
+                        placeholder="∞"
+                        className="bg-background"
+                        type="number"
+                        min={1}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleCreateInvite}
+                    disabled={createInviteMutation.isPending}
+                    className="w-full"
+                  >
+                    <Link2 className="w-4 h-4 mr-2" />{t("manage.admins.inviteCreateBtn")}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Invite list */}
+              {inviteList && inviteList.length > 0 && (
+                <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
+                  <ul className="divide-y divide-border/50">
+                    {inviteList.map((inv) => {
+                      const isExpired = inv.expiresAt ? new Date(inv.expiresAt) < new Date() : false;
+                      const isExhausted = inv.maxUses != null && inv.useCount >= inv.maxUses;
+                      const inactive = inv.revoked || isExpired || isExhausted;
+                      return (
+                        <li key={inv.id} className="flex items-start gap-4 px-6 py-4">
+                          <div className="flex-1 min-w-0 space-y-0.5">
+                            <p className={`font-medium ${inactive ? "text-muted-foreground line-through" : ""}`}>
+                              {inv.label}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-mono truncate">{inv.token}</p>
+                            <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
+                              <span>
+                                {t("manage.admins.inviteUsed", { count: inv.useCount })}
+                                {inv.maxUses !== null ? ` / ${inv.maxUses}` : ` / ${t("manage.admins.inviteUnlimited")}`}
+                              </span>
+                              {inv.expiresAt && !isExpired && (
+                                <span>{t("manage.admins.inviteExpires", { date: new Date(inv.expiresAt).toLocaleDateString() })}</span>
+                              )}
+                              {isExpired && <span className="text-destructive">{t("manage.admins.inviteExpired")}</span>}
+                              {inv.revoked && <span className="text-destructive">{t("manage.admins.inviteRevokedBadge")}</span>}
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+                            {!inactive && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5"
+                                onClick={() => copyInviteLink(inv.id, inv.token)}
+                              >
+                                {copiedId === inv.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedId === inv.id ? t("manage.admins.inviteCopiedBtn") : t("manage.admins.inviteCopyBtn")}
+                              </Button>
+                            )}
+                            {!inv.revoked && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRevokeInvite(inv.id)}
+                                disabled={revokeInviteMutation.isPending}
+                              >
+                                <X className="w-3.5 h-3.5" />{t("manage.admins.inviteRevokeBtn")}
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              {inviteList?.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-2">{t("manage.admins.inviteNoTokens")}</p>
               )}
             </>
           )}

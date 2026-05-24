@@ -22,6 +22,7 @@ import MyPhotos from "@/pages/my-photos";
 import ThemeDetail from "@/pages/theme-detail";
 import Search from "@/pages/search";
 import NotFound from "@/pages/not-found";
+import Join from "@/pages/join";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
@@ -147,6 +148,7 @@ function Router() {
         <Route path="/upload" component={Upload} />
         <Route path="/manage" component={Manage} />
         <Route path="/my-photos" component={MyPhotos} />
+        <Route path="/join/:token?" component={Join} />
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/sign-up/*?" component={SignUpPage} />
         <Route component={NotFound} />

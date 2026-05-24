@@ -137,7 +137,27 @@
       "saveBtn": "Opslaan",
       "toastUpdatedTitle": "Beheerder bijgewerkt",
       "toastUpdateError": "Kon beheerder niet bijwerken.",
-      "displayNameRequired": "Weergavenaam is verplicht"
+      "displayNameRequired": "Weergavenaam is verplicht",
+      "invitesTitle": "Uitnodigingslinks",
+      "invitesDesc": "Maak links aan zodat anderen clubs, fotografen en foto’s kunnen toevoegen — geen account nodig.",
+      "inviteLabelLabel": "Label",
+      "inviteLabelPlaceholder": "Bijv. Fotoclub leden",
+      "inviteMaxUsesLabel": "Max. gebruik (leeg = onbeperkt)",
+      "inviteExpiryLabel": "Vervalt na dagen (leeg = nooit)",
+      "inviteCreateBtn": "Uitnodigingslink aanmaken",
+      "inviteCopyBtn": "Link kopiëren",
+      "inviteCopiedBtn": "Gekopieerd!",
+      "inviteRevokeBtn": "Intrekken",
+      "inviteRevokedBadge": "Ingetrokken",
+      "inviteUsed": "{{count}} keer gebruikt",
+      "inviteUnlimited": "onbeperkt",
+      "inviteExpires": "Vervalt {{date}}",
+      "inviteExpired": "Verlopen",
+      "inviteNoTokens": "Nog geen uitnodigingslinks.",
+      "toastInviteCreatedTitle": "Uitnodigingslink aangemaakt",
+      "toastInviteCreateError": "Kon uitnodigingslink niet aanmaken.",
+      "toastInviteRevokedTitle": "Uitnodigingslink ingetrokken",
+      "toastInviteRevokeError": "Kon uitnodigingslink niet intrekken."
     }
   },
   "toasts": {
@@ -378,5 +398,19 @@
     "label": "Taal",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "join": {
+    "heading": "Je bent uitgenodigd",
+    "desc": "Met deze link kun je clubs, fotografen en foto’s toevoegen.",
+    "enterToken": "Of voer je uitnodigingscode handmatig in:",
+    "tokenPlaceholder": "Plak uitnodigingscode hier",
+    "joinBtn": "Deelnemen",
+    "joining": "Bezig…",
+    "successHeading": "Toegang verleend!",
+    "successDesc": "Je kunt nu clubs, fotografen en foto’s toevoegen.",
+    "goUpload": "Foto uploaden",
+    "goManage": "Naar beheer",
+    "invalidToken": "Deze uitnodigingslink is ongeldig, verlopen of al volledig gebruikt.",
+    "errorGeneric": "Er is iets misgegaan. Probeer opnieuw."
   }
 }

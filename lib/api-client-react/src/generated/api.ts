@@ -27,8 +27,12 @@ import type {
   ClubInput,
   Comment,
   CommentInput,
+  CreateInviteRequest,
   ErrorEnvelope,
   HealthStatus,
+  InviteRedeemResult,
+  InviteSessionResponse,
+  InviteToken,
   LikeInput,
   ListClubsParams,
   ListPhotographersParams,
@@ -41,6 +45,7 @@ import type {
   Photographer,
   PhotographerInput,
   PhotographerUpdate,
+  RedeemInviteRequest,
   Stats,
   Theme,
   ThemeInput,
@@ -2463,4 +2468,370 @@ export const useRemoveAdmin = <TError = ErrorType<void>,
       > => {
       return useMutation(getRemoveAdminMutationOptions(options));
     }
+
+export const getListInvitesUrl = () => {
+
+
+
+
+  return `/api/invites`
+}
+
+/**
+ * @summary List all invite tokens (admin only)
+ */
+export const listInvites = async ( options?: RequestInit): Promise<InviteToken[]> => {
+
+  return customFetch<InviteToken[]>(getListInvitesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInvitesQueryKey = () => {
+    return [
+    `/api/invites`
+    ] as const;
+    }
+
+
+export const getListInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listInvites>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInvitesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInvites>>> = ({ signal }) => listInvites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInvites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInvitesQueryResult = NonNullable<Awaited<ReturnType<typeof listInvites>>>
+export type ListInvitesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List all invite tokens (admin only)
+ */
+
+export function useListInvites<TData = Awaited<ReturnType<typeof listInvites>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInvitesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateInviteUrl = () => {
+
+
+
+
+  return `/api/invites`
+}
+
+/**
+ * @summary Create an invite token (admin only)
+ */
+export const createInvite = async (createInviteRequest: CreateInviteRequest, options?: RequestInit): Promise<InviteToken> => {
+
+  return customFetch<InviteToken>(getCreateInviteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createInviteRequest,)
+  }
+);}
+
+
+
+
+export const getCreateInviteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvite>>, TError,{data: BodyType<CreateInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInvite>>, TError,{data: BodyType<CreateInviteRequest>}, TContext> => {
+
+const mutationKey = ['createInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInvite>>, {data: BodyType<CreateInviteRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInvite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInviteMutationResult = NonNullable<Awaited<ReturnType<typeof createInvite>>>
+    export type CreateInviteMutationBody = BodyType<CreateInviteRequest>
+    export type CreateInviteMutationError = ErrorType<void>
+
+    /**
+ * @summary Create an invite token (admin only)
+ */
+export const useCreateInvite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvite>>, TError,{data: BodyType<CreateInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInvite>>,
+        TError,
+        {data: BodyType<CreateInviteRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateInviteMutationOptions(options));
+    }
+
+export const getRevokeInviteUrl = (id: number,) => {
+
+
+
+
+  return `/api/invites/${id}`
+}
+
+/**
+ * @summary Revoke an invite token (admin only)
+ */
+export const revokeInvite = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevokeInviteUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeInviteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeInvite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeInvite>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['revokeInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeInvite>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeInvite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeInviteMutationResult = NonNullable<Awaited<ReturnType<typeof revokeInvite>>>
+
+    export type RevokeInviteMutationError = ErrorType<void>
+
+    /**
+ * @summary Revoke an invite token (admin only)
+ */
+export const useRevokeInvite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeInvite>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeInvite>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRevokeInviteMutationOptions(options));
+    }
+
+export const getRedeemInviteUrl = () => {
+
+
+
+
+  return `/api/invites/redeem`
+}
+
+/**
+ * @summary Redeem an invite token to gain contributor access
+ */
+export const redeemInvite = async (redeemInviteRequest: RedeemInviteRequest, options?: RequestInit): Promise<InviteRedeemResult> => {
+
+  return customFetch<InviteRedeemResult>(getRedeemInviteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      redeemInviteRequest,)
+  }
+);}
+
+
+
+
+export const getRedeemInviteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemInvite>>, TError,{data: BodyType<RedeemInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof redeemInvite>>, TError,{data: BodyType<RedeemInviteRequest>}, TContext> => {
+
+const mutationKey = ['redeemInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redeemInvite>>, {data: BodyType<RedeemInviteRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  redeemInvite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RedeemInviteMutationResult = NonNullable<Awaited<ReturnType<typeof redeemInvite>>>
+    export type RedeemInviteMutationBody = BodyType<RedeemInviteRequest>
+    export type RedeemInviteMutationError = ErrorType<void>
+
+    /**
+ * @summary Redeem an invite token to gain contributor access
+ */
+export const useRedeemInvite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemInvite>>, TError,{data: BodyType<RedeemInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof redeemInvite>>,
+        TError,
+        {data: BodyType<RedeemInviteRequest>},
+        TContext
+      > => {
+      return useMutation(getRedeemInviteMutationOptions(options));
+    }
+
+export const getGetInviteSessionUrl = () => {
+
+
+
+
+  return `/api/invites/session`
+}
+
+/**
+ * @summary Check if current session has contributor access via invite
+ */
+export const getInviteSession = async ( options?: RequestInit): Promise<InviteSessionResponse> => {
+
+  return customFetch<InviteSessionResponse>(getGetInviteSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInviteSessionQueryKey = () => {
+    return [
+    `/api/invites/session`
+    ] as const;
+    }
+
+
+export const getGetInviteSessionQueryOptions = <TData = Awaited<ReturnType<typeof getInviteSession>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInviteSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInviteSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInviteSession>>> = ({ signal }) => getInviteSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInviteSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInviteSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getInviteSession>>>
+export type GetInviteSessionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check if current session has contributor access via invite
+ */
+
+export function useGetInviteSession<TData = Awaited<ReturnType<typeof getInviteSession>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInviteSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInviteSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 

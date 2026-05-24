@@ -604,3 +604,57 @@ export const RemoveAdminParams = zod.object({
 })
 
 
+/**
+ * @summary List all invite tokens (admin only)
+ */
+export const ListInvitesResponseItem = zod.object({
+  "id": zod.number(),
+  "token": zod.string(),
+  "label": zod.string(),
+  "maxUses": zod.number().nullish(),
+  "useCount": zod.number(),
+  "expiresAt": zod.string().nullish(),
+  "revoked": zod.boolean(),
+  "createdAt": zod.string()
+})
+export const ListInvitesResponse = zod.array(ListInvitesResponseItem)
+
+
+/**
+ * @summary Create an invite token (admin only)
+ */
+export const CreateInviteBody = zod.object({
+  "label": zod.string(),
+  "maxUses": zod.number().nullish(),
+  "expiresInDays": zod.number().nullish()
+})
+
+
+/**
+ * @summary Revoke an invite token (admin only)
+ */
+export const RevokeInviteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Redeem an invite token to gain contributor access
+ */
+export const RedeemInviteBody = zod.object({
+  "token": zod.string()
+})
+
+export const RedeemInviteResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Check if current session has contributor access via invite
+ */
+export const GetInviteSessionResponse = zod.object({
+  "hasAccess": zod.boolean()
+})
+
+
