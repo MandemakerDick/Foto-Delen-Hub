@@ -105,7 +105,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Clerk sign-in button — only when not already authenticated any way */}
             {!isSessionAdmin && (
               <Show when="signed-out">
-                <Link href="/sign-in">
+                <Link href="/admin/login">
                   <Button variant="outline" size="sm" className="gap-2 border-border/50">
                     <LogIn className="w-4 h-4" />
                     <span className="hidden sm:inline">{t("nav.signIn")}</span>
