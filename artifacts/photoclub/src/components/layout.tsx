@@ -1,14 +1,31 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Camera, Users, LayoutDashboard, User, PlusSquare, Settings, LogIn, ImageIcon } from "lucide-react";
+import { Camera, Users, LayoutDashboard, User, PlusSquare, Settings, LogIn, ImageIcon, ShieldCheck, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
-import { Show, useUser } from "@clerk/react";
+import { Show, useAuth, useUser } from "@clerk/react";
+import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
+  const { isSignedIn } = useAuth();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: adminStatus } = useGetAdminStatus({
+    query: { retry: false, queryKey: getGetAdminStatusQueryKey() },
+  });
+
+  // True only when signed in via email+password session (not Clerk)
+  const isSessionAdmin = !!adminStatus?.isAdmin && !isSignedIn;
+
+  const handleSessionSignOut = async () => {
+    await fetch(`${basePath}/api/admins/logout`, { method: "POST", credentials: "include" });
+    await queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
+  };
 
   const navItems = [
     { href: "/photos", label: t("nav.gallery"), icon: LayoutDashboard },
@@ -48,6 +65,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </Link>
 
+            {/* Clerk signed-in user */}
             <Show when="signed-in">
               <Link href="/my-photos">
                 <Button
@@ -65,22 +83,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             </Show>
 
-            <Show when="signed-out">
-              <Link href="/sign-in">
-                <Button variant="outline" size="sm" className="gap-2 border-border/50">
-                  <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t("nav.signIn")}</span>
+            {/* Session-based admin indicator */}
+            {isSessionAdmin && (
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground"
+                  onClick={handleSessionSignOut}
+                  title={t("nav.signOut")}
+                >
+                  <LogOut className="w-4 h-4" />
                 </Button>
-              </Link>
-            </Show>
+              </div>
+            )}
+
+            {/* Clerk sign-in button — only when not already authenticated any way */}
+            {!isSessionAdmin && (
+              <Show when="signed-out">
+                <Link href="/sign-in">
+                  <Button variant="outline" size="sm" className="gap-2 border-border/50">
+                    <LogIn className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t("nav.signIn")}</span>
+                  </Button>
+                </Link>
+              </Show>
+            )}
 
             <LanguageSwitcher />
 
-            <Link href="/manage">
-              <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </Link>
+            {adminStatus?.isAdmin && (
+              <Link href="/manage">
+                <Button
+                  variant={location.startsWith("/manage") ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-1 text-muted-foreground"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
