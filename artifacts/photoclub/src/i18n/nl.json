@@ -219,7 +219,7 @@
   "home": {
     "heroTitle1": "Doordacht. Bewust.",
     "heroTitle2": "Trots.",
-    "heroSubtitle": "Een digitale donkere kamer voor serieuze fotografen. Deel je vak binnen hechte gemeenschappen.",
+    "heroSubtitle": "Een digitale donkere kamer voor serieuze fotografen. Deel je vak binnen hechte fotoclubs.",
     "searchPlaceholder": "Zoek foto's op titel of beschrijving...",
     "stats": {
       "photographs": "Foto's",
@@ -242,10 +242,10 @@
     }
   },
   "clubs": {
-    "title": "Gemeenschappen",
+    "title": "Fotoclubs",
     "subtitle": "Het hart van PhotoClub. Lokale groepen en collectieven die hun visie delen.",
     "findPlaceholder": "Vind een club...",
-    "empty": "Geen gemeenschappen gevonden",
+    "empty": "Geen fotoclubs gevonden",
     "emptyCta": "Start een nieuwe club om lokale fotografen samen te brengen.",
     "createButton": "Maak een club"
   },
@@ -288,14 +288,14 @@
   },
   "clubDetail": {
     "back": "Terug naar clubs",
-    "notFound": "Gemeenschap niet gevonden",
+    "notFound": "Fotoclub niet gevonden",
     "returnLink": "Terug naar clubs",
     "established": "Opgericht {{year}}",
     "members": "Leden",
     "prints": "Afdrukken",
     "collection": "Collectie",
     "noPhotos": "Nog geen foto's",
-    "noPhotosBody": "Deze gemeenschap heeft nog geen afdrukken gedeeld.",
+    "noPhotosBody": "Deze fotoclub heeft nog geen afdrukken gedeeld.",
     "membersHeading": "Leden",
     "allPhotos": "Alle foto's",
     "filteringBy": "Foto's van {{name}}",
@@ -320,7 +320,7 @@
     "title": "Titel",
     "description": "Beschrijving",
     "artistStatement": "Kunstenaarsverklaring of bijschrift...",
-    "community": "Gemeenschap",
+    "community": "Fotoclub",
     "theme": "Thema",
     "none": "Geen",
     "saving": "Opslaan...",
@@ -349,7 +349,7 @@
     "subtitle": "Voeg je werk toe aan de gezamenlijke donkere kamer.",
     "uploadingAs": "Uploaden als",
     "labelTitle": "Titel",
-    "labelCommunity": "Gemeenschap",
+    "labelCommunity": "Fotoclub",
     "labelTheme": "Thema",
     "labelStatement": "Kunstenaarsverklaring",
     "titlePlaceholder": "Zonder titel",
