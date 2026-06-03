@@ -129,6 +129,7 @@ export default function PhotoDetail() {
       {
         onSuccess: (updatedPhoto) => {
           queryClient.setQueryData(getGetPhotoQueryKey(photoId), updatedPhoto);
+          queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
           toast({ title: t("toasts.likedTitle"), description: t("toasts.likedDesc") });
         },
         onError: () => toast({ title: t("common.error"), description: t("toasts.likeError"), variant: "destructive" }),

@@ -103,7 +103,7 @@ export default function PhotographerDetail() {
                 )}
                 <div className="flex items-center gap-2 font-mono">
                   <ImageIcon className="w-4 h-4" />
-                  <span>{photographer.photoCount || 0} {t("common.prints")}</span>
+                  <span>{photographer.photoCount || 0} {t("common.photos")}</span>
                 </div>
                 <div className="flex items-center gap-2 font-mono">
                   <Calendar className="w-4 h-4" />
