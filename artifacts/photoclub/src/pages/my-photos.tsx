@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X } from "lucide-react";
+import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import {
   useListPhotos,
@@ -606,7 +606,19 @@ function MyPhotosDashboard({
                 </AlertDialog>
 
                 <div className="mt-2">
-                  <p className="font-serif text-sm font-medium leading-tight line-clamp-1">{photo.title}</p>
+                  <div className="flex justify-between items-start">
+                    <p className="font-serif text-sm font-medium leading-tight line-clamp-1">{photo.title}</p>
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-mono shrink-0 ml-2">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-3 h-3" />
+                        <span>{Number(photo.likeCount || 0)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3" />
+                        <span>{Number(photo.commentCount ?? 0)}</span>
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-xs text-muted-foreground font-mono">
                     {format(new Date(photo.createdAt), "MMM d, yyyy")}
                   </p>
