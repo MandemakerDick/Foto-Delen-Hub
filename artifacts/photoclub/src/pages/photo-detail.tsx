@@ -9,6 +9,7 @@ import { Show } from "@clerk/react";
 import {
   useGetPhoto,
   getGetPhotoQueryKey,
+  getListPhotosQueryKey,
   useLikePhoto,
   useDeletePhoto,
   useUpdatePhoto,
@@ -194,6 +195,8 @@ export default function PhotoDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(photoId) });
+          queryClient.invalidateQueries({ queryKey: getGetPhotoQueryKey(photoId) });
+          queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
           setCommentBody("");
           toast({ title: t("toasts.commentPostedTitle"), description: t("toasts.commentPostedDesc") });
         },
@@ -208,6 +211,8 @@ export default function PhotoDetail() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(photoId) });
+          queryClient.invalidateQueries({ queryKey: getGetPhotoQueryKey(photoId) });
+          queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
           toast({ title: t("toasts.commentRemovedTitle") });
         },
         onError: () => toast({ title: t("common.error"), description: t("toasts.commentDeleteError"), variant: "destructive" }),
