@@ -130,6 +130,9 @@ export default function PhotoDetail() {
         onSuccess: (updatedPhoto) => {
           queryClient.setQueryData(getGetPhotoQueryKey(photoId), updatedPhoto);
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+          if (photo?.photographerId) {
+            queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: photo.photographerId }) });
+          }
           toast({ title: t("toasts.likedTitle"), description: t("toasts.likedDesc") });
         },
         onError: () => toast({ title: t("common.error"), description: t("toasts.likeError"), variant: "destructive" }),
@@ -198,6 +201,9 @@ export default function PhotoDetail() {
           queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(photoId) });
           queryClient.invalidateQueries({ queryKey: getGetPhotoQueryKey(photoId) });
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+          if (photo?.photographerId) {
+            queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: photo.photographerId }) });
+          }
           setCommentBody("");
           toast({ title: t("toasts.commentPostedTitle"), description: t("toasts.commentPostedDesc") });
         },
@@ -214,6 +220,9 @@ export default function PhotoDetail() {
           queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(photoId) });
           queryClient.invalidateQueries({ queryKey: getGetPhotoQueryKey(photoId) });
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+          if (photo?.photographerId) {
+            queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: photo.photographerId }) });
+          }
           toast({ title: t("toasts.commentRemovedTitle") });
         },
         onError: () => toast({ title: t("common.error"), description: t("toasts.commentDeleteError"), variant: "destructive" }),
