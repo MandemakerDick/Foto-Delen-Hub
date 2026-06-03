@@ -4,12 +4,19 @@ import { alias } from "drizzle-orm/pg-core";
 import { db, photographersTable, clubsTable, themesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
+// Aliases let us join the themes table twice in the same query without
+// column-name conflicts (a photographer can have up to two favourite themes).
 const t1 = alias(themesTable, "t1");
 const t2 = alias(themesTable, "t2");
 
 const router = Router();
 
-function requireAuth(req: any, res: any, next: any) {
+/**
+ * Middleware: require a Clerk-authenticated session.
+ * Attaches req.clerkUserId on success; returns 401 otherwise.
+ * Used on routes that need a logged-in Clerk user (not session admins).
+ */
+export function requireAuth(req: any, res: any, next: any) {
   const { userId } = getAuth(req);
   if (!userId) {
     res.status(401).json({ error: "Unauthorized" });
@@ -19,6 +26,10 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+/**
+ * Fetch the photographer profile linked to a Clerk user, including their
+ * club and both favourite theme names resolved via JOIN.
+ */
 async function getPhotographerByClerkId(clerkUserId: string) {
   const rows = await db
     .select({
@@ -43,6 +54,7 @@ async function getPhotographerByClerkId(clerkUserId: string) {
   return rows[0] ?? null;
 }
 
+// GET /api/me — return the photographer profile for the signed-in Clerk user
 router.get("/me", requireAuth, async (req: any, res) => {
   const profile = await getPhotographerByClerkId(req.clerkUserId);
   if (!profile) {
@@ -52,6 +64,9 @@ router.get("/me", requireAuth, async (req: any, res) => {
   res.json({ ...profile, createdAt: profile.createdAt.toISOString() });
 });
 
+// POST /api/me/link — link an existing photographer profile to the Clerk account.
+// Prevents double-claiming: if the profile is already linked to a *different*
+// Clerk user the request is rejected with 409.
 router.post("/me/link", requireAuth, async (req: any, res) => {
   const { photographerId } = req.body;
   if (!photographerId || typeof photographerId !== "number") {
@@ -82,6 +97,8 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
   res.json({ ...profile!, createdAt: profile!.createdAt.toISOString() });
 });
 
+// POST /api/me/profile — create a new photographer profile linked to the Clerk account.
+// Only one profile per Clerk account is allowed.
 router.post("/me/profile", requireAuth, async (req: any, res) => {
   const { name, bio, avatarUrl, clubId, themeId1, themeId2 } = req.body;
   if (!name || typeof name !== "string") {
@@ -95,7 +112,7 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
     return;
   }
 
-  const [photographer] = await db
+  await db
     .insert(photographersTable)
     .values({ name, bio, avatarUrl, clubId, themeId1, themeId2, clerkUserId: req.clerkUserId })
     .returning();
@@ -104,5 +121,4 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
   res.status(201).json({ ...profile!, createdAt: profile!.createdAt.toISOString() });
 });
 
-export { requireAuth };
 export default router;

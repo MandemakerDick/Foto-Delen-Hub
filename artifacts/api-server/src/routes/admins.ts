@@ -7,6 +7,7 @@ import { requireAuth } from "./auth";
 
 const router = Router();
 
+/** Serialise an admin row, hiding the password hash and converting the date. */
 function serializeAdmin(r: typeof adminsTable.$inferSelect) {
   return {
     id: r.id,
@@ -37,7 +38,7 @@ async function getAdminByEmail(email: string) {
   return rows[0] ?? null;
 }
 
-// Look up a Clerk user's primary email address via the Clerk backend API
+/** Look up a Clerk user's primary email address via the Clerk backend API. */
 async function getClerkUserEmail(userId: string): Promise<string | null> {
   try {
     const user = await clerkClient.users.getUser(userId);
@@ -47,7 +48,15 @@ async function getClerkUserEmail(userId: string): Promise<string | null> {
   }
 }
 
-// Find admin by Clerk ID, falling back to email match and auto-linking the Clerk ID
+/**
+ * Find an admin record for a given Clerk userId.
+ *
+ * First tries a direct Clerk ID match (fast path).
+ * If not found, looks up the user's email from Clerk and tries an email match —
+ * this handles admins who were added by email before their first Clerk sign-in.
+ * On a successful email match the Clerk ID is written back so future lookups
+ * hit the fast path.
+ */
 async function resolveClerkAdmin(userId: string) {
   const byId = await getAdminByClerkId(userId);
   if (byId) return byId;
@@ -58,8 +67,10 @@ async function resolveClerkAdmin(userId: string) {
   const byEmail = await getAdminByEmail(email);
   if (!byEmail) return null;
 
-  // Auto-link this Clerk ID to the existing admin record so future lookups are instant
-  await db.update(adminsTable).set({ clerkUserId: userId }).where(eq(adminsTable.id, byEmail.id));
+  await db
+    .update(adminsTable)
+    .set({ clerkUserId: userId })
+    .where(eq(adminsTable.id, byEmail.id));
   return { ...byEmail, clerkUserId: userId };
 }
 
@@ -77,9 +88,14 @@ async function getTotalAdmins(): Promise<number> {
   return value;
 }
 
-// Accepts either a Clerk-authenticated admin OR a session-based admin
+/**
+ * Middleware that accepts either a Clerk-authenticated admin or a
+ * session-based (email+password) admin.
+ *
+ * On success it attaches req.adminId (and req.clerkUserId for Clerk sessions)
+ * so downstream handlers can use them without re-querying the DB.
+ */
 async function requireAdmin(req: any, res: any, next: any) {
-  // Option 1: Clerk session
   const { userId } = getAuth(req);
   if (userId) {
     const admin = await resolveClerkAdmin(userId);
@@ -90,7 +106,6 @@ async function requireAdmin(req: any, res: any, next: any) {
     }
   }
 
-  // Option 2: Password-based session
   const sessionAdminId = req.session?.adminId as number | undefined;
   if (sessionAdminId) {
     const admin = await getAdminById(sessionAdminId);
@@ -103,7 +118,7 @@ async function requireAdmin(req: any, res: any, next: any) {
   res.status(401).json({ error: "Unauthorized" });
 }
 
-// POST /api/admins/login — email + password sign-in
+// POST /api/admins/login — email + password sign-in; creates a server session
 router.post("/admins/login", async (req: any, res) => {
   const { email, password } = req.body as { email?: string; password?: string };
   if (!email || !password) {
@@ -133,17 +148,18 @@ router.post("/admins/login", async (req: any, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/admins/logout — clear session
+// POST /api/admins/logout — clear the session-based admin login
 router.post("/admins/logout", (req: any, res) => {
   req.session.adminId = undefined;
   res.status(204).end();
 });
 
-// GET /api/admins/me — check admin status (Clerk or session)
+// GET /api/admins/me — check admin status for the current user.
+// Always returns totalAdmins so the frontend can decide whether to show
+// the bootstrap prompt (when totalAdmins === 0).
 router.get("/admins/me", async (req: any, res) => {
   const total = await getTotalAdmins();
 
-  // Check Clerk
   const { userId } = getAuth(req);
   if (userId) {
     const admin = await resolveClerkAdmin(userId);
@@ -151,7 +167,6 @@ router.get("/admins/me", async (req: any, res) => {
     return;
   }
 
-  // Check session
   const sessionAdminId = req.session?.adminId as number | undefined;
   if (sessionAdminId) {
     const admin = await getAdminById(sessionAdminId);
@@ -159,7 +174,6 @@ router.get("/admins/me", async (req: any, res) => {
     return;
   }
 
-  // Not authenticated at all — still return total so bootstrap check works
   res.json({ isAdmin: false, totalAdmins: total, displayName: null });
 });
 
@@ -177,18 +191,9 @@ router.post("/admins", requireAdmin, async (req: any, res) => {
     password?: string;
   };
 
-  if (!displayName?.trim()) {
-    res.status(400).json({ error: "displayName required" });
-    return;
-  }
-  if (!email?.trim()) {
-    res.status(400).json({ error: "email required" });
-    return;
-  }
-  if (!password?.trim()) {
-    res.status(400).json({ error: "password required" });
-    return;
-  }
+  if (!displayName?.trim()) { res.status(400).json({ error: "displayName required" }); return; }
+  if (!email?.trim()) { res.status(400).json({ error: "email required" }); return; }
+  if (!password?.trim()) { res.status(400).json({ error: "password required" }); return; }
 
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -207,18 +212,14 @@ router.post("/admins", requireAdmin, async (req: any, res) => {
 
   const [row] = await db
     .insert(adminsTable)
-    .values({
-      displayName: displayName.trim(),
-      email: normalizedEmail,
-      passwordHash,
-      isOwner: false,
-    })
+    .values({ displayName: displayName.trim(), email: normalizedEmail, passwordHash, isOwner: false })
     .returning();
 
   res.status(201).json(serializeAdmin(row));
 });
 
-// POST /api/admins/bootstrap — owner becomes first admin (Clerk only)
+// POST /api/admins/bootstrap — Clerk user claims the first-admin slot.
+// Only works when no admins exist yet (guards against repeat calls).
 router.post("/admins/bootstrap", requireAuth, async (req: any, res) => {
   const total = await getTotalAdmins();
   if (total > 0) {
@@ -248,7 +249,7 @@ router.post("/admins/bootstrap", requireAuth, async (req: any, res) => {
   res.status(201).json(serializeAdmin(row));
 });
 
-// POST /api/admins/:id/set-password — set or update password (admin only)
+// POST /api/admins/:id/set-password — set or replace an admin's password (admin only)
 router.post("/admins/:id/set-password", requireAdmin, async (req: any, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -264,7 +265,7 @@ router.post("/admins/:id/set-password", requireAdmin, async (req: any, res) => {
   res.status(204).end();
 });
 
-// PATCH /api/admins/:id — update display name / email (admin only)
+// PATCH /api/admins/:id — update display name or email (admin only)
 router.patch("/admins/:id", requireAdmin, async (req: any, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -279,14 +280,19 @@ router.patch("/admins/:id", requireAdmin, async (req: any, res) => {
   if (email !== undefined) updates.email = email ? email.trim().toLowerCase() : null;
 
   if (Object.keys(updates).length === 0) {
-    res.status(400).json({ error: "No valid fields to update" }); return;
+    res.status(400).json({ error: "No valid fields to update" });
+    return;
   }
 
-  const [updated] = await db.update(adminsTable).set(updates).where(eq(adminsTable.id, id)).returning();
+  const [updated] = await db
+    .update(adminsTable)
+    .set(updates)
+    .where(eq(adminsTable.id, id))
+    .returning();
   res.json(serializeAdmin(updated));
 });
 
-// DELETE /api/admins/:id — remove admin (cannot remove self)
+// DELETE /api/admins/:id — remove an admin; self-deletion is blocked
 router.delete("/admins/:id", requireAdmin, async (req: any, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }

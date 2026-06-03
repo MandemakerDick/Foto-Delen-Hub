@@ -1,10 +1,13 @@
 import { Router } from "express";
 import { db, photosTable, clubsTable, photographersTable, themesTable } from "@workspace/db";
-import { count, gte, sql } from "drizzle-orm";
+import { count, gte } from "drizzle-orm";
 
 const router = Router();
 
-router.get("/stats", async (req, res) => {
+// GET /api/stats — aggregate counts used by the home-page dashboard.
+// Each count is a separate query; Postgres handles them quickly on small tables.
+// recentUploads counts photos uploaded in the past 7 days.
+router.get("/stats", async (_req, res) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const [totalPhotosRow] = await db.select({ value: count() }).from(photosTable);

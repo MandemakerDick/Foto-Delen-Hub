@@ -1,3 +1,10 @@
+/**
+ * Root API router — mounts all feature routers under /api.
+ *
+ * Routes are matched in registration order; within each router, more specific
+ * paths (e.g. /photos/recent) must be registered before wildcard ones
+ * (e.g. /photos/:id) to avoid shadowing.
+ */
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import clubsRouter from "./clubs";

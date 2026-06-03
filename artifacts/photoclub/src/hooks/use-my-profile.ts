@@ -11,8 +11,24 @@ export type MyProfile = {
   createdAt: string;
 };
 
-let cache: MyProfile | null | "none" = "none"; // "none" = not fetched yet, null = no profile
+/**
+ * Module-level cache for the current user's profile.
+ *
+ * "none" = not yet fetched; null = fetched but no profile exists.
+ *
+ * Using a module-level variable means the profile is only fetched once per
+ * page session regardless of how many components call this hook. Call
+ * `invalidate()` after creating or linking a profile to force a re-fetch.
+ */
+let cache: MyProfile | null | "none" = "none";
 
+/**
+ * Returns the Clerk-linked photographer profile for the signed-in user.
+ *
+ * - `profile === undefined` — loading
+ * - `profile === null`      — signed in but no profile linked yet
+ * - `profile`               — fully resolved photographer profile
+ */
 export function useMyProfile() {
   const { isSignedIn, isLoaded } = useUser();
   const [profile, setProfile] = useState<MyProfile | null | undefined>(
@@ -43,6 +59,8 @@ export function useMyProfile() {
   useEffect(() => {
     if (!isLoaded) return;
     if (!isSignedIn) {
+      // User is signed out — clear cache immediately so it is not stale on
+      // the next sign-in.
       cache = null;
       setProfile(null);
       setLoading(false);
@@ -53,6 +71,7 @@ export function useMyProfile() {
     }
   }, [isSignedIn, isLoaded]);
 
+  /** Reset the cache and re-fetch — call after linking or creating a profile. */
   const invalidate = () => {
     cache = "none";
     fetchProfile();

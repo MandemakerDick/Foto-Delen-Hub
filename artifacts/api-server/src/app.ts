@@ -14,29 +14,28 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-// Trust the first proxy so req.secure and cookies work correctly behind HTTPS
+// Trust the first proxy so req.secure and cookies work correctly behind the
+// Replit HTTPS reverse proxy.
 app.set("trust proxy", 1);
 
+// Structured request/response logging via pino-http.
+// URL is stripped of query strings to avoid logging sensitive params.
 app.use(
   pinoHttp({
     logger,
     serializers: {
       req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
+        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
       },
       res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+        return { statusCode: res.statusCode };
       },
     },
   }),
 );
 
+// Forward Clerk auth requests through the Replit proxy path so the SDK works
+// without a custom domain.
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
@@ -46,10 +45,19 @@ app.use(express.urlencoded({ extended: true }));
 const PgStore = connectPgSimple(session);
 const isProduction = process.env["NODE_ENV"] === "production";
 
+// A dedicated pool for the session store avoids interfering with Drizzle's pool.
 const sessionPool = new pg.Pool({ connectionString: process.env["DATABASE_URL"] });
 
-// Create the session table manually — avoids connect-pg-simple reading a .sql file
-// from disk (which breaks in esbuild bundles where package assets are not co-located).
+/**
+ * Create the session table if it does not already exist.
+ *
+ * This is done manually rather than using connect-pg-simple's built-in
+ * createTableIfMissing option because that option reads a bundled .sql file
+ * from disk — which fails when the server is bundled with esbuild because
+ * package assets are not copied alongside the output file.
+ *
+ * Called once at startup (see index.ts) before the server begins listening.
+ */
 export async function ensureSessionTable() {
   await sessionPool.query(`
     CREATE TABLE IF NOT EXISTS "session" (
@@ -64,22 +72,20 @@ export async function ensureSessionTable() {
 
 app.use(
   session({
-    store: new PgStore({
-      pool: sessionPool,
-      tableName: "session",
-    }),
+    store: new PgStore({ pool: sessionPool, tableName: "session" }),
     secret: process.env["SESSION_SECRET"] || "dev-secret-change-me",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: isProduction,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: isProduction,   // HTTPS-only cookie in production
+      maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
     },
   }),
 );
 
+// Attach Clerk auth state to every request (reads the JWT from the cookie/header).
 app.use(clerkMiddleware());
 
 app.use("/api", router);

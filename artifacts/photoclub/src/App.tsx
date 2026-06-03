@@ -25,19 +25,31 @@ import NotFound from "@/pages/not-found";
 import Join from "@/pages/join";
 import AdminLogin from "@/pages/admin-login";
 
+// TanStack Query client — 5-minute stale time, single retry on failure.
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
 });
 
+// Resolve the Clerk publishable key — publishableKeyFromHost checks the domain
+// first (for Replit's managed Clerk tenant) then falls back to the env var.
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
 
+// Replit proxies Clerk requests through /api/__clerk so auth works on the
+// shared *.replit.dev domain without a custom domain.
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
+// BASE_URL is set by Vite to the artifact's preview path (e.g. "/photoclub").
+// Trailing slash is stripped so it can be safely prepended to route strings.
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/**
+ * Strip the basePath prefix from a URL returned by Clerk's router callbacks.
+ * Clerk includes the full path (with prefix) in push/replace calls; wouter
+ * only understands paths relative to its own base.
+ */
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
     ? path.slice(basePath.length) || "/"
@@ -48,6 +60,7 @@ if (!clerkPubKey) {
   throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
 }
 
+// Match the app's dark theme inside Clerk's modal / embedded components.
 const clerkAppearance = {
   theme: shadcn,
   cssLayerName: "clerk",
@@ -113,6 +126,13 @@ function SignUpPage() {
   );
 }
 
+/**
+ * Clears the TanStack Query cache whenever the signed-in Clerk user changes
+ * (sign-in or sign-out). This ensures no stale per-user data (e.g. "My Photos")
+ * leaks between accounts without needing to manually invalidate every query.
+ *
+ * Renders nothing — pure side-effect component.
+ */
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const qc = useQueryClient();
@@ -159,6 +179,13 @@ function Router() {
   );
 }
 
+/**
+ * Wraps the app with ClerkProvider and QueryClientProvider.
+ *
+ * ClerkProvider needs access to wouter's setLocation so it can drive
+ * Clerk's internal routing (sign-in redirects, etc.) through the same
+ * router the rest of the app uses.
+ */
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
 
@@ -189,6 +216,8 @@ function ClerkProviderWithRoutes() {
 
 function App() {
   return (
+    // WouterRouter is initialised with the basePath so all <Route> paths are
+    // relative to the artifact's preview path, not the document root.
     <WouterRouter base={basePath}>
       <ClerkProviderWithRoutes />
     </WouterRouter>

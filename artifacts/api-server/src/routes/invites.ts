@@ -6,6 +6,7 @@ import { requireAdmin } from "./admins";
 
 const router = Router();
 
+/** Serialise an invite token row — convert dates to ISO strings for JSON. */
 function serializeToken(t: typeof inviteTokensTable.$inferSelect) {
   return {
     id: t.id,
@@ -28,7 +29,9 @@ router.get("/invites", requireAdmin, async (_req, res) => {
   res.json(rows.map(serializeToken));
 });
 
-// POST /api/invites — create a new invite token (admin only)
+// POST /api/invites — create a new invite token (admin only).
+// Tokens are 16 random bytes encoded as hex (32 chars).
+// Optional: maxUses (null = unlimited), expiresInDays (null = no expiry).
 router.post("/invites", requireAdmin, async (req: any, res) => {
   const { label, maxUses, expiresInDays } = req.body as {
     label?: string;
@@ -58,7 +61,8 @@ router.post("/invites", requireAdmin, async (req: any, res) => {
   res.status(201).json(serializeToken(row));
 });
 
-// DELETE /api/invites/:id — revoke an invite token (admin only)
+// DELETE /api/invites/:id — revoke an invite token (admin only).
+// Sets revoked = true rather than deleting, to preserve audit history.
 router.delete("/invites/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) {
@@ -85,7 +89,9 @@ router.delete("/invites/:id", requireAdmin, async (req, res) => {
   res.status(204).end();
 });
 
-// POST /api/invites/redeem — exchange a token for a session grant
+// POST /api/invites/redeem — exchange a token for a session-level access grant.
+// Validates: token exists, not revoked, not expired, within usage limit.
+// On success: increments useCount, sets req.session.inviteGranted = true.
 router.post("/invites/redeem", async (req: any, res) => {
   const { token } = req.body as { token?: string };
   if (!token) {
@@ -99,21 +105,9 @@ router.post("/invites/redeem", async (req: any, res) => {
     .where(eq(inviteTokensTable.token, token.trim()))
     .limit(1);
 
-  if (!row) {
-    res.status(404).json({ error: "Token not found" });
-    return;
-  }
-
-  if (row.revoked) {
-    res.status(400).json({ error: "Token has been revoked" });
-    return;
-  }
-
-  if (row.expiresAt && row.expiresAt < new Date()) {
-    res.status(400).json({ error: "Token has expired" });
-    return;
-  }
-
+  if (!row) { res.status(404).json({ error: "Token not found" }); return; }
+  if (row.revoked) { res.status(400).json({ error: "Token has been revoked" }); return; }
+  if (row.expiresAt && row.expiresAt < new Date()) { res.status(400).json({ error: "Token has expired" }); return; }
   if (row.maxUses !== null && row.useCount >= row.maxUses) {
     res.status(400).json({ error: "Token has reached its usage limit" });
     return;
@@ -130,7 +124,7 @@ router.post("/invites/redeem", async (req: any, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/invites/session — check if current session has invite access
+// GET /api/invites/session — check whether the current session holds an invite grant
 router.get("/invites/session", (req: any, res) => {
   res.json({ hasAccess: req.session?.inviteGranted === true });
 });
