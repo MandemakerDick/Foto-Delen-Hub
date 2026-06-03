@@ -45,7 +45,7 @@ function buildPhotoSelect() {
       themeId: photosTable.themeId,
       themeName: themesTable.name,
       likeCount: photosTable.likeCount,
-      commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)`,
+      commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)::int`,
       createdAt: photosTable.createdAt,
     })
     .from(photosTable)

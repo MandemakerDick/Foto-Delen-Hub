@@ -524,13 +524,13 @@ function MyPhotosDashboard({
         </div>
         <div>
           <div className="text-3xl font-serif font-bold">
-            {photos.reduce((sum, p) => sum + (p.likeCount || 0), 0)}
+            {photos.reduce((sum, p) => sum + Number(p.likeCount || 0), 0)}
           </div>
           <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("myPhotos.totalLikes")}</div>
         </div>
         <div>
           <div className="text-3xl font-serif font-bold">
-            {photos.reduce((sum, p) => sum + (p.commentCount ?? 0), 0)}
+            {photos.reduce((sum, p) => sum + Number(p.commentCount ?? 0), 0)}
           </div>
           <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("myPhotos.commentsReceived")}</div>
         </div>
