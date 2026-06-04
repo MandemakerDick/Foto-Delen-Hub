@@ -17,6 +17,8 @@ export const reviewSessionsTable = pgTable("review_sessions", {
   status: text("status").notNull().default("open"), // "open" | "reviewing" | "closed"
   createdByAdminId: integer("created_by_admin_id"),
   scheduledFor: timestamp("scheduled_for"),
+  submissionDeadline: timestamp("submission_deadline"),
+  maxPhotosPerMember: integer("max_photos_per_member"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   closedAt: timestamp("closed_at"),
 });

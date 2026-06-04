@@ -38,8 +38,8 @@ export function SessionDetail() {
   const { data: reviewers, isLoading: reviewersLoading } = useListSessionReviewers(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionReviewersQueryKey(sessionId) } });
   const { data: adminStatus } = useGetAdminStatus();
   
-  const { data: photographers } = useListPhotographers({}, { query: { enabled: !!adminStatus?.isAdmin } });
-  const { data: allPhotos } = useListPhotos({}, { query: { enabled: session?.status === 'open' } });
+  const { data: photographers } = useListPhotographers({}, { query: { enabled: !!adminStatus?.isAdmin, queryKey: ['photographers'] } });
+  const { data: allPhotos } = useListPhotos({}, { query: { enabled: session?.status === 'open', queryKey: ['photos'] } });
 
   const addReviewer = useAddSessionReviewer();
   const removeReviewer = useRemoveSessionReviewer();
@@ -70,11 +70,11 @@ export function SessionDetail() {
     }
   };
 
-  const handleRemoveReviewer = async (photographerId: number) => {
+  const handleRemoveReviewer = async (reviewerId: number) => {
     try {
       await removeReviewer.mutateAsync({ 
         id: sessionId, 
-        photographerId 
+        reviewerId,
       });
       toast({ title: "Reviewer Removed" });
       queryClient.invalidateQueries({ queryKey: getListSessionReviewersQueryKey(sessionId) });
@@ -171,7 +171,7 @@ export function SessionDetail() {
                       <span className="text-sm font-medium">{r.photographerName}</span>
                     </div>
                     {adminStatus?.isAdmin && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive" onClick={() => handleRemoveReviewer(r.photographerId)}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive" onClick={() => handleRemoveReviewer(r.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     )}

@@ -267,6 +267,10 @@ export interface ReviewSession {
   status: string;
   /** @nullable */
   scheduledFor?: string | null;
+  /** @nullable */
+  submissionDeadline?: string | null;
+  /** @nullable */
+  maxPhotosPerMember?: number | null;
   createdAt: string;
   /** @nullable */
   closedAt?: string | null;
@@ -281,6 +285,14 @@ export interface ReviewSessionInput {
   description?: string;
   /** @nullable */
   scheduledFor?: string | null;
+  /** @nullable */
+  submissionDeadline?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  maxPhotosPerMember?: number | null;
+  reviewerIds?: number[];
 }
 
 export interface ReviewSessionUpdate {
@@ -291,6 +303,13 @@ export interface ReviewSessionUpdate {
   status?: string;
   /** @nullable */
   scheduledFor?: string | null;
+  /** @nullable */
+  submissionDeadline?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  maxPhotosPerMember?: number | null;
 }
 
 export interface SessionPhoto {

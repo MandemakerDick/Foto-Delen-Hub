@@ -50,6 +50,8 @@ function serializeSession(s: typeof reviewSessionsTable.$inferSelect) {
     status: s.status,
     createdByAdminId: s.createdByAdminId ?? null,
     scheduledFor: s.scheduledFor ? s.scheduledFor.toISOString() : null,
+    submissionDeadline: s.submissionDeadline ? s.submissionDeadline.toISOString() : null,
+    maxPhotosPerMember: s.maxPhotosPerMember ?? null,
     createdAt: s.createdAt.toISOString(),
     closedAt: s.closedAt ? s.closedAt.toISOString() : null,
   };
@@ -81,7 +83,7 @@ router.post("/review-sessions", requireAdmin, async (req: any, res): Promise<voi
     return;
   }
 
-  const { title, description, clubId, scheduledFor } = parsed.data;
+  const { title, description, clubId, scheduledFor, submissionDeadline, maxPhotosPerMember, reviewerIds } = parsed.data;
   const [session] = await db
     .insert(reviewSessionsTable)
     .values({
@@ -89,9 +91,17 @@ router.post("/review-sessions", requireAdmin, async (req: any, res): Promise<voi
       description: description ?? null,
       clubId,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+      submissionDeadline: submissionDeadline ? new Date(submissionDeadline) : null,
+      maxPhotosPerMember: maxPhotosPerMember ?? null,
       createdByAdminId: req.adminId ?? null,
     })
     .returning();
+
+  if (reviewerIds && reviewerIds.length > 0) {
+    await db.insert(sessionReviewersTable).values(
+      reviewerIds.map((photographerId) => ({ sessionId: session.id, photographerId }))
+    );
+  }
 
   res.status(201).json(serializeSession(session));
 });
@@ -134,6 +144,9 @@ router.patch("/review-sessions/:id", requireAdmin, async (req: any, res): Promis
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.scheduledFor !== undefined) {
     updateData.scheduledFor = parsed.data.scheduledFor ? new Date(parsed.data.scheduledFor) : null;
+  }
+  if (parsed.data.submissionDeadline !== undefined) {
+    updateData.submissionDeadline = parsed.data.submissionDeadline ? new Date(parsed.data.submissionDeadline) : null;
   }
   if (parsed.data.status === "closed") {
     updateData.closedAt = new Date();
@@ -260,10 +273,35 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     return;
   }
 
+  // Enforce submission deadline
+  if (session[0].submissionDeadline && new Date() > session[0].submissionDeadline) {
+    res.status(400).json({ error: "The submission deadline for this session has passed" });
+    return;
+  }
+
   const photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
   if (!photographerId) {
     res.status(403).json({ error: "No photographer profile found" });
     return;
+  }
+
+  // Enforce max photos per member
+  if (session[0].maxPhotosPerMember) {
+    const existing = await db
+      .select()
+      .from(sessionPhotosTable)
+      .where(
+        and(
+          eq(sessionPhotosTable.sessionId, params.data.id),
+          eq(sessionPhotosTable.photographerId, photographerId)
+        )
+      );
+    if (existing.length >= session[0].maxPhotosPerMember) {
+      res.status(400).json({
+        error: `You have reached the maximum of ${session[0].maxPhotosPerMember} photo${session[0].maxPhotosPerMember !== 1 ? "s" : ""} for this session`,
+      });
+      return;
+    }
   }
 
   const [sp] = await db

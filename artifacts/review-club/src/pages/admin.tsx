@@ -1,54 +1,115 @@
-import { useGetAdminStatus, useListReviewSessions, useCreateReviewSession, useUpdateReviewSession, getListReviewSessionsQueryKey, useListClubs } from "@workspace/api-client-react";
+import {
+  useGetAdminStatus,
+  useListReviewSessions,
+  useCreateReviewSession,
+  useUpdateReviewSession,
+  useListPhotographers,
+  getListReviewSessionsQueryKey,
+  useListClubs,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Plus, Play, CheckCircle, Search } from "lucide-react";
+import { Settings, Plus, Play, CheckCircle, Search, Users } from "lucide-react";
 import { Link } from "wouter";
+
+const EMPTY_FORM = {
+  title: "",
+  description: "",
+  clubId: "",
+  scheduledFor: "",
+  submissionDeadline: "",
+  maxPhotosPerMember: "",
+  deadlineDays: "",
+};
 
 export function AdminPanel() {
   const { data: adminStatus, isLoading: adminLoading } = useGetAdminStatus();
   const { data: sessions, isLoading: sessionsLoading } = useListReviewSessions();
   const { data: clubs } = useListClubs();
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const createSession = useCreateReviewSession();
   const updateSession = useUpdateReviewSession();
-  
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newSession, setNewSession] = useState({ title: "", description: "", clubId: "", scheduledFor: "" });
 
-  if (adminLoading) return <div>Loading...</div>;
-  if (!adminStatus?.isAdmin) return <div className="text-center py-12">Access denied. Admin only.</div>;
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [selectedReviewerIds, setSelectedReviewerIds] = useState<Set<number>>(new Set());
+  const [deadlineMode, setDeadlineMode] = useState<"date" | "days">("date");
+
+  const clubIdNum = form.clubId ? parseInt(form.clubId, 10) : undefined;
+
+  const { data: clubPhotographers } = useListPhotographers(
+    clubIdNum ? { clubId: clubIdNum } : undefined,
+    { query: { enabled: !!clubIdNum, queryKey: ['photographers', { clubId: clubIdNum }] } }
+  );
+
+  const setField = (key: keyof typeof EMPTY_FORM) => (val: string) =>
+    setForm((f) => ({ ...f, [key]: val }));
+
+  const toggleReviewer = (id: number) => {
+    setSelectedReviewerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const computedDeadline = (): string | null => {
+    if (deadlineMode === "date") return form.submissionDeadline || null;
+    if (deadlineMode === "days" && form.scheduledFor && form.deadlineDays) {
+      const days = parseInt(form.deadlineDays, 10);
+      if (!isNaN(days) && days > 0) {
+        const d = new Date(form.scheduledFor);
+        d.setDate(d.getDate() - days);
+        return d.toISOString();
+      }
+    }
+    return null;
+  };
+
+  const handleClubChange = (val: string) => {
+    setForm((f) => ({ ...f, clubId: val }));
+    setSelectedReviewerIds(new Set());
+  };
 
   const handleCreate = async () => {
-    if (!newSession.title || !newSession.clubId) {
-      toast({ title: "Validation Error", description: "Title and Club are required.", variant: "destructive" });
+    if (!form.title || !form.clubId) {
+      toast({ title: "Required fields missing", description: "Title and Club are required.", variant: "destructive" });
       return;
     }
-    
+
+    const deadline = computedDeadline();
+
     try {
       await createSession.mutateAsync({
         data: {
-          title: newSession.title,
-          description: newSession.description,
-          clubId: parseInt(newSession.clubId, 10),
-          scheduledFor: newSession.scheduledFor ? new Date(newSession.scheduledFor).toISOString() : undefined,
-        }
+          title: form.title,
+          description: form.description || undefined,
+          clubId: parseInt(form.clubId, 10),
+          scheduledFor: form.scheduledFor ? new Date(form.scheduledFor).toISOString() : undefined,
+          submissionDeadline: deadline ?? undefined,
+          maxPhotosPerMember: form.maxPhotosPerMember ? parseInt(form.maxPhotosPerMember, 10) : undefined,
+          reviewerIds: selectedReviewerIds.size > 0 ? Array.from(selectedReviewerIds) : undefined,
+        },
       });
-      toast({ title: "Success", description: "Session created." });
+      toast({ title: "Session created", description: `"${form.title}" is now open.` });
       setIsCreateOpen(false);
-      setNewSession({ title: "", description: "", clubId: "", scheduledFor: "" });
+      setForm(EMPTY_FORM);
+      setSelectedReviewerIds(new Set());
       queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to create session.", variant: "destructive" });
@@ -58,12 +119,15 @@ export function AdminPanel() {
   const handleStatusChange = async (id: number, newStatus: string) => {
     try {
       await updateSession.mutateAsync({ id, data: { status: newStatus } });
-      toast({ title: "Status Updated", description: `Session is now ${newStatus}.` });
+      toast({ title: "Status updated", description: `Session is now ${newStatus}.` });
       queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to update status.", variant: "destructive" });
     }
   };
+
+  if (adminLoading) return <div>Loading…</div>;
+  if (!adminStatus?.isAdmin) return <div className="text-center py-12 text-muted-foreground">Access denied. Admin only.</div>;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -75,6 +139,7 @@ export function AdminPanel() {
           </h1>
           <p className="text-muted-foreground text-lg">Manage review sessions and platform settings.</p>
         </div>
+
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button size="lg" className="font-medium tracking-wide">
@@ -82,71 +147,203 @@ export function AdminPanel() {
               New Session
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-serif">Create Review Session</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-6 py-4">
+
+            <div className="grid gap-5 py-4">
+              {/* Title */}
               <div className="grid gap-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" value={newSession.title} onChange={(e) => setNewSession(s => ({ ...s, title: e.target.value }))} placeholder="e.g. Winter Landscapes Critique" />
+                <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
+                <Input
+                  id="title"
+                  value={form.title}
+                  onChange={(e) => setField("title")(e.target.value)}
+                  placeholder="e.g. Winter Landscapes Critique"
+                />
               </div>
+
+              {/* Club */}
               <div className="grid gap-2">
-                <Label htmlFor="club">Club</Label>
-                <Select value={newSession.clubId} onValueChange={(val) => setNewSession(s => ({ ...s, clubId: val }))}>
+                <Label>Club <span className="text-destructive">*</span></Label>
+                <Select value={form.clubId} onValueChange={handleClubChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a club" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clubs?.map(c => (
+                    {clubs?.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Reviewers */}
+              {clubIdNum && (
+                <div className="grid gap-2">
+                  <Label className="flex items-center gap-2">
+                    <Users className="w-4 h-4" /> Reviewers (from club members)
+                  </Label>
+                  {!clubPhotographers || clubPhotographers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No members found in this club.</p>
+                  ) : (
+                    <div className="border border-border rounded-md p-3 grid gap-2 max-h-48 overflow-y-auto">
+                      {clubPhotographers.map((p) => (
+                        <label key={p.id} className="flex items-center gap-3 cursor-pointer hover:text-primary transition-colors">
+                          <Checkbox
+                            checked={selectedReviewerIds.has(p.id)}
+                            onCheckedChange={() => toggleReviewer(p.id)}
+                          />
+                          <span className="text-sm font-medium">{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {selectedReviewerIds.size > 0 && (
+                    <p className="text-xs text-muted-foreground">{selectedReviewerIds.size} reviewer{selectedReviewerIds.size !== 1 ? "s" : ""} selected</p>
+                  )}
+                </div>
+              )}
+
+              {/* Description */}
               <div className="grid gap-2">
                 <Label htmlFor="desc">Description</Label>
-                <Textarea id="desc" value={newSession.description} onChange={(e) => setNewSession(s => ({ ...s, description: e.target.value }))} placeholder="Goals and rules for this session..." rows={3} />
+                <Textarea
+                  id="desc"
+                  value={form.description}
+                  onChange={(e) => setField("description")(e.target.value)}
+                  placeholder="Goals and rules for this session…"
+                  rows={3}
+                />
               </div>
+
+              {/* Max photos per member */}
               <div className="grid gap-2">
-                <Label htmlFor="date">Scheduled For (Optional)</Label>
-                <Input id="date" type="datetime-local" value={newSession.scheduledFor} onChange={(e) => setNewSession(s => ({ ...s, scheduledFor: e.target.value }))} />
+                <Label htmlFor="maxPhotos">Max photos per member</Label>
+                <Input
+                  id="maxPhotos"
+                  type="number"
+                  min={1}
+                  value={form.maxPhotosPerMember}
+                  onChange={(e) => setField("maxPhotosPerMember")(e.target.value)}
+                  placeholder="Leave blank for no limit"
+                />
+              </div>
+
+              {/* Review date */}
+              <div className="grid gap-2">
+                <Label htmlFor="scheduledFor">Review date</Label>
+                <Input
+                  id="scheduledFor"
+                  type="datetime-local"
+                  value={form.scheduledFor}
+                  onChange={(e) => setField("scheduledFor")(e.target.value)}
+                />
+              </div>
+
+              {/* Submission deadline */}
+              <div className="grid gap-2">
+                <Label>Submission deadline</Label>
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={deadlineMode === "date" ? "default" : "outline"}
+                    onClick={() => setDeadlineMode("date")}
+                    className="text-xs"
+                  >
+                    Specific date
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={deadlineMode === "days" ? "default" : "outline"}
+                    onClick={() => setDeadlineMode("days")}
+                    className="text-xs"
+                    disabled={!form.scheduledFor}
+                    title={!form.scheduledFor ? "Set a review date first" : undefined}
+                  >
+                    Days before review
+                  </Button>
+                </div>
+
+                {deadlineMode === "date" ? (
+                  <Input
+                    type="datetime-local"
+                    value={form.submissionDeadline}
+                    onChange={(e) => setField("submissionDeadline")(e.target.value)}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      value={form.deadlineDays}
+                      onChange={(e) => setField("deadlineDays")(e.target.value)}
+                      placeholder="e.g. 3"
+                      className="w-28"
+                    />
+                    <span className="text-sm text-muted-foreground">days before review date</span>
+                  </div>
+                )}
+
+                {deadlineMode === "days" && computedDeadline() && (
+                  <p className="text-xs text-muted-foreground">
+                    Deadline: {format(new Date(computedDeadline()!), "MMM d, yyyy HH:mm")}
+                  </p>
+                )}
               </div>
             </div>
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
               <Button onClick={handleCreate} disabled={createSession.isPending}>
-                {createSession.isPending ? "Creating..." : "Create Session"}
+                {createSession.isPending ? "Creating…" : "Create Session"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Sessions list */}
       <div className="space-y-4">
         <h2 className="text-xl font-serif font-medium tracking-tight">All Sessions</h2>
         {sessionsLoading ? (
-          <div>Loading sessions...</div>
+          <div className="text-muted-foreground">Loading sessions…</div>
+        ) : !sessions?.length ? (
+          <p className="text-muted-foreground text-sm">No sessions yet. Create your first one above.</p>
         ) : (
           <div className="space-y-4">
-            {sessions?.map(session => (
+            {sessions.map((session) => (
               <Card key={session.id} className="bg-card/30 border-border/50">
                 <CardContent className="p-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <Link href={`/sessions/${session.id}`} className="text-xl font-serif font-semibold hover:text-primary transition-colors">
                         {session.title}
                       </Link>
-                      <Badge variant={session.status === 'open' ? 'default' : session.status === 'reviewing' ? 'secondary' : 'outline'} className="uppercase text-[10px] tracking-wider">
+                      <Badge
+                        variant={session.status === "open" ? "default" : session.status === "reviewing" ? "secondary" : "outline"}
+                        className="uppercase text-[10px] tracking-wider"
+                      >
                         {session.status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground flex gap-4">
-                      <span>{clubs?.find(c => c.id === session.clubId)?.name || 'Unknown Club'}</span>
-                      {session.scheduledFor && <span>Scheduled: {format(new Date(session.scheduledFor), "MMM d, yyyy")}</span>}
+                    <div className="text-sm text-muted-foreground flex flex-wrap gap-4">
+                      <span>{clubs?.find((c) => c.id === session.clubId)?.name ?? "Unknown Club"}</span>
+                      {session.scheduledFor && (
+                        <span>Review: {format(new Date(session.scheduledFor), "MMM d, yyyy")}</span>
+                      )}
+                      {session.submissionDeadline && (
+                        <span>Deadline: {format(new Date(session.submissionDeadline), "MMM d, yyyy")}</span>
+                      )}
+                      {session.maxPhotosPerMember && (
+                        <span>Max {session.maxPhotosPerMember} photo{session.maxPhotosPerMember !== 1 ? "s" : ""}/member</span>
+                      )}
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
                     <div className="flex gap-2 w-full sm:w-auto justify-end">
                       {session.status === "open" && (

@@ -1633,6 +1633,10 @@ components:
           type: string
         scheduledFor:
           type: ["string", "null"]
+        submissionDeadline:
+          type: ["string", "null"]
+        maxPhotosPerMember:
+          type: ["integer", "null"]
         createdAt:
           type: string
         closedAt:
@@ -1655,6 +1659,15 @@ components:
           type: string
         scheduledFor:
           type: ["string", "null"]
+        submissionDeadline:
+          type: ["string", "null"]
+        maxPhotosPerMember:
+          type: ["integer", "null"]
+          minimum: 1
+        reviewerIds:
+          type: array
+          items:
+            type: integer
 
     ReviewSessionUpdate:
       type: object
@@ -1668,6 +1681,11 @@ components:
           type: string
         scheduledFor:
           type: ["string", "null"]
+        submissionDeadline:
+          type: ["string", "null"]
+        maxPhotosPerMember:
+          type: ["integer", "null"]
+          minimum: 1
 
     SessionPhoto:
       type: object

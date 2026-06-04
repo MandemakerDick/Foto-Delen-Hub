@@ -14,4 +14,11 @@ export interface ReviewSessionUpdate {
   status?: string;
   /** @nullable */
   scheduledFor?: string | null;
+  /** @nullable */
+  submissionDeadline?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  maxPhotosPerMember?: number | null;
 }

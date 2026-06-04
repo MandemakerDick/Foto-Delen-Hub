@@ -13,4 +13,12 @@ export interface ReviewSessionInput {
   description?: string;
   /** @nullable */
   scheduledFor?: string | null;
+  /** @nullable */
+  submissionDeadline?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  maxPhotosPerMember?: number | null;
+  reviewerIds?: number[];
 }

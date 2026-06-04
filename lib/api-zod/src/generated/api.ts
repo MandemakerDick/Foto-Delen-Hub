@@ -693,6 +693,8 @@ export const ListReviewSessionsResponseItem = zod.object({
   "description": zod.string().nullish(),
   "status": zod.string(),
   "scheduledFor": zod.string().nullish(),
+  "submissionDeadline": zod.string().nullish(),
+  "maxPhotosPerMember": zod.number().nullish(),
   "createdAt": zod.string(),
   "closedAt": zod.string().nullish(),
   "photoCount": zod.number().optional(),
@@ -707,11 +709,15 @@ export const ListReviewSessionsResponse = zod.array(ListReviewSessionsResponseIt
 
 
 
+
 export const CreateReviewSessionBody = zod.object({
   "clubId": zod.number(),
   "title": zod.string().min(1),
   "description": zod.string().optional(),
-  "scheduledFor": zod.string().nullish()
+  "scheduledFor": zod.string().nullish(),
+  "submissionDeadline": zod.string().nullish(),
+  "maxPhotosPerMember": zod.number().min(1).nullish(),
+  "reviewerIds": zod.array(zod.number()).optional()
 })
 
 
@@ -730,6 +736,8 @@ export const GetReviewSessionResponse = zod.object({
   "description": zod.string().nullish(),
   "status": zod.string(),
   "scheduledFor": zod.string().nullish(),
+  "submissionDeadline": zod.string().nullish(),
+  "maxPhotosPerMember": zod.number().nullish(),
   "createdAt": zod.string(),
   "closedAt": zod.string().nullish(),
   "photoCount": zod.number().optional(),
@@ -747,11 +755,14 @@ export const UpdateReviewSessionParams = zod.object({
 
 
 
+
 export const UpdateReviewSessionBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().nullish(),
   "status": zod.string().optional(),
-  "scheduledFor": zod.string().nullish()
+  "scheduledFor": zod.string().nullish(),
+  "submissionDeadline": zod.string().nullish(),
+  "maxPhotosPerMember": zod.number().min(1).nullish()
 })
 
 export const UpdateReviewSessionResponse = zod.object({
@@ -762,6 +773,8 @@ export const UpdateReviewSessionResponse = zod.object({
   "description": zod.string().nullish(),
   "status": zod.string(),
   "scheduledFor": zod.string().nullish(),
+  "submissionDeadline": zod.string().nullish(),
+  "maxPhotosPerMember": zod.number().nullish(),
   "createdAt": zod.string(),
   "closedAt": zod.string().nullish(),
   "photoCount": zod.number().optional(),
