@@ -41,3 +41,8 @@ externalPort = 3000
 [[ports]]
 localPort = 22381
 externalPort = 3001
+
+[userenv]
+
+[userenv.shared]
+ADMIN_RECOVERY_TOKEN = "g1hk8yz80qjwmx2p"

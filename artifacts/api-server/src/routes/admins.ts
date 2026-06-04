@@ -218,6 +218,36 @@ router.post("/admins", requireAdmin, async (req: any, res) => {
   res.status(201).json(serializeAdmin(row));
 });
 
+// POST /api/admins/recover — Emergency re-claim with a one-time recovery token.
+// Deletes all existing admins and creates a fresh owner admin for the Clerk user.
+// Protected by ADMIN_RECOVERY_TOKEN env var; must be signed in via Clerk.
+router.post("/admins/recover", requireAuth, async (req: any, res) => {
+  const envToken = process.env.ADMIN_RECOVERY_TOKEN;
+  if (!envToken) {
+    res.status(503).json({ error: "Recovery not configured" });
+    return;
+  }
+
+  const { recoveryToken, displayName } = req.body as { recoveryToken?: string; displayName?: string };
+  if (!recoveryToken || recoveryToken !== envToken) {
+    res.status(403).json({ error: "Invalid recovery token" });
+    return;
+  }
+
+  await db.delete(adminsTable);
+
+  const [row] = await db
+    .insert(adminsTable)
+    .values({
+      clerkUserId: req.clerkUserId,
+      displayName: displayName?.trim() || "Admin",
+      isOwner: true,
+    })
+    .returning();
+
+  res.status(201).json(serializeAdmin(row));
+});
+
 // POST /api/admins/bootstrap — Clerk user claims the first-admin slot.
 // Only works when no admins exist yet (guards against repeat calls).
 router.post("/admins/bootstrap", requireAuth, async (req: any, res) => {

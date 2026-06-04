@@ -3,6 +3,7 @@ import { Show, useClerk, useUser } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { KeyRound } from "lucide-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -31,6 +32,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
       }
     } finally {
       setBootstrapping(false);
+    }
+  };
+
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryToken, setRecoveryToken] = useState("");
+  const [recoveryName, setRecoveryName] = useState("");
+  const [recovering, setRecovering] = useState(false);
+
+  const handleRecover = async () => {
+    if (!recoveryToken.trim()) return;
+    setRecovering(true);
+    try {
+      const res = await fetch("/api/admins/recover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ recoveryToken: recoveryToken.trim(), displayName: recoveryName.trim() || "Admin" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Recovery failed.");
+      } else {
+        setShowRecovery(false);
+        setRecoveryToken("");
+        queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
+      }
+    } finally {
+      setRecovering(false);
     }
   };
 
@@ -114,6 +143,51 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
+
+      {/* Admin recovery — shown to signed-in non-admins when admins already exist */}
+      <Show when="signed-in">
+        {!adminStatus?.isAdmin && adminStatus !== undefined && adminStatus.totalAdmins > 0 && (
+          <div className="bg-muted/40 border-b border-border/50 py-2 px-4">
+            <div className="container mx-auto flex items-center justify-between gap-4">
+              <p className="text-xs text-muted-foreground">
+                You are signed in but not an admin.
+              </p>
+              <button
+                onClick={() => setShowRecovery(!showRecovery)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <KeyRound className="w-3 h-3" />
+                Recovery mode
+              </button>
+            </div>
+            {showRecovery && (
+              <div className="container mx-auto mt-3 pb-2 flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={recoveryName}
+                  onChange={e => setRecoveryName(e.target.value)}
+                  className="text-sm border border-border rounded px-3 py-1.5 bg-background w-36 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <input
+                  type="password"
+                  placeholder="Recovery token"
+                  value={recoveryToken}
+                  onChange={e => setRecoveryToken(e.target.value)}
+                  className="text-sm border border-border rounded px-3 py-1.5 bg-background w-56 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  onClick={handleRecover}
+                  disabled={recovering || !recoveryToken.trim()}
+                  className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {recovering ? "Recovering…" : "Claim Admin"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Show>
 
       <main className="flex-1 container mx-auto px-4 py-8">
         {children}
