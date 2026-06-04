@@ -76,12 +76,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {showBootstrapBanner && (
-        <SignedIn>
-          <div className="bg-primary/10 border-b border-primary/20 py-3 px-4">
-            <div className="container mx-auto flex items-center justify-between gap-4">
-              <p className="text-sm text-foreground">
-                <span className="font-semibold">No admins yet.</span> Sign in and claim the admin role to create review sessions.
-              </p>
+        <div className="bg-primary/10 border-b border-primary/20 py-3 px-4">
+          <div className="container mx-auto flex items-center justify-between gap-4">
+            <p className="text-sm text-foreground">
+              <span className="font-semibold">No admins yet.</span> Claim the admin role to start creating review sessions.
+            </p>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
+                  Sign in to claim admin
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
               <button
                 onClick={handleBootstrap}
                 disabled={bootstrapping}
@@ -89,9 +96,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 {bootstrapping ? "Claiming…" : "Claim Admin"}
               </button>
-            </div>
+            </SignedIn>
           </div>
-        </SignedIn>
+        </div>
       )}
 
       <main className="flex-1 container mx-auto px-4 py-8">
