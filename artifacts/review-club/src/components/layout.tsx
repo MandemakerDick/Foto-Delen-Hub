@@ -1,14 +1,18 @@
 import { Link, useLocation } from "wouter";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { Show, useClerk, useUser } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: adminStatus } = useGetAdminStatus();
   const queryClient = useQueryClient();
   const [bootstrapping, setBootstrapping] = useState(false);
+  const { signOut } = useClerk();
+  const { user } = useUser();
 
   const handleBootstrap = async () => {
     setBootstrapping(true);
@@ -55,22 +59,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-4">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
-                  Sign In
+            <Show when="signed-out">
+              <Link
+                href="/sign-in"
+                className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              >
+                Sign In
+              </Link>
+            </Show>
+            <Show when="signed-in">
+              <div className="flex items-center gap-3">
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} alt={user.fullName || "User"} className="w-8 h-8 rounded-sm object-cover border border-border/50" />
+                ) : (
+                  <div className="w-8 h-8 rounded-sm bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary">
+                    {user?.firstName?.[0] ?? "U"}
+                  </div>
+                )}
+                <button
+                  onClick={() => signOut({ redirectUrl: basePath || "/" })}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Sign out
                 </button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton 
-                appearance={{ 
-                  elements: { 
-                    userButtonAvatarBox: "w-8 h-8 rounded-sm",
-                  }
-                }} 
-              />
-            </SignedIn>
+              </div>
+            </Show>
           </div>
         </div>
       </header>
@@ -81,14 +94,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <p className="text-sm text-foreground">
               <span className="font-semibold">No admins yet.</span> Claim the admin role to start creating review sessions.
             </p>
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
-                  Sign in to claim admin
-                </button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
+            <Show when="signed-out">
+              <Link
+                href="/sign-in"
+                className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              >
+                Sign in to claim admin
+              </Link>
+            </Show>
+            <Show when="signed-in">
               <button
                 onClick={handleBootstrap}
                 disabled={bootstrapping}
@@ -96,7 +110,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 {bootstrapping ? "Claiming…" : "Claim Admin"}
               </button>
-            </SignedIn>
+            </Show>
           </div>
         </div>
       )}
