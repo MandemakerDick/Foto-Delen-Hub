@@ -3,6 +3,7 @@ import {
   useListReviewSessions,
   useCreateReviewSession,
   useUpdateReviewSession,
+  useDeleteReviewSession,
   useListPhotographers,
   getListReviewSessionsQueryKey,
   useListClubs,
@@ -15,12 +16,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Plus, Play, CheckCircle, Search, Users } from "lucide-react";
+import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
 const EMPTY_FORM = {
@@ -43,6 +45,7 @@ export function AdminPanel() {
 
   const createSession = useCreateReviewSession();
   const updateSession = useUpdateReviewSession();
+  const deleteSession = useDeleteReviewSession();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -123,6 +126,16 @@ export function AdminPanel() {
       queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to update status.", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: number, title: string) => {
+    try {
+      await deleteSession.mutateAsync({ id });
+      toast({ title: "Session deleted", description: `"${title}" and all its photos, ratings, and comments have been removed.` });
+      queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to delete session.", variant: "destructive" });
     }
   };
 
@@ -345,7 +358,7 @@ export function AdminPanel() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
-                    <div className="flex gap-2 w-full sm:w-auto justify-end">
+                    <div className="flex gap-2 w-full sm:w-auto justify-end flex-wrap">
                       {session.status === "open" && (
                         <Button size="sm" variant="secondary" onClick={() => handleStatusChange(session.id, "reviewing")} className="w-full sm:w-auto">
                           <Play className="w-4 h-4 mr-2" /> Start Reviewing
@@ -366,6 +379,30 @@ export function AdminPanel() {
                           Manage <Search className="w-4 h-4 ml-2" />
                         </Link>
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{session.title}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This permanently deletes the session and all submitted photos, star ratings, and comments. This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(session.id, session.title)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete session
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>

@@ -167,6 +167,7 @@ router.patch("/review-sessions/:id", requireAdmin, async (req: any, res): Promis
 });
 
 // DELETE /review-sessions/:id (admin only)
+// Cascades: photo_reviews → session_photos → session_reviewers → review_sessions
 router.delete("/review-sessions/:id", requireAdmin, async (req: any, res): Promise<void> => {
   const params = DeleteReviewSessionParams.safeParse(req.params);
   if (!params.success) {
@@ -174,15 +175,39 @@ router.delete("/review-sessions/:id", requireAdmin, async (req: any, res): Promi
     return;
   }
 
-  const [deleted] = await db
-    .delete(reviewSessionsTable)
-    .where(eq(reviewSessionsTable.id, params.data.id))
-    .returning();
+  const { id } = params.data;
 
-  if (!deleted) {
+  const [session] = await db
+    .select()
+    .from(reviewSessionsTable)
+    .where(eq(reviewSessionsTable.id, id));
+
+  if (!session) {
     res.status(404).json({ error: "Review session not found" });
     return;
   }
+
+  // 1. Delete photo reviews (child of session_photos)
+  const sessionPhotoIds = await db
+    .select({ id: sessionPhotosTable.id })
+    .from(sessionPhotosTable)
+    .where(eq(sessionPhotosTable.sessionId, id));
+
+  if (sessionPhotoIds.length > 0) {
+    const { inArray } = await import("drizzle-orm");
+    await db
+      .delete(photoReviewsTable)
+      .where(inArray(photoReviewsTable.sessionPhotoId, sessionPhotoIds.map((r) => r.id)));
+  }
+
+  // 2. Delete session photos
+  await db.delete(sessionPhotosTable).where(eq(sessionPhotosTable.sessionId, id));
+
+  // 3. Delete session reviewers
+  await db.delete(sessionReviewersTable).where(eq(sessionReviewersTable.sessionId, id));
+
+  // 4. Delete the session itself
+  await db.delete(reviewSessionsTable).where(eq(reviewSessionsTable.id, id));
 
   res.sendStatus(204);
 });
