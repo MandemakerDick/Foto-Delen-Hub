@@ -17,6 +17,7 @@ import authRouter from "./auth";
 import storageRouter from "./storage";
 import adminsRouter from "./admins";
 import invitesRouter from "./invites";
+import reviewSessionsRouter from "./review-sessions";
 
 const router: IRouter = Router();
 
@@ -31,5 +32,6 @@ router.use(authRouter);
 router.use(storageRouter);
 router.use(adminsRouter);
 router.use(invitesRouter);
+router.use(reviewSessionsRouter);
 
 export default router;

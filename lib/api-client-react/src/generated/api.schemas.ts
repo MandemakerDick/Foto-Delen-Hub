@@ -256,6 +256,111 @@ export interface InviteSessionResponse {
   hasAccess: boolean;
 }
 
+export interface ReviewSession {
+  id: number;
+  clubId: number;
+  /** @nullable */
+  clubName?: string | null;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  status: string;
+  /** @nullable */
+  scheduledFor?: string | null;
+  createdAt: string;
+  /** @nullable */
+  closedAt?: string | null;
+  photoCount?: number;
+  reviewerCount?: number;
+}
+
+export interface ReviewSessionInput {
+  clubId: number;
+  /** @minLength 1 */
+  title: string;
+  description?: string;
+  /** @nullable */
+  scheduledFor?: string | null;
+}
+
+export interface ReviewSessionUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @nullable */
+  description?: string | null;
+  status?: string;
+  /** @nullable */
+  scheduledFor?: string | null;
+}
+
+export interface SessionPhoto {
+  id: number;
+  sessionId: number;
+  photoId: number;
+  photographerId: number;
+  /** @nullable */
+  photographerName?: string | null;
+  /** @nullable */
+  photographerAvatarUrl?: string | null;
+  photoTitle?: string;
+  photoImageUrl?: string;
+  sortOrder?: number;
+  submittedAt: string;
+  /** @nullable */
+  averageRating?: number | null;
+  reviewCount?: number;
+}
+
+export interface SessionPhotoInput {
+  photoId: number;
+  sortOrder?: number;
+}
+
+export interface SessionReviewer {
+  id: number;
+  sessionId: number;
+  photographerId: number;
+  /** @nullable */
+  photographerName?: string | null;
+  /** @nullable */
+  photographerAvatarUrl?: string | null;
+  addedAt: string;
+}
+
+export interface SessionReviewerInput {
+  photographerId: number;
+}
+
+export interface PhotoReview {
+  id: number;
+  sessionPhotoId: number;
+  reviewerPhotographerId: number;
+  /** @nullable */
+  reviewerName?: string | null;
+  /** @nullable */
+  reviewerAvatarUrl?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PhotoReviewInput {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+  /** @nullable */
+  comment?: string | null;
+  photographerId?: number;
+}
+
 export interface ErrorEnvelope {
   error: string;
 }
@@ -286,5 +391,10 @@ photographerId?: number;
 
 export type ListRecentPhotosParams = {
 limit?: number;
+};
+
+export type ListReviewSessionsParams = {
+clubId?: number;
+status?: string;
 };
 

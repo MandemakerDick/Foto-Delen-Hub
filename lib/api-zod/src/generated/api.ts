@@ -678,6 +678,272 @@ export const RevokeInviteParams = zod.object({
 
 
 /**
+ * @summary List review sessions, optionally filtered by club or status
+ */
+export const ListReviewSessionsQueryParams = zod.object({
+  "clubId": zod.coerce.number().optional(),
+  "status": zod.coerce.string().optional()
+})
+
+export const ListReviewSessionsResponseItem = zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "clubName": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledFor": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "reviewerCount": zod.number().optional()
+})
+export const ListReviewSessionsResponse = zod.array(ListReviewSessionsResponseItem)
+
+
+/**
+ * @summary Create a new review session (admin only)
+ */
+
+
+
+export const CreateReviewSessionBody = zod.object({
+  "clubId": zod.number(),
+  "title": zod.string().min(1),
+  "description": zod.string().optional(),
+  "scheduledFor": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get a single review session by ID
+ */
+export const GetReviewSessionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetReviewSessionResponse = zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "clubName": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledFor": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "reviewerCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a review session (admin only) — change status, title, etc.
+ */
+export const UpdateReviewSessionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const UpdateReviewSessionBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "description": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "scheduledFor": zod.string().nullish()
+})
+
+export const UpdateReviewSessionResponse = zod.object({
+  "id": zod.number(),
+  "clubId": zod.number(),
+  "clubName": zod.string().nullish(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.string(),
+  "scheduledFor": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullish(),
+  "photoCount": zod.number().optional(),
+  "reviewerCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Delete a review session (admin only)
+ */
+export const DeleteReviewSessionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List photos submitted to a review session
+ */
+export const ListSessionPhotosParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListSessionPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "sessionId": zod.number(),
+  "photoId": zod.number(),
+  "photographerId": zod.number(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "photoTitle": zod.string().optional(),
+  "photoImageUrl": zod.string().optional(),
+  "sortOrder": zod.number().optional(),
+  "submittedAt": zod.string(),
+  "averageRating": zod.number().nullish(),
+  "reviewCount": zod.number().optional()
+})
+export const ListSessionPhotosResponse = zod.array(ListSessionPhotosResponseItem)
+
+
+/**
+ * @summary Submit a photo to a review session
+ */
+export const SubmitSessionPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SubmitSessionPhotoBody = zod.object({
+  "photoId": zod.number(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Remove a photo from a review session
+ */
+export const RemoveSessionPhotoParams = zod.object({
+  "id": zod.coerce.number(),
+  "sessionPhotoId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List reviewers assigned to a session
+ */
+export const ListSessionReviewersParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListSessionReviewersResponseItem = zod.object({
+  "id": zod.number(),
+  "sessionId": zod.number(),
+  "photographerId": zod.number(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "addedAt": zod.string()
+})
+export const ListSessionReviewersResponse = zod.array(ListSessionReviewersResponseItem)
+
+
+/**
+ * @summary Add a reviewer to a session (admin only)
+ */
+export const AddSessionReviewerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddSessionReviewerBody = zod.object({
+  "photographerId": zod.number()
+})
+
+
+/**
+ * @summary Remove a reviewer from a session (admin only)
+ */
+export const RemoveSessionReviewerParams = zod.object({
+  "id": zod.coerce.number(),
+  "reviewerId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all reviews for a session photo
+ */
+export const ListPhotoReviewsParams = zod.object({
+  "id": zod.coerce.number(),
+  "sessionPhotoId": zod.coerce.number()
+})
+
+export const listPhotoReviewsResponseRatingMax = 5;
+
+
+
+export const ListPhotoReviewsResponseItem = zod.object({
+  "id": zod.number(),
+  "sessionPhotoId": zod.number(),
+  "reviewerPhotographerId": zod.number(),
+  "reviewerName": zod.string().nullish(),
+  "reviewerAvatarUrl": zod.string().nullish(),
+  "rating": zod.number().min(1).max(listPhotoReviewsResponseRatingMax),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+export const ListPhotoReviewsResponse = zod.array(ListPhotoReviewsResponseItem)
+
+
+/**
+ * @summary Submit a review for a session photo (reviewers only)
+ */
+export const CreatePhotoReviewParams = zod.object({
+  "id": zod.coerce.number(),
+  "sessionPhotoId": zod.coerce.number()
+})
+
+export const createPhotoReviewBodyRatingMax = 5;
+
+
+
+export const CreatePhotoReviewBody = zod.object({
+  "rating": zod.number().min(1).max(createPhotoReviewBodyRatingMax),
+  "comment": zod.string().nullish(),
+  "photographerId": zod.number().optional()
+})
+
+
+/**
+ * @summary Update your own review
+ */
+export const UpdatePhotoReviewParams = zod.object({
+  "id": zod.coerce.number(),
+  "sessionPhotoId": zod.coerce.number(),
+  "reviewId": zod.coerce.number()
+})
+
+export const updatePhotoReviewBodyRatingMax = 5;
+
+
+
+export const UpdatePhotoReviewBody = zod.object({
+  "rating": zod.number().min(1).max(updatePhotoReviewBodyRatingMax),
+  "comment": zod.string().nullish(),
+  "photographerId": zod.number().optional()
+})
+
+export const updatePhotoReviewResponseRatingMax = 5;
+
+
+
+export const UpdatePhotoReviewResponse = zod.object({
+  "id": zod.number(),
+  "sessionPhotoId": zod.number(),
+  "reviewerPhotographerId": zod.number(),
+  "reviewerName": zod.string().nullish(),
+  "reviewerAvatarUrl": zod.string().nullish(),
+  "rating": zod.number().min(1).max(updatePhotoReviewResponseRatingMax),
+  "comment": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
  * @summary Redeem an invite token to gain contributor access
  */
 export const RedeemInviteBody = zod.object({

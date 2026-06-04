@@ -40,14 +40,24 @@ import type {
   ListPhotographersParams,
   ListPhotosParams,
   ListRecentPhotosParams,
+  ListReviewSessionsParams,
   ListThemesParams,
   Photo,
   PhotoInput,
+  PhotoReview,
+  PhotoReviewInput,
   PhotoUpdate,
   Photographer,
   PhotographerInput,
   PhotographerUpdate,
   RedeemInviteRequest,
+  ReviewSession,
+  ReviewSessionInput,
+  ReviewSessionUpdate,
+  SessionPhoto,
+  SessionPhotoInput,
+  SessionReviewer,
+  SessionReviewerInput,
   SetAdminPasswordRequest,
   Stats,
   Theme,
@@ -2971,6 +2981,1054 @@ export const useRevokeInvite = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRevokeInviteMutationOptions(options));
+    }
+
+export const getListReviewSessionsUrl = (params?: ListReviewSessionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/review-sessions?${stringifiedParams}` : `/api/review-sessions`
+}
+
+/**
+ * @summary List review sessions, optionally filtered by club or status
+ */
+export const listReviewSessions = async (params?: ListReviewSessionsParams, options?: RequestInit): Promise<ReviewSession[]> => {
+
+  return customFetch<ReviewSession[]>(getListReviewSessionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReviewSessionsQueryKey = (params?: ListReviewSessionsParams,) => {
+    return [
+    `/api/review-sessions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListReviewSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listReviewSessions>>, TError = ErrorType<unknown>>(params?: ListReviewSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReviewSessionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviewSessions>>> = ({ signal }) => listReviewSessions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReviewSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReviewSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listReviewSessions>>>
+export type ListReviewSessionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List review sessions, optionally filtered by club or status
+ */
+
+export function useListReviewSessions<TData = Awaited<ReturnType<typeof listReviewSessions>>, TError = ErrorType<unknown>>(
+ params?: ListReviewSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReviewSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReviewSessionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateReviewSessionUrl = () => {
+
+
+
+
+  return `/api/review-sessions`
+}
+
+/**
+ * @summary Create a new review session (admin only)
+ */
+export const createReviewSession = async (reviewSessionInput: ReviewSessionInput, options?: RequestInit): Promise<ReviewSession> => {
+
+  return customFetch<ReviewSession>(getCreateReviewSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reviewSessionInput,)
+  }
+);}
+
+
+
+
+export const getCreateReviewSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewSession>>, TError,{data: BodyType<ReviewSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReviewSession>>, TError,{data: BodyType<ReviewSessionInput>}, TContext> => {
+
+const mutationKey = ['createReviewSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReviewSession>>, {data: BodyType<ReviewSessionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createReviewSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReviewSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createReviewSession>>>
+    export type CreateReviewSessionMutationBody = BodyType<ReviewSessionInput>
+    export type CreateReviewSessionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new review session (admin only)
+ */
+export const useCreateReviewSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewSession>>, TError,{data: BodyType<ReviewSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createReviewSession>>,
+        TError,
+        {data: BodyType<ReviewSessionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateReviewSessionMutationOptions(options));
+    }
+
+export const getGetReviewSessionUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}`
+}
+
+/**
+ * @summary Get a single review session by ID
+ */
+export const getReviewSession = async (id: number, options?: RequestInit): Promise<ReviewSession> => {
+
+  return customFetch<ReviewSession>(getGetReviewSessionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReviewSessionQueryKey = (id: number,) => {
+    return [
+    `/api/review-sessions/${id}`
+    ] as const;
+    }
+
+
+export const getGetReviewSessionQueryOptions = <TData = Awaited<ReturnType<typeof getReviewSession>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReviewSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReviewSessionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReviewSession>>> = ({ signal }) => getReviewSession(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReviewSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReviewSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getReviewSession>>>
+export type GetReviewSessionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single review session by ID
+ */
+
+export function useGetReviewSession<TData = Awaited<ReturnType<typeof getReviewSession>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReviewSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReviewSessionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateReviewSessionUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}`
+}
+
+/**
+ * @summary Update a review session (admin only) — change status, title, etc.
+ */
+export const updateReviewSession = async (id: number,
+    reviewSessionUpdate: ReviewSessionUpdate, options?: RequestInit): Promise<ReviewSession> => {
+
+  return customFetch<ReviewSession>(getUpdateReviewSessionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reviewSessionUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateReviewSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReviewSession>>, TError,{id: number;data: BodyType<ReviewSessionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReviewSession>>, TError,{id: number;data: BodyType<ReviewSessionUpdate>}, TContext> => {
+
+const mutationKey = ['updateReviewSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReviewSession>>, {id: number;data: BodyType<ReviewSessionUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateReviewSession(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateReviewSessionMutationResult = NonNullable<Awaited<ReturnType<typeof updateReviewSession>>>
+    export type UpdateReviewSessionMutationBody = BodyType<ReviewSessionUpdate>
+    export type UpdateReviewSessionMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a review session (admin only) — change status, title, etc.
+ */
+export const useUpdateReviewSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReviewSession>>, TError,{id: number;data: BodyType<ReviewSessionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateReviewSession>>,
+        TError,
+        {id: number;data: BodyType<ReviewSessionUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateReviewSessionMutationOptions(options));
+    }
+
+export const getDeleteReviewSessionUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}`
+}
+
+/**
+ * @summary Delete a review session (admin only)
+ */
+export const deleteReviewSession = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteReviewSessionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteReviewSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReviewSession>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteReviewSession>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteReviewSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteReviewSession>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteReviewSession(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteReviewSessionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteReviewSession>>>
+
+    export type DeleteReviewSessionMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a review session (admin only)
+ */
+export const useDeleteReviewSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteReviewSession>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteReviewSession>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteReviewSessionMutationOptions(options));
+    }
+
+export const getListSessionPhotosUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/photos`
+}
+
+/**
+ * @summary List photos submitted to a review session
+ */
+export const listSessionPhotos = async (id: number, options?: RequestInit): Promise<SessionPhoto[]> => {
+
+  return customFetch<SessionPhoto[]>(getListSessionPhotosUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSessionPhotosQueryKey = (id: number,) => {
+    return [
+    `/api/review-sessions/${id}/photos`
+    ] as const;
+    }
+
+
+export const getListSessionPhotosQueryOptions = <TData = Awaited<ReturnType<typeof listSessionPhotos>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessionPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSessionPhotosQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessionPhotos>>> = ({ signal }) => listSessionPhotos(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessionPhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSessionPhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listSessionPhotos>>>
+export type ListSessionPhotosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List photos submitted to a review session
+ */
+
+export function useListSessionPhotos<TData = Awaited<ReturnType<typeof listSessionPhotos>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessionPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSessionPhotosQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSubmitSessionPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/photos`
+}
+
+/**
+ * @summary Submit a photo to a review session
+ */
+export const submitSessionPhoto = async (id: number,
+    sessionPhotoInput: SessionPhotoInput, options?: RequestInit): Promise<SessionPhoto> => {
+
+  return customFetch<SessionPhoto>(getSubmitSessionPhotoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sessionPhotoInput,)
+  }
+);}
+
+
+
+
+export const getSubmitSessionPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSessionPhoto>>, TError,{id: number;data: BodyType<SessionPhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitSessionPhoto>>, TError,{id: number;data: BodyType<SessionPhotoInput>}, TContext> => {
+
+const mutationKey = ['submitSessionPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitSessionPhoto>>, {id: number;data: BodyType<SessionPhotoInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitSessionPhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitSessionPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof submitSessionPhoto>>>
+    export type SubmitSessionPhotoMutationBody = BodyType<SessionPhotoInput>
+    export type SubmitSessionPhotoMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit a photo to a review session
+ */
+export const useSubmitSessionPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSessionPhoto>>, TError,{id: number;data: BodyType<SessionPhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitSessionPhoto>>,
+        TError,
+        {id: number;data: BodyType<SessionPhotoInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitSessionPhotoMutationOptions(options));
+    }
+
+export const getRemoveSessionPhotoUrl = (id: number,
+    sessionPhotoId: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/photos/${sessionPhotoId}`
+}
+
+/**
+ * @summary Remove a photo from a review session
+ */
+export const removeSessionPhoto = async (id: number,
+    sessionPhotoId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveSessionPhotoUrl(id,sessionPhotoId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveSessionPhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSessionPhoto>>, TError,{id: number;sessionPhotoId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSessionPhoto>>, TError,{id: number;sessionPhotoId: number}, TContext> => {
+
+const mutationKey = ['removeSessionPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSessionPhoto>>, {id: number;sessionPhotoId: number}> = (props) => {
+          const {id,sessionPhotoId} = props ?? {};
+
+          return  removeSessionPhoto(id,sessionPhotoId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSessionPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof removeSessionPhoto>>>
+
+    export type RemoveSessionPhotoMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a photo from a review session
+ */
+export const useRemoveSessionPhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSessionPhoto>>, TError,{id: number;sessionPhotoId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeSessionPhoto>>,
+        TError,
+        {id: number;sessionPhotoId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveSessionPhotoMutationOptions(options));
+    }
+
+export const getListSessionReviewersUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/reviewers`
+}
+
+/**
+ * @summary List reviewers assigned to a session
+ */
+export const listSessionReviewers = async (id: number, options?: RequestInit): Promise<SessionReviewer[]> => {
+
+  return customFetch<SessionReviewer[]>(getListSessionReviewersUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSessionReviewersQueryKey = (id: number,) => {
+    return [
+    `/api/review-sessions/${id}/reviewers`
+    ] as const;
+    }
+
+
+export const getListSessionReviewersQueryOptions = <TData = Awaited<ReturnType<typeof listSessionReviewers>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessionReviewers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSessionReviewersQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessionReviewers>>> = ({ signal }) => listSessionReviewers(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessionReviewers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSessionReviewersQueryResult = NonNullable<Awaited<ReturnType<typeof listSessionReviewers>>>
+export type ListSessionReviewersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List reviewers assigned to a session
+ */
+
+export function useListSessionReviewers<TData = Awaited<ReturnType<typeof listSessionReviewers>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessionReviewers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSessionReviewersQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddSessionReviewerUrl = (id: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/reviewers`
+}
+
+/**
+ * @summary Add a reviewer to a session (admin only)
+ */
+export const addSessionReviewer = async (id: number,
+    sessionReviewerInput: SessionReviewerInput, options?: RequestInit): Promise<SessionReviewer> => {
+
+  return customFetch<SessionReviewer>(getAddSessionReviewerUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sessionReviewerInput,)
+  }
+);}
+
+
+
+
+export const getAddSessionReviewerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSessionReviewer>>, TError,{id: number;data: BodyType<SessionReviewerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSessionReviewer>>, TError,{id: number;data: BodyType<SessionReviewerInput>}, TContext> => {
+
+const mutationKey = ['addSessionReviewer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSessionReviewer>>, {id: number;data: BodyType<SessionReviewerInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addSessionReviewer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSessionReviewerMutationResult = NonNullable<Awaited<ReturnType<typeof addSessionReviewer>>>
+    export type AddSessionReviewerMutationBody = BodyType<SessionReviewerInput>
+    export type AddSessionReviewerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a reviewer to a session (admin only)
+ */
+export const useAddSessionReviewer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSessionReviewer>>, TError,{id: number;data: BodyType<SessionReviewerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addSessionReviewer>>,
+        TError,
+        {id: number;data: BodyType<SessionReviewerInput>},
+        TContext
+      > => {
+      return useMutation(getAddSessionReviewerMutationOptions(options));
+    }
+
+export const getRemoveSessionReviewerUrl = (id: number,
+    reviewerId: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/reviewers/${reviewerId}`
+}
+
+/**
+ * @summary Remove a reviewer from a session (admin only)
+ */
+export const removeSessionReviewer = async (id: number,
+    reviewerId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveSessionReviewerUrl(id,reviewerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveSessionReviewerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSessionReviewer>>, TError,{id: number;reviewerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSessionReviewer>>, TError,{id: number;reviewerId: number}, TContext> => {
+
+const mutationKey = ['removeSessionReviewer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSessionReviewer>>, {id: number;reviewerId: number}> = (props) => {
+          const {id,reviewerId} = props ?? {};
+
+          return  removeSessionReviewer(id,reviewerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSessionReviewerMutationResult = NonNullable<Awaited<ReturnType<typeof removeSessionReviewer>>>
+
+    export type RemoveSessionReviewerMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a reviewer from a session (admin only)
+ */
+export const useRemoveSessionReviewer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSessionReviewer>>, TError,{id: number;reviewerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeSessionReviewer>>,
+        TError,
+        {id: number;reviewerId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveSessionReviewerMutationOptions(options));
+    }
+
+export const getListPhotoReviewsUrl = (id: number,
+    sessionPhotoId: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/photos/${sessionPhotoId}/reviews`
+}
+
+/**
+ * @summary List all reviews for a session photo
+ */
+export const listPhotoReviews = async (id: number,
+    sessionPhotoId: number, options?: RequestInit): Promise<PhotoReview[]> => {
+
+  return customFetch<PhotoReview[]>(getListPhotoReviewsUrl(id,sessionPhotoId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPhotoReviewsQueryKey = (id: number,
+    sessionPhotoId: number,) => {
+    return [
+    `/api/review-sessions/${id}/photos/${sessionPhotoId}/reviews`
+    ] as const;
+    }
+
+
+export const getListPhotoReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listPhotoReviews>>, TError = ErrorType<unknown>>(id: number,
+    sessionPhotoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPhotoReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPhotoReviewsQueryKey(id,sessionPhotoId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPhotoReviews>>> = ({ signal }) => listPhotoReviews(id,sessionPhotoId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id && sessionPhotoId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPhotoReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPhotoReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listPhotoReviews>>>
+export type ListPhotoReviewsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all reviews for a session photo
+ */
+
+export function useListPhotoReviews<TData = Awaited<ReturnType<typeof listPhotoReviews>>, TError = ErrorType<unknown>>(
+ id: number,
+    sessionPhotoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPhotoReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPhotoReviewsQueryOptions(id,sessionPhotoId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreatePhotoReviewUrl = (id: number,
+    sessionPhotoId: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/photos/${sessionPhotoId}/reviews`
+}
+
+/**
+ * @summary Submit a review for a session photo (reviewers only)
+ */
+export const createPhotoReview = async (id: number,
+    sessionPhotoId: number,
+    photoReviewInput: PhotoReviewInput, options?: RequestInit): Promise<PhotoReview> => {
+
+  return customFetch<PhotoReview>(getCreatePhotoReviewUrl(id,sessionPhotoId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      photoReviewInput,)
+  }
+);}
+
+
+
+
+export const getCreatePhotoReviewMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoReview>>, TError,{id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPhotoReview>>, TError,{id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}, TContext> => {
+
+const mutationKey = ['createPhotoReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPhotoReview>>, {id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}> = (props) => {
+          const {id,sessionPhotoId,data} = props ?? {};
+
+          return  createPhotoReview(id,sessionPhotoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePhotoReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createPhotoReview>>>
+    export type CreatePhotoReviewMutationBody = BodyType<PhotoReviewInput>
+    export type CreatePhotoReviewMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit a review for a session photo (reviewers only)
+ */
+export const useCreatePhotoReview = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoReview>>, TError,{id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPhotoReview>>,
+        TError,
+        {id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePhotoReviewMutationOptions(options));
+    }
+
+export const getUpdatePhotoReviewUrl = (id: number,
+    sessionPhotoId: number,
+    reviewId: number,) => {
+
+
+
+
+  return `/api/review-sessions/${id}/photos/${sessionPhotoId}/reviews/${reviewId}`
+}
+
+/**
+ * @summary Update your own review
+ */
+export const updatePhotoReview = async (id: number,
+    sessionPhotoId: number,
+    reviewId: number,
+    photoReviewInput: PhotoReviewInput, options?: RequestInit): Promise<PhotoReview> => {
+
+  return customFetch<PhotoReview>(getUpdatePhotoReviewUrl(id,sessionPhotoId,reviewId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      photoReviewInput,)
+  }
+);}
+
+
+
+
+export const getUpdatePhotoReviewMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePhotoReview>>, TError,{id: number;sessionPhotoId: number;reviewId: number;data: BodyType<PhotoReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePhotoReview>>, TError,{id: number;sessionPhotoId: number;reviewId: number;data: BodyType<PhotoReviewInput>}, TContext> => {
+
+const mutationKey = ['updatePhotoReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePhotoReview>>, {id: number;sessionPhotoId: number;reviewId: number;data: BodyType<PhotoReviewInput>}> = (props) => {
+          const {id,sessionPhotoId,reviewId,data} = props ?? {};
+
+          return  updatePhotoReview(id,sessionPhotoId,reviewId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePhotoReviewMutationResult = NonNullable<Awaited<ReturnType<typeof updatePhotoReview>>>
+    export type UpdatePhotoReviewMutationBody = BodyType<PhotoReviewInput>
+    export type UpdatePhotoReviewMutationError = ErrorType<void>
+
+    /**
+ * @summary Update your own review
+ */
+export const useUpdatePhotoReview = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePhotoReview>>, TError,{id: number;sessionPhotoId: number;reviewId: number;data: BodyType<PhotoReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePhotoReview>>,
+        TError,
+        {id: number;sessionPhotoId: number;reviewId: number;data: BodyType<PhotoReviewInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePhotoReviewMutationOptions(options));
     }
 
 export const getRedeemInviteUrl = () => {

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/review/"
+title = "ReviewClub"
+version = "1.0.0"
+id = "artifacts/review-club"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/review/" ]
+localPort = 22381
+
+[services.development]
+run = "pnpm --filter @workspace/review-club run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/review-club", "run", "build" ]
+publicDir = "artifacts/review-club/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22381"
+BASE_PATH = "/review/"

@@ -837,6 +837,331 @@ paths:
         '404':
           description: Not found
 
+  /review-sessions:
+    get:
+      operationId: listReviewSessions
+      tags: [review]
+      summary: List review sessions, optionally filtered by club or status
+      parameters:
+        - name: clubId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of review sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReviewSession"
+    post:
+      operationId: createReviewSession
+      tags: [review]
+      summary: Create a new review session (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewSessionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewSession"
+
+  /review-sessions/{id}:
+    get:
+      operationId: getReviewSession
+      tags: [review]
+      summary: Get a single review session by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Review session detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewSession"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateReviewSession
+      tags: [review]
+      summary: Update a review session (admin only) — change status, title, etc.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewSessionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewSession"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteReviewSession
+      tags: [review]
+      summary: Delete a review session (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /review-sessions/{id}/photos:
+    get:
+      operationId: listSessionPhotos
+      tags: [review]
+      summary: List photos submitted to a review session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of session photos with review summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SessionPhoto"
+    post:
+      operationId: submitSessionPhoto
+      tags: [review]
+      summary: Submit a photo to a review session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionPhotoInput"
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionPhoto"
+
+  /review-sessions/{id}/photos/{sessionPhotoId}:
+    delete:
+      operationId: removeSessionPhoto
+      tags: [review]
+      summary: Remove a photo from a review session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionPhotoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+
+  /review-sessions/{id}/reviewers:
+    get:
+      operationId: listSessionReviewers
+      tags: [review]
+      summary: List reviewers assigned to a session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reviewers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SessionReviewer"
+    post:
+      operationId: addSessionReviewer
+      tags: [review]
+      summary: Add a reviewer to a session (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionReviewerInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionReviewer"
+
+  /review-sessions/{id}/reviewers/{reviewerId}:
+    delete:
+      operationId: removeSessionReviewer
+      tags: [review]
+      summary: Remove a reviewer from a session (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: reviewerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+
+  /review-sessions/{id}/photos/{sessionPhotoId}/reviews:
+    get:
+      operationId: listPhotoReviews
+      tags: [review]
+      summary: List all reviews for a session photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionPhotoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PhotoReview"
+    post:
+      operationId: createPhotoReview
+      tags: [review]
+      summary: Submit a review for a session photo (reviewers only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionPhotoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoReviewInput"
+      responses:
+        "201":
+          description: Review submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoReview"
+
+  /review-sessions/{id}/photos/{sessionPhotoId}/reviews/{reviewId}:
+    patch:
+      operationId: updatePhotoReview
+      tags: [review]
+      summary: Update your own review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionPhotoId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoReviewInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoReview"
+        "404":
+          description: Not found
+
   /invites/redeem:
     post:
       operationId: redeemInvite
@@ -1289,6 +1614,160 @@ components:
       properties:
         hasAccess:
           type: boolean
+
+    ReviewSession:
+      type: object
+      required: [id, clubId, title, status, createdAt]
+      properties:
+        id:
+          type: integer
+        clubId:
+          type: integer
+        clubName:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+        scheduledFor:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        closedAt:
+          type: ["string", "null"]
+        photoCount:
+          type: integer
+        reviewerCount:
+          type: integer
+
+    ReviewSessionInput:
+      type: object
+      required: [clubId, title]
+      properties:
+        clubId:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        scheduledFor:
+          type: ["string", "null"]
+
+    ReviewSessionUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+        scheduledFor:
+          type: ["string", "null"]
+
+    SessionPhoto:
+      type: object
+      required: [id, sessionId, photoId, photographerId, submittedAt]
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: integer
+        photoId:
+          type: integer
+        photographerId:
+          type: integer
+        photographerName:
+          type: ["string", "null"]
+        photographerAvatarUrl:
+          type: ["string", "null"]
+        photoTitle:
+          type: string
+        photoImageUrl:
+          type: string
+        sortOrder:
+          type: integer
+        submittedAt:
+          type: string
+        averageRating:
+          type: ["number", "null"]
+        reviewCount:
+          type: integer
+
+    SessionPhotoInput:
+      type: object
+      required: [photoId]
+      properties:
+        photoId:
+          type: integer
+        sortOrder:
+          type: integer
+
+    SessionReviewer:
+      type: object
+      required: [id, sessionId, photographerId, addedAt]
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: integer
+        photographerId:
+          type: integer
+        photographerName:
+          type: ["string", "null"]
+        photographerAvatarUrl:
+          type: ["string", "null"]
+        addedAt:
+          type: string
+
+    SessionReviewerInput:
+      type: object
+      required: [photographerId]
+      properties:
+        photographerId:
+          type: integer
+
+    PhotoReview:
+      type: object
+      required: [id, sessionPhotoId, reviewerPhotographerId, rating, createdAt]
+      properties:
+        id:
+          type: integer
+        sessionPhotoId:
+          type: integer
+        reviewerPhotographerId:
+          type: integer
+        reviewerName:
+          type: ["string", "null"]
+        reviewerAvatarUrl:
+          type: ["string", "null"]
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    PhotoReviewInput:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: ["string", "null"]
+        photographerId:
+          type: integer
 
     ErrorEnvelope:
       type: object
