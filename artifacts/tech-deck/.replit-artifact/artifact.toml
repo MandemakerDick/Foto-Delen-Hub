@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/tech-deck/"
+title = "PhotoClub / ReviewClub — Technical Deep-Dive"
+version = "1.0.0"
+id = "artifacts/tech-deck"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/tech-deck/" ]
+localPort = 19936
+
+[services.development]
+run = "pnpm --filter @workspace/tech-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tech-deck", "run", "build" ]
+publicDir = "artifacts/tech-deck/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19936"
+BASE_PATH = "/tech-deck/"

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Title.tsx",
+    "title": "PHOTOCLUB / REVIEWCLUB",
+    "description": "Title slide — project overview and subtitle",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Stack.tsx",
+    "title": "STACK",
+    "description": "Technology stack — runtime, frontend, backend, auth, and build tooling",
+    "speakerNotes": ""
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3ApiDesign.tsx",
+    "title": "API DESIGN",
+    "description": "Contract-first API design — OpenAPI spec, Orval codegen, path-based proxy routing",
+    "speakerNotes": ""
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4DbSchema.tsx",
+    "title": "DB SCHEMA",
+    "description": "Database schema — PhotoClub and ReviewClub tables, Drizzle ORM, FK approach",
+    "speakerNotes": ""
+  },
+  {
+    "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5Deployment.tsx",
+    "title": "DEPLOYMENT",
+    "description": "Deployment topology — Replit autoscale, 3 artifacts, shared proxy, PostgreSQL",
+    "speakerNotes": ""
+  }
+]
