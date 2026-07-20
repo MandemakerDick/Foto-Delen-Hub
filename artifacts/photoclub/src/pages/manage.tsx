@@ -945,18 +945,16 @@ export default function Manage() {
                               </p>
                               {admin.email && <p className="text-xs text-muted-foreground truncate">{admin.email}</p>}
                             </div>
-                            {!admin.clerkUserId && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="shrink-0 gap-1.5"
-                                onClick={() => { setSettingPasswordAdminId(admin.id); setNewPassword(""); setEditingAdminId(null); }}
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                                {t("manage.admins.setPasswordBtn")}
-                              </Button>
-                            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 gap-1.5"
+                              onClick={() => { setSettingPasswordAdminId(admin.id); setNewPassword(""); setEditingAdminId(null); }}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                              {t("manage.admins.setPasswordBtn")}
+                            </Button>
                             <Button
                               type="button"
                               variant="ghost"
