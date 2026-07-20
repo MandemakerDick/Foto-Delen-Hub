@@ -16,6 +16,10 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
+  --color-dialog: hsl(var(--dialog));
+  --color-dialog-foreground: hsl(var(--dialog-foreground));
+  --color-dialog-border: hsl(var(--dialog-border));
+
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-card-border: hsl(var(--card-border));
@@ -58,7 +62,11 @@
   /* DARKROOM AESTHETIC - Forced Dark Mode */
   --background: 240 5% 4%;
   --foreground: 0 0% 90%;
-  
+
+  --dialog: 240 5% 13%;
+  --dialog-foreground: 0 0% 90%;
+  --dialog-border: 240 5% 22%;
+
   --card: 240 5% 6%;
   --card-foreground: 0 0% 90%;
   --card-border: 240 5% 12%;
