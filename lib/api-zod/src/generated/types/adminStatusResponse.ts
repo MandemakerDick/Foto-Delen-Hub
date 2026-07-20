@@ -10,4 +10,6 @@ export interface AdminStatusResponse {
   isAdmin: boolean;
   totalAdmins: number;
   displayName?: string | null;
+  /** @nullable */
+  photographerId?: number | null;
 }

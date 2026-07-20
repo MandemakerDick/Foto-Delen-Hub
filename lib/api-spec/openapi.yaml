@@ -1582,6 +1582,8 @@ components:
         displayName:
           type: string
           nullable: true
+        photographerId:
+          type: ["integer", "null"]
 
     AddAdminRequest:
       type: object

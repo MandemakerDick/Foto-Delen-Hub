@@ -39,7 +39,11 @@ export function SessionDetail() {
   const { data: adminStatus } = useGetAdminStatus();
   
   const { data: photographers } = useListPhotographers({}, { query: { enabled: !!adminStatus?.isAdmin, queryKey: ['photographers'] } });
-  const { data: allPhotos } = useListPhotos({}, { query: { enabled: session?.status === 'open', queryKey: ['photos'] } });
+  const myPhotographerId = adminStatus?.photographerId ?? undefined;
+  const { data: allPhotos } = useListPhotos(
+    adminStatus?.isAdmin ? {} : (myPhotographerId ? { photographerId: myPhotographerId } : {}),
+    { query: { enabled: session?.status === 'open' && adminStatus !== undefined, queryKey: ['photos', adminStatus?.isAdmin ? 'all' : myPhotographerId] } }
+  );
 
   const addReviewer = useAddSessionReviewer();
   const removeReviewer = useRemoveSessionReviewer();

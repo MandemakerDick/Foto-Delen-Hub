@@ -610,7 +610,8 @@ export const AdminLoginResponse = zod.object({
 export const GetAdminStatusResponse = zod.object({
   "isAdmin": zod.boolean(),
   "totalAdmins": zod.number(),
-  "displayName": zod.string().nullish()
+  "displayName": zod.string().nullish(),
+  "photographerId": zod.number().nullish()
 })
 
 

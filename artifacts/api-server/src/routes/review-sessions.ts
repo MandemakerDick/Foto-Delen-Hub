@@ -259,7 +259,7 @@ router.get("/review-sessions/:id/photos", async (req, res): Promise<void> => {
         sortOrder: row.sortOrder,
         submittedAt: row.submittedAt.toISOString(),
         photoTitle: row.photoTitle ?? null,
-        photoUrl: row.photoUrl ?? null,
+        photoImageUrl: row.photoUrl ?? null,
         photographerName: row.photographerName ?? null,
         reviewCount: reviews.length,
         averageRating: avgRating,

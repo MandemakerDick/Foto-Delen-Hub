@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { getAuth, clerkClient } from "@clerk/express";
 import { db, adminsTable } from "@workspace/db";
+import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { eq, count } from "drizzle-orm";
 import { requireAuth } from "./auth";
 
@@ -163,18 +164,19 @@ router.get("/admins/me", async (req: any, res) => {
   const { userId } = getAuth(req);
   if (userId) {
     const admin = await resolveClerkAdmin(userId);
-    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null });
+    const photographerId = await getPhotographerIdForClerkUser(userId);
+    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: photographerId ?? null });
     return;
   }
 
   const sessionAdminId = req.session?.adminId as number | undefined;
   if (sessionAdminId) {
     const admin = await getAdminById(sessionAdminId);
-    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null });
+    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: null });
     return;
   }
 
-  res.json({ isAdmin: false, totalAdmins: total, displayName: null });
+  res.json({ isAdmin: false, totalAdmins: total, displayName: null, photographerId: null });
 });
 
 // GET /api/admins — list all admins (admin only)
