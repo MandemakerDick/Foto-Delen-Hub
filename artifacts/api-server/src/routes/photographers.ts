@@ -97,7 +97,12 @@ router.get("/photographers", async (req, res) => {
   const { search, clubId, themeId } = query.data;
 
   const whereClause = search
-    ? ilike(photographersTable.name, `%${search}%`)
+    ? or(
+        ilike(photographersTable.name, `%${search}%`),
+        ilike(photographersTable.bio, `%${search}%`),
+        ilike(t1.name, `%${search}%`),
+        ilike(t2.name, `%${search}%`),
+      )
     : clubId
       ? eq(photographersTable.clubId, clubId)
       : themeId

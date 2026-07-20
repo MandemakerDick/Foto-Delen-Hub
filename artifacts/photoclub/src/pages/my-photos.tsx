@@ -13,6 +13,7 @@ import {
   useListPhotographers,
   useListThemes,
   useUpdatePhotographer,
+  useProposeTheme,
   getGetPhotographerQueryKey,
 } from "@workspace/api-client-react";
 import { ObjectUploader } from "@workspace/object-storage-web";
@@ -324,6 +325,9 @@ function EditThemesPanel({
   const [theme1, setTheme1] = useState(profile.themeId1?.toString() ?? "none");
   const [theme2, setTheme2] = useState(profile.themeId2?.toString() ?? "none");
   const [open, setOpen] = useState(false);
+  const [showPropose, setShowPropose] = useState(false);
+  const [proposeName, setProposeName] = useState("");
+  const proposeMutation = useProposeTheme();
 
   const theme2Options = themes?.filter((th) => th.id.toString() !== theme1) ?? [];
 
@@ -431,6 +435,60 @@ function EditThemesPanel({
           <X className="w-3.5 h-3.5" />
         </Button>
       </div>
+
+      {/* Propose new theme */}
+      {!showPropose ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1 mt-1"
+          onClick={() => setShowPropose(true)}
+        >
+          <PlusCircle className="w-3 h-3" />
+          {t("myPhotos.proposeTheme")}
+        </Button>
+      ) : (
+        <div className="flex items-center gap-2 mt-1">
+          <Input
+            value={proposeName}
+            onChange={(e) => setProposeName(e.target.value)}
+            placeholder={t("myPhotos.proposeThemePlaceholder")}
+            className="h-8 text-sm w-48 bg-background border-border/50"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") { setShowPropose(false); setProposeName(""); }
+            }}
+          />
+          <Button
+            size="sm"
+            className="h-8 px-3 text-xs gap-1"
+            disabled={!proposeName.trim() || proposeMutation.isPending}
+            onClick={() => {
+              proposeMutation.mutate(
+                { data: { name: proposeName.trim() } },
+                {
+                  onSuccess: () => {
+                    toast({ title: t("myPhotos.proposeThemeSuccess") });
+                    setProposeName("");
+                    setShowPropose(false);
+                  },
+                  onError: () => toast({ title: t("common.error"), description: t("myPhotos.proposeThemeError"), variant: "destructive" }),
+                },
+              );
+            }}
+          >
+            {proposeMutation.isPending ? t("myPhotos.proposeThemeSubmitting") : t("myPhotos.proposeThemeBtn")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={() => { setShowPropose(false); setProposeName(""); }}
+          >
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

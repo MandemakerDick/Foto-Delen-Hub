@@ -1,2 +1,3 @@
 - [Radix Select empty-value crash](radix-select-empty-value.md) — SelectItem value="" crashes at runtime; use "none" and check accordingly in save logic.
 - [Dark-theme dialog visibility](dark-theme-dialog.md) — with near-black backgrounds, dialog bg-background blends into the overlay; use hardcoded arbitrary values in dialog.tsx.
+- [Drizzle-kit non-TTY](drizzle-kit-noninteractive.md) — drizzle-kit push needs TTY; use executeSql for raw DDL in agent shells.

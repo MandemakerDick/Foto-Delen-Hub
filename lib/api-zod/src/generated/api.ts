@@ -182,6 +182,46 @@ export const DeleteThemeParams = zod.object({
 
 
 /**
+ * @summary List theme proposals (admin only)
+ */
+export const ListThemeProposalsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "proposedByPhotographerId": zod.number(),
+  "proposedByPhotographerName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.string()
+})
+export const ListThemeProposalsResponse = zod.array(ListThemeProposalsResponseItem)
+
+
+/**
+ * @summary Propose a new theme (photographer)
+ */
+export const ProposeThemeBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string().nullish()
+})
+
+
+/**
+ * @summary Approve a theme proposal (admin only) — creates the theme
+ */
+export const ApproveThemeProposalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Reject (delete) a theme proposal (admin only)
+ */
+export const RejectThemeProposalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all photographers
  */
 export const ListPhotographersQueryParams = zod.object({

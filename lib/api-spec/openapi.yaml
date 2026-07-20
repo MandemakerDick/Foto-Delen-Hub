@@ -222,6 +222,78 @@ paths:
         "404":
           description: Not found
 
+  /themes/proposals:
+    get:
+      operationId: listThemeProposals
+      tags: [themes]
+      summary: List theme proposals (admin only)
+      responses:
+        "200":
+          description: List of proposals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ThemeProposal"
+
+  /themes/propose:
+    post:
+      operationId: proposeTheme
+      tags: [themes]
+      summary: Propose a new theme (photographer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThemeProposalInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThemeProposal"
+
+  /themes/proposals/{id}/approve:
+    post:
+      operationId: approveThemeProposal
+      tags: [themes]
+      summary: Approve a theme proposal (admin only) — creates the theme
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Theme created from proposal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Theme"
+        "404":
+          description: Not found
+
+  /themes/proposals/{id}:
+    delete:
+      operationId: rejectThemeProposal
+      tags: [themes]
+      summary: Reject (delete) a theme proposal (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /photographers:
     get:
       operationId: listPhotographers
@@ -1786,6 +1858,35 @@ components:
           type: ["string", "null"]
         photographerId:
           type: integer
+
+    ThemeProposal:
+      type: object
+      required: [id, name, proposedByPhotographerId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        proposedByPhotographerId:
+          type: integer
+        proposedByPhotographerName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+
+    ThemeProposalInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
 
     ErrorEnvelope:
       type: object

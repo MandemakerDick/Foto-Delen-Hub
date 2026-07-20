@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, themesTable, photosTable } from "@workspace/db";
+import { db, themesTable, photosTable, themeProposalsTable, photographersTable } from "@workspace/db";
 import { eq, ilike, count } from "drizzle-orm";
 import {
   ListThemesQueryParams,
@@ -8,6 +8,9 @@ import {
   UpdateThemeParams,
   DeleteThemeParams,
 } from "@workspace/api-zod";
+import { requireAdmin } from "./admins";
+import { requireAuth } from "./auth";
+import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 
 const router = Router();
 
@@ -48,6 +51,96 @@ router.get("/themes", async (req, res) => {
     .orderBy(themesTable.name);
 
   res.json(themes.map(mapTheme));
+});
+
+// GET /api/themes/proposals — list all pending proposals (admin only)
+router.get("/themes/proposals", requireAdmin, async (_req, res) => {
+  const rows = await db
+    .select({
+      id: themeProposalsTable.id,
+      name: themeProposalsTable.name,
+      description: themeProposalsTable.description,
+      proposedByPhotographerId: themeProposalsTable.proposedByPhotographerId,
+      proposedByPhotographerName: photographersTable.name,
+      status: themeProposalsTable.status,
+      createdAt: themeProposalsTable.createdAt,
+    })
+    .from(themeProposalsTable)
+    .leftJoin(photographersTable, eq(themeProposalsTable.proposedByPhotographerId, photographersTable.id))
+    .orderBy(themeProposalsTable.createdAt);
+
+  res.json(rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
+});
+
+// POST /api/themes/propose — photographer proposes a new theme
+router.post("/themes/propose", requireAuth, async (req: any, res) => {
+  const { name, description } = req.body as { name?: string; description?: string | null };
+  if (!name?.trim()) {
+    res.status(400).json({ error: "name is required" });
+    return;
+  }
+
+  const photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
+  if (!photographerId) {
+    res.status(403).json({ error: "No photographer profile found" });
+    return;
+  }
+
+  const [proposal] = await db
+    .insert(themeProposalsTable)
+    .values({
+      name: name.trim(),
+      description: description?.trim() || null,
+      proposedByPhotographerId: photographerId,
+    })
+    .returning();
+
+  res.status(201).json({
+    ...proposal,
+    proposedByPhotographerName: null,
+    createdAt: proposal.createdAt.toISOString(),
+  });
+});
+
+// POST /api/themes/proposals/:id/approve — admin approves → creates theme
+router.post("/themes/proposals/:id/approve", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [proposal] = await db
+    .select()
+    .from(themeProposalsTable)
+    .where(eq(themeProposalsTable.id, id));
+
+  if (!proposal) { res.status(404).json({ error: "Proposal not found" }); return; }
+
+  const [theme] = await db
+    .insert(themesTable)
+    .values({ name: proposal.name, description: proposal.description ?? null })
+    .returning();
+
+  await db
+    .update(themeProposalsTable)
+    .set({ status: "approved" })
+    .where(eq(themeProposalsTable.id, id));
+
+  res.status(201).json({ ...theme, photoCount: 0, createdAt: theme.createdAt.toISOString() });
+});
+
+// DELETE /api/themes/proposals/:id — admin rejects a proposal
+router.delete("/themes/proposals/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [proposal] = await db
+    .select({ id: themeProposalsTable.id })
+    .from(themeProposalsTable)
+    .where(eq(themeProposalsTable.id, id));
+
+  if (!proposal) { res.status(404).json({ error: "Proposal not found" }); return; }
+
+  await db.delete(themeProposalsTable).where(eq(themeProposalsTable.id, id));
+  res.status(204).send();
 });
 
 // GET /api/themes/:id — fetch a single theme by id
@@ -94,7 +187,6 @@ router.put("/themes/:id", async (req, res) => {
     .where(eq(themesTable.id, params.data.id))
     .returning();
 
-  // Re-fetch with photoCount so the response matches the list/get shape
   const [row] = await themeBaseQuery()
     .where(eq(themesTable.id, updated.id))
     .groupBy(themesTable.id);

@@ -24,12 +24,16 @@ import {
   useListInvites,
   useCreateInvite,
   useRevokeInvite,
+  useListThemeProposals,
+  useApproveThemeProposal,
+  useRejectThemeProposal,
   getListClubsQueryKey,
   getListThemesQueryKey,
   getListPhotographersQueryKey,
   getListAdminsQueryKey,
   getGetAdminStatusQueryKey,
   getListInvitesQueryKey,
+  getListThemeProposalsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/react";
@@ -104,6 +108,38 @@ export default function Manage() {
   const updateAdminMutation = useUpdateAdmin();
   const removeAdminMutation = useRemoveAdmin();
   const setPasswordMutation = useSetAdminPassword();
+
+  // Theme proposals
+  const { data: themeProposals } = useListThemeProposals({ query: { enabled: !!adminStatus?.isAdmin, queryKey: getListThemeProposalsQueryKey() } });
+  const approveProposalMutation = useApproveThemeProposal();
+  const rejectProposalMutation = useRejectThemeProposal();
+
+  const handleApproveProposal = (id: number, name: string) => {
+    approveProposalMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.theme.toastApprovedTitle"), description: t("manage.theme.toastApprovedDesc", { name }) });
+          queryClient.invalidateQueries({ queryKey: getListThemeProposalsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListThemesQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.theme.toastApproveError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleRejectProposal = (id: number) => {
+    rejectProposalMutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ title: t("manage.theme.toastRejectedTitle") });
+          queryClient.invalidateQueries({ queryKey: getListThemeProposalsQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("manage.theme.toastRejectError"), variant: "destructive" }),
+      },
+    );
+  };
 
   // Invite state
   const { data: inviteList } = useListInvites({ query: { enabled: !!adminStatus?.isAdmin, queryKey: getListInvitesQueryKey() } });
@@ -633,6 +669,49 @@ export default function Manage() {
                     <Button type="button" variant="ghost" size="sm" className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => deleteTheme(theme.id, theme.name)} disabled={deleteThemeMutation.isPending}>
                       <Trash2 className="w-3.5 h-3.5" />
                       {t("common.delete")}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Theme proposals section */}
+          {themeProposals && themeProposals.filter((p) => p.status === "pending").length > 0 && (
+            <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-border/50">
+                <h3 className="font-serif text-lg font-medium">{t("manage.theme.proposalsHeading")}</h3>
+              </div>
+              <ul className="divide-y divide-border/50">
+                {themeProposals.filter((p) => p.status === "pending").map((proposal) => (
+                  <li key={proposal.id} className="flex items-center gap-4 px-6 py-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{proposal.name}</p>
+                      {proposal.description && <p className="text-xs text-muted-foreground truncate">{proposal.description}</p>}
+                      {proposal.proposedByPhotographerName && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{t("manage.theme.proposedBy", { name: proposal.proposedByPhotographerName })}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="shrink-0 gap-1.5"
+                      onClick={() => handleApproveProposal(proposal.id, proposal.name)}
+                      disabled={approveProposalMutation.isPending}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      {t("manage.theme.approveBtn")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleRejectProposal(proposal.id)}
+                      disabled={rejectProposalMutation.isPending}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      {t("manage.theme.rejectBtn")}
                     </Button>
                   </li>
                 ))}

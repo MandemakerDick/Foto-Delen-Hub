@@ -6,3 +6,4 @@ export * from "./comments";
 export * from "./admins";
 export * from "./invites";
 export * from "./review-sessions";
+export * from "./theme-proposals";

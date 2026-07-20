@@ -380,6 +380,33 @@ export interface PhotoReviewInput {
   photographerId?: number;
 }
 
+export type ThemeProposalStatus = typeof ThemeProposalStatus[keyof typeof ThemeProposalStatus];
+
+
+export const ThemeProposalStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface ThemeProposal {
+  id: number;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  proposedByPhotographerId: number;
+  /** @nullable */
+  proposedByPhotographerName?: string | null;
+  status: ThemeProposalStatus;
+  createdAt: string;
+}
+
+export interface ThemeProposalInput {
+  name: string;
+  /** @nullable */
+  description?: string | null;
+}
+
 export interface ErrorEnvelope {
   error: string;
 }
