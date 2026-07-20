@@ -20,6 +20,8 @@ import {
   getListCommentsQueryKey,
   useCreateComment,
   useDeleteComment,
+  useGetAdminStatus,
+  getGetAdminStatusQueryKey,
 } from "@workspace/api-client-react";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { Button } from "@/components/ui/button";
@@ -78,6 +80,7 @@ export default function PhotoDetail() {
   const deleteCommentMutation = useDeleteComment();
 
   const { profile: myProfile } = useMyProfile();
+  const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
 
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
@@ -360,7 +363,7 @@ export default function PhotoDetail() {
           <div className="flex justify-between items-start mb-4">
             <h1 className="font-serif text-4xl font-bold leading-tight">{photo.title}</h1>
 
-            {myProfile?.id === photo.photographerId && (
+            {(myProfile?.id === photo.photographerId || adminStatus?.isAdmin) && (
               <>
                 {/* Edit dialog */}
                 <Dialog open={editOpen} onOpenChange={setEditOpen}>
