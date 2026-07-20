@@ -86,8 +86,8 @@ export default function PhotoDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editClubId, setEditClubId] = useState<string>("");
-  const [editThemeId, setEditThemeId] = useState<string>("");
+  const [editClubId, setEditClubId] = useState<string>("none");
+  const [editThemeId, setEditThemeId] = useState<string>("none");
 
   const [selectedLiker, setSelectedLiker] = useState<string>("");
   const [selectedCommenter, setSelectedCommenter] = useState<string>("");
@@ -156,8 +156,8 @@ export default function PhotoDetail() {
   const openEdit = () => {
     setEditTitle(photo?.title ?? "");
     setEditDescription(photo?.description ?? "");
-    setEditClubId(photo?.clubId?.toString() ?? "");
-    setEditThemeId(photo?.themeId?.toString() ?? "");
+    setEditClubId(photo?.clubId?.toString() ?? "none");
+    setEditThemeId(photo?.themeId?.toString() ?? "none");
     setEditOpen(true);
   };
 
@@ -168,8 +168,8 @@ export default function PhotoDetail() {
         data: {
           title: editTitle || undefined,
           description: editDescription || undefined,
-          clubId: editClubId ? Number(editClubId) : null,
-          themeId: editThemeId ? Number(editThemeId) : null,
+          clubId: editClubId !== "none" ? Number(editClubId) : null,
+          themeId: editThemeId !== "none" ? Number(editThemeId) : null,
         },
       },
       {
@@ -396,7 +396,7 @@ export default function PhotoDetail() {
                               <SelectValue placeholder={t("photoDetail.none")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">{t("photoDetail.none")}</SelectItem>
+                              <SelectItem value="none">{t("photoDetail.none")}</SelectItem>
                               {clubs?.map((c) => (
                                 <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                               ))}
@@ -410,7 +410,7 @@ export default function PhotoDetail() {
                               <SelectValue placeholder={t("photoDetail.none")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">{t("photoDetail.none")}</SelectItem>
+                              <SelectItem value="none">{t("photoDetail.none")}</SelectItem>
                               {themes?.map((theme) => (
                                 <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
                               ))}
