@@ -8,6 +8,7 @@ import {
   photoReviewsTable,
   photosTable,
   photographersTable,
+  adminsTable,
 } from "@workspace/db";
 import {
   ListReviewSessionsQueryParams,
@@ -304,10 +305,29 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     return;
   }
 
-  const photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
+  let photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
   if (!photographerId) {
-    res.status(403).json({ error: "No photographer profile found" });
-    return;
+    // Allow admins to submit on behalf of the photo's own photographer
+    const adminRows = await db
+      .select({ id: adminsTable.id })
+      .from(adminsTable)
+      .where(eq(adminsTable.clerkUserId, req.clerkUserId))
+      .limit(1);
+    if (adminRows.length === 0) {
+      res.status(403).json({ error: "No photographer profile found" });
+      return;
+    }
+    // Derive photographer from the photo itself
+    const photoRows = await db
+      .select({ photographerId: photosTable.photographerId })
+      .from(photosTable)
+      .where(eq(photosTable.id, parsed.data.photoId))
+      .limit(1);
+    if (!photoRows[0]?.photographerId) {
+      res.status(400).json({ error: "Photo has no photographer" });
+      return;
+    }
+    photographerId = photoRows[0].photographerId;
   }
 
   // Enforce max photos per member
