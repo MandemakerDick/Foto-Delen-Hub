@@ -113,3 +113,10 @@
     @apply font-serif tracking-tight;
   }
 }
+
+/* Prevent casual saving of photos */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  pointer-events: none;
+}

@@ -112,6 +112,9 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
 
     res.status(response.status);
     response.headers.forEach((value, key) => res.setHeader(key, value));
+    // Force inline display — prevents the browser from offering a "Save" dialog
+    // when a user navigates directly to the image URL.
+    res.setHeader("Content-Disposition", "inline");
 
     if (response.body) {
       const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
