@@ -215,6 +215,14 @@ function ClerkProviderWithRoutes() {
 }
 
 function App() {
+  useEffect(() => {
+    const block = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).tagName === "IMG") e.preventDefault();
+    };
+    document.addEventListener("contextmenu", block);
+    return () => document.removeEventListener("contextmenu", block);
+  }, []);
+
   return (
     // WouterRouter is initialised with the basePath so all <Route> paths are
     // relative to the artifact's preview path, not the document root.
