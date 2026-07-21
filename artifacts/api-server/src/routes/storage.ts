@@ -112,8 +112,6 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
 
     res.status(response.status);
     response.headers.forEach((value, key) => res.setHeader(key, value));
-    // Inline disposition — browser displays rather than prompts save
-    res.setHeader("Content-Disposition", "inline");
 
     if (response.body) {
       const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
