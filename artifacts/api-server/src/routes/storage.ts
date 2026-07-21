@@ -6,9 +6,6 @@ import {
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { getAuth } from "@clerk/express";
-import { db, photosTable, adminsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -16,59 +13,15 @@ const objectStorageService = new ObjectStorageService();
 /**
  * Resolves the access decision for a private object path.
  *
- * - If the path belongs to a photo (found in photos table):
- *     → allow only the owning photographer (via Clerk) or an admin.
- * - If the path is not a photo (e.g. an avatar):
- *     → allow any authenticated user (Clerk or session admin).
- * - Unauthenticated requests always get 401.
+ * Any authenticated user (Clerk or session admin) may access any object.
+ * Unauthenticated requests are denied.
  *
- * Returns "ok" | "unauthenticated" | "forbidden".
+ * Returns "ok" | "unauthenticated".
  */
-async function checkObjectAccess(
-  req: Request,
-  objectPath: string,
-): Promise<"ok" | "unauthenticated" | "forbidden"> {
-  // Identify the requester
+function checkObjectAccess(req: Request): "ok" | "unauthenticated" {
   const { userId } = getAuth(req as any);
   const sessionAdminId = (req as any).session?.adminId as number | undefined;
-
-  const isAuthenticated = !!userId || !!sessionAdminId;
-  if (!isAuthenticated) return "unauthenticated";
-
-  // Session admins always have full access
-  if (sessionAdminId) return "ok";
-
-  // For Clerk users: check if they are an admin
-  if (userId) {
-    const [adminRow] = await db
-      .select({ id: adminsTable.id })
-      .from(adminsTable)
-      .where(eq(adminsTable.clerkUserId, userId))
-      .limit(1);
-    if (adminRow) return "ok";
-  }
-
-  // Look up the photo by its stored imageUrl to find the owner
-  const [photo] = await db
-    .select({ photographerId: photosTable.photographerId })
-    .from(photosTable)
-    .where(eq(photosTable.imageUrl, objectPath))
-    .limit(1);
-
-  if (!photo) {
-    // Not a photo (e.g. avatar) — any authenticated user may view
-    return "ok";
-  }
-
-  // It is a photo: only the owning photographer may access it
-  if (!userId) return "forbidden";
-
-  const myPhotographerId = await getPhotographerIdForClerkUser(userId);
-  if (myPhotographerId !== null && myPhotographerId === photo.photographerId) {
-    return "ok";
-  }
-
-  return "forbidden";
+  return userId || sessionAdminId ? "ok" : "unauthenticated";
 }
 
 /**
@@ -148,13 +101,9 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
 
-    const access = await checkObjectAccess(req, objectPath);
+    const access = checkObjectAccess(req);
     if (access === "unauthenticated") {
       res.status(401).json({ error: "Authentication required" });
-      return;
-    }
-    if (access === "forbidden") {
-      res.status(403).json({ error: "You do not have permission to access this file" });
       return;
     }
 
