@@ -91,21 +91,16 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 /**
  * GET /storage/objects/*
  *
- * Serve private object entities.
- * - Photos: only the owning photographer or an admin.
- * - Other objects (avatars etc.): any authenticated user.
+ * Serve object entities (photos, avatars, imports).
+ * Publicly accessible — visitors can view gallery images without signing in.
+ * Download protection is handled at the UI layer (right-click blocking,
+ * Content-Disposition: inline, CSS drag prevention).
  */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
-
-    const access = checkObjectAccess(req);
-    if (access === "unauthenticated") {
-      res.status(401).json({ error: "Authentication required" });
-      return;
-    }
 
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
     const response = await objectStorageService.downloadObject(objectFile);
