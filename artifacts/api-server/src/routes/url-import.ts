@@ -63,7 +63,7 @@ function guessBio($: ReturnType<typeof cheerio.load>): string | null {
 }
 
 /** Best-effort guess at the photographer name from page metadata. */
-function guessPhotographerName($: ReturnType<typeof cheerio.load>, pageTitle: string): string | null {
+function guessPhotographerName($: ReturnType<typeof cheerio.load>, pageTitle: string, pageUrl: URL): string | null {
   // Try explicit og:site_name or author meta first
   const author = $('meta[name="author"]').attr("content")?.trim();
   if (author && author.length > 1 && author.length < 80) return author;
@@ -84,6 +84,16 @@ function guessPhotographerName($: ReturnType<typeof cheerio.load>, pageTitle: st
   // Fall back to the first <h1>
   const h1 = $("h1").first().text().trim();
   if (h1 && h1.length > 1 && h1.length < 80) return h1;
+
+  // Last resort: derive a name from the URL slug (e.g. "henriette-van-ekert" → "Henriette Van Ekert")
+  const segments = pageUrl.pathname.split("/").filter(Boolean);
+  const slug = segments[segments.length - 1];
+  if (slug && /^[a-z]/.test(slug)) {
+    const fromSlug = slug
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    if (fromSlug.length > 1 && fromSlug.length < 80) return fromSlug;
+  }
 
   return null;
 }
@@ -169,7 +179,7 @@ router.post("/admins/import-from-url/scan", requireAdmin, async (req: any, res) 
 
   const $ = cheerio.load(html);
   const pageTitle = $("title").first().text().trim();
-  const photographerName = guessPhotographerName($, pageTitle);
+  const photographerName = guessPhotographerName($, pageTitle, parsedUrl);
   const bio = guessBio($);
 
   // Collect all <img> srcs, resolve to absolute, deduplicate
