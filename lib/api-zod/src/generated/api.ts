@@ -714,7 +714,8 @@ export const ImportPhotosFromUrlBody = zod.object({
   "images": zod.array(zod.object({
   "src": zod.string(),
   "title": zod.string(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "themeId": zod.number().nullish()
 })).min(1),
   "photographerId": zod.number().nullish(),
   "photographerName": zod.string().nullish(),

@@ -254,7 +254,7 @@ router.get("/admins/import-from-url/proxy", requireAdmin, async (req: any, res) 
 
 router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res) => {
   const body = req.body as {
-    images?: Array<{ src: string; title: string; description?: string | null }>;
+    images?: Array<{ src: string; title: string; description?: string | null; themeId?: number | null }>;
     photographerId?: number | null;
     photographerName?: string | null;
     photographerBio?: string | null;
@@ -349,7 +349,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
           imageUrl,
           photographerId: photographerId ?? null,
           clubId: clubId ?? null,
-          themeId: themeId ?? null,
+          themeId: img.themeId ?? themeId ?? null,
         })
         .returning();
 

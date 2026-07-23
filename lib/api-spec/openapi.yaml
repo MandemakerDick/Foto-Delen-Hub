@@ -1986,6 +1986,9 @@ components:
         description:
           type: string
           nullable: true
+        themeId:
+          type: integer
+          nullable: true
 
     UrlImportRequest:
       type: object

@@ -431,6 +431,7 @@ export interface UrlImportItem {
   src: string;
   title: string;
   description?: string | null;
+  themeId?: number | null;
 }
 
 export interface UrlImportRequest {

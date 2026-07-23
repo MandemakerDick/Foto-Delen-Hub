@@ -105,8 +105,7 @@ export default function Manage() {
   const [importNewPhotographerBio, setImportNewPhotographerBio] = useState("");
   const [importClubId, setImportClubId] = useState<string>("none");
   const [importNewClubName, setImportNewClubName] = useState("");
-  const [importThemeId, setImportThemeId] = useState<string>("none");
-  const [importNewThemeName, setImportNewThemeName] = useState("");
+  const [importPhotoEdits, setImportPhotoEdits] = useState<Array<{ title: string; themeId: string }>>([]);
   const [importResult, setImportResult] = useState<{ imported: number; failed: number } | null>(null);
 
   const scanUrlMutation = useScanUrlForPhotos();
@@ -140,20 +139,30 @@ export default function Manage() {
     setSelectedImageIndices(next);
   };
 
+  const initPhotoEdits = () => {
+    if (!scanResult) return;
+    const edits = scanResult.images
+      .filter((_, i) => selectedImageIndices.has(i))
+      .map(img => ({ title: img.alt?.trim() || "Untitled", themeId: "none" }));
+    setImportPhotoEdits(edits);
+    setImportStep(3);
+  };
+
   const handleImportPhotos = () => {
     if (!scanResult || selectedImageIndices.size === 0) return;
-    
+
     const selectedImages = scanResult.images
       .filter((_, i) => selectedImageIndices.has(i))
-      .map(img => ({
+      .map((img, idx) => ({
         src: img.src,
-        title: img.alt || "Untitled",
-        description: ""
+        title: importPhotoEdits[idx]?.title?.trim() || img.alt?.trim() || "Untitled",
+        description: "",
+        ...(importPhotoEdits[idx]?.themeId !== "none"
+          ? { themeId: Number(importPhotoEdits[idx].themeId) }
+          : {}),
       }));
 
-    const data: any = {
-      images: selectedImages,
-    };
+    const data: any = { images: selectedImages };
 
     if (importPhotographerId === "new") {
       data.photographerName = importNewPhotographerName.trim() || "Unknown Photographer";
@@ -166,11 +175,6 @@ export default function Manage() {
       data.clubName = importNewClubName.trim() || "New Club";
     } else if (importClubId !== "none") {
       data.clubId = Number(importClubId);
-    }
-    if (importThemeId === "new") {
-      data.themeName = importNewThemeName.trim() || "New Theme";
-    } else if (importThemeId !== "none") {
-      data.themeId = Number(importThemeId);
     }
 
     importPhotosMutation.mutate(
@@ -1064,7 +1068,7 @@ export default function Manage() {
                   <Button
                     className="flex-1"
                     disabled={selectedImageIndices.size === 0}
-                    onClick={() => setImportStep(3)}
+                    onClick={initPhotoEdits}
                   >
                     Next: Assign &amp; Import ({selectedImageIndices.size} photos)
                   </Button>
@@ -1141,26 +1145,50 @@ export default function Manage() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Theme (Optional)</label>
-                    <Select value={importThemeId} onValueChange={setImportThemeId}>
-                      <SelectTrigger className="bg-background"><SelectValue placeholder="Select theme..." /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="new">+ Add new theme</SelectItem>
-                        {themes?.map(t => (
-                          <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {importThemeId === "new" && (
-                      <Input
-                        value={importNewThemeName}
-                        onChange={(e) => setImportNewThemeName(e.target.value)}
-                        className="bg-background mt-2"
-                        placeholder="Theme name..."
-                      />
-                    )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium block mb-3">Photos — edit title &amp; theme per photo</label>
+                  <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                    {scanResult.images
+                      .filter((_, i) => selectedImageIndices.has(i))
+                      .map((img, idx) => (
+                        <div key={idx} className="flex items-center gap-3 bg-background/50 border border-border/50 rounded-md p-2">
+                          <img
+                            src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
+                            alt=""
+                            className="w-12 h-12 rounded object-cover shrink-0"
+                          />
+                          <Input
+                            value={importPhotoEdits[idx]?.title ?? ""}
+                            onChange={e => {
+                              const next = [...importPhotoEdits];
+                              if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
+                              setImportPhotoEdits(next);
+                            }}
+                            className="bg-background flex-1 min-w-0"
+                            placeholder="Title..."
+                          />
+                          <Select
+                            value={importPhotoEdits[idx]?.themeId ?? "none"}
+                            onValueChange={val => {
+                              const next = [...importPhotoEdits];
+                              if (next[idx]) next[idx] = { ...next[idx], themeId: val };
+                              setImportPhotoEdits(next);
+                            }}
+                          >
+                            <SelectTrigger className="bg-background w-40 shrink-0">
+                              <SelectValue placeholder="No theme" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No theme</SelectItem>
+                              {themes?.map(t => (
+                                <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
@@ -1199,8 +1227,7 @@ export default function Manage() {
                   setImportNewPhotographerBio("");
                   setImportClubId("none");
                   setImportNewClubName("");
-                  setImportThemeId("none");
-                  setImportNewThemeName("");
+                  setImportPhotoEdits([]);
                 }}>
                   Import More
                 </Button>
