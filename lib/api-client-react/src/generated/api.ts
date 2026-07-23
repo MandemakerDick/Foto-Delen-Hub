@@ -66,7 +66,11 @@ import type {
   ThemeProposalInput,
   UpdateAdminRequest,
   UploadUrlRequest,
-  UploadUrlResponse
+  UploadUrlResponse,
+  UrlImportRequest,
+  UrlImportResult,
+  UrlScanRequest,
+  UrlScanResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3053,6 +3057,148 @@ export const useSetAdminPassword = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSetAdminPasswordMutationOptions(options));
+    }
+
+export const getScanUrlForPhotosUrl = () => {
+
+
+
+
+  return `/api/admins/import-from-url/scan`
+}
+
+/**
+ * @summary Scan a photographer portfolio URL and return discovered images (admin only)
+ */
+export const scanUrlForPhotos = async (urlScanRequest: UrlScanRequest, options?: RequestInit): Promise<UrlScanResult> => {
+
+  return customFetch<UrlScanResult>(getScanUrlForPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      urlScanRequest,)
+  }
+);}
+
+
+
+
+export const getScanUrlForPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanUrlForPhotos>>, TError,{data: BodyType<UrlScanRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof scanUrlForPhotos>>, TError,{data: BodyType<UrlScanRequest>}, TContext> => {
+
+const mutationKey = ['scanUrlForPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof scanUrlForPhotos>>, {data: BodyType<UrlScanRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  scanUrlForPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ScanUrlForPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof scanUrlForPhotos>>>
+    export type ScanUrlForPhotosMutationBody = BodyType<UrlScanRequest>
+    export type ScanUrlForPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Scan a photographer portfolio URL and return discovered images (admin only)
+ */
+export const useScanUrlForPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanUrlForPhotos>>, TError,{data: BodyType<UrlScanRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof scanUrlForPhotos>>,
+        TError,
+        {data: BodyType<UrlScanRequest>},
+        TContext
+      > => {
+      return useMutation(getScanUrlForPhotosMutationOptions(options));
+    }
+
+export const getImportPhotosFromUrlUrl = () => {
+
+
+
+
+  return `/api/admins/import-from-url/import`
+}
+
+/**
+ * @summary Download and import selected images from a scanned page (admin only)
+ */
+export const importPhotosFromUrl = async (urlImportRequest: UrlImportRequest, options?: RequestInit): Promise<UrlImportResult> => {
+
+  return customFetch<UrlImportResult>(getImportPhotosFromUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      urlImportRequest,)
+  }
+);}
+
+
+
+
+export const getImportPhotosFromUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importPhotosFromUrl>>, TError,{data: BodyType<UrlImportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importPhotosFromUrl>>, TError,{data: BodyType<UrlImportRequest>}, TContext> => {
+
+const mutationKey = ['importPhotosFromUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importPhotosFromUrl>>, {data: BodyType<UrlImportRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importPhotosFromUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportPhotosFromUrlMutationResult = NonNullable<Awaited<ReturnType<typeof importPhotosFromUrl>>>
+    export type ImportPhotosFromUrlMutationBody = BodyType<UrlImportRequest>
+    export type ImportPhotosFromUrlMutationError = ErrorType<void>
+
+    /**
+ * @summary Download and import selected images from a scanned page (admin only)
+ */
+export const useImportPhotosFromUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importPhotosFromUrl>>, TError,{data: BodyType<UrlImportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importPhotosFromUrl>>,
+        TError,
+        {data: BodyType<UrlImportRequest>},
+        TContext
+      > => {
+      return useMutation(getImportPhotosFromUrlMutationOptions(options));
     }
 
 export const getListInvitesUrl = () => {

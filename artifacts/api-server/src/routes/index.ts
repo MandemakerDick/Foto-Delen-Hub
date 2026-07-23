@@ -18,6 +18,7 @@ import storageRouter from "./storage";
 import adminsRouter from "./admins";
 import invitesRouter from "./invites";
 import reviewSessionsRouter from "./review-sessions";
+import urlImportRouter from "./url-import";
 
 const router: IRouter = Router();
 
@@ -33,5 +34,6 @@ router.use(storageRouter);
 router.use(adminsRouter);
 router.use(invitesRouter);
 router.use(reviewSessionsRouter);
+router.use(urlImportRouter);
 
 export default router;

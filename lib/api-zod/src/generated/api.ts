@@ -685,6 +685,65 @@ export const SetAdminPasswordBody = zod.object({
 
 
 /**
+ * @summary Scan a photographer portfolio URL and return discovered images (admin only)
+ */
+export const ScanUrlForPhotosBody = zod.object({
+  "url": zod.string().url()
+})
+
+export const ScanUrlForPhotosResponse = zod.object({
+  "url": zod.string(),
+  "photographerName": zod.string().nullish(),
+  "images": zod.array(zod.object({
+  "src": zod.string(),
+  "alt": zod.string().nullish(),
+  "width": zod.number().nullish(),
+  "height": zod.number().nullish()
+}))
+})
+
+
+/**
+ * @summary Download and import selected images from a scanned page (admin only)
+ */
+
+
+
+export const ImportPhotosFromUrlBody = zod.object({
+  "images": zod.array(zod.object({
+  "src": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish()
+})).min(1),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "themeId": zod.number().nullish()
+})
+
+export const ImportPhotosFromUrlResponse = zod.object({
+  "imported": zod.number(),
+  "failed": zod.number(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "themeId": zod.number().nullish(),
+  "themeName": zod.string().nullish(),
+  "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
+  "createdAt": zod.string()
+})).optional()
+})
+
+
+/**
  * @summary List all invite tokens (admin only)
  */
 export const ListInvitesResponseItem = zod.object({

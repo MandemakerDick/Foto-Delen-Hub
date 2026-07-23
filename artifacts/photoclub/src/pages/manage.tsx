@@ -34,8 +34,13 @@ import {
   getGetAdminStatusQueryKey,
   getListInvitesQueryKey,
   getListThemeProposalsQueryKey,
+  useScanUrlForPhotos,
+  useImportPhotosFromUrl,
+  getListPhotosQueryKey,
 } from "@workspace/api-client-react";
+import type { UrlScanResult } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth, useUser } from "@clerk/react";
 import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
@@ -53,7 +58,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2 } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -88,6 +93,86 @@ export default function Manage() {
   const { data: photographers } = useListPhotographers();
   const { data: adminStatus } = useGetAdminStatus({ query: { retry: false, queryKey: getGetAdminStatusQueryKey() } });
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
+
+  // ── Import tab state ──────────────────────────────────────
+  const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
+  const [importUrl, setImportUrl] = useState("");
+  const [scanResult, setScanResult] = useState<UrlScanResult | null>(null);
+  const [selectedImageIndices, setSelectedImageIndices] = useState<Set<number>>(new Set());
+  
+  const [importPhotographerId, setImportPhotographerId] = useState<string>("new");
+  const [importNewPhotographerName, setImportNewPhotographerName] = useState("");
+  const [importClubId, setImportClubId] = useState<string>("none");
+  const [importThemeId, setImportThemeId] = useState<string>("none");
+  const [importResult, setImportResult] = useState<{ imported: number; failed: number } | null>(null);
+
+  const scanUrlMutation = useScanUrlForPhotos();
+  const importPhotosMutation = useImportPhotosFromUrl();
+
+  const handleScanUrl = () => {
+    if (!importUrl.trim()) return;
+    scanUrlMutation.mutate(
+      { data: { url: importUrl.trim() } },
+      {
+        onSuccess: (result) => {
+          setScanResult(result);
+          setSelectedImageIndices(new Set(result.images.map((_, i) => i)));
+          setImportNewPhotographerName(result.photographerName || "");
+          setImportStep(2);
+        },
+        onError: () => toast({ title: t("common.error", "Error"), description: "Could not scan the provided URL. Please try again.", variant: "destructive" }),
+      }
+    );
+  };
+
+  const toggleSelectImage = (index: number, force?: boolean) => {
+    const next = new Set(selectedImageIndices);
+    if (force === true) next.add(index);
+    else if (force === false) next.delete(index);
+    else {
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+    }
+    setSelectedImageIndices(next);
+  };
+
+  const handleImportPhotos = () => {
+    if (!scanResult || selectedImageIndices.size === 0) return;
+    
+    const selectedImages = scanResult.images
+      .filter((_, i) => selectedImageIndices.has(i))
+      .map(img => ({
+        src: img.src,
+        title: img.alt || "Untitled",
+        description: ""
+      }));
+
+    const data: any = {
+      images: selectedImages,
+    };
+
+    if (importPhotographerId === "new") {
+      data.photographerName = importNewPhotographerName.trim() || "Unknown Photographer";
+    } else {
+      data.photographerId = Number(importPhotographerId);
+    }
+
+    if (importClubId !== "none") data.clubId = Number(importClubId);
+    if (importThemeId !== "none") data.themeId = Number(importThemeId);
+
+    importPhotosMutation.mutate(
+      { data },
+      {
+        onSuccess: (res) => {
+          setImportResult({ imported: res.imported, failed: res.failed });
+          setImportStep(3);
+          queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
+        },
+        onError: () => toast({ title: t("common.error", "Error"), description: "An error occurred during import.", variant: "destructive" }),
+      }
+    );
+  };
 
   // Add admin form state
   const [newAdminName, setNewAdminName] = useState("");
@@ -500,7 +585,7 @@ export default function Manage() {
       </div>
 
       <Tabs defaultValue="club" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-8 bg-secondary border border-border/50">
+        <TabsList className="grid w-full grid-cols-5 mb-8 bg-secondary border border-border/50">
           <TabsTrigger value="club" className="data-[state=active]:bg-background">
             <Users className="w-4 h-4 mr-2" />{t("manage.tabs.club")}
           </TabsTrigger>
@@ -509,6 +594,9 @@ export default function Manage() {
           </TabsTrigger>
           <TabsTrigger value="photographer" className="data-[state=active]:bg-background">
             <User className="w-4 h-4 mr-2" />{t("manage.tabs.photographer")}
+          </TabsTrigger>
+          <TabsTrigger value="import" className="data-[state=active]:bg-background">
+            <Globe className="w-4 h-4 mr-2" />Import
           </TabsTrigger>
           <TabsTrigger value="admins" className="data-[state=active]:bg-background">
             <ShieldCheck className="w-4 h-4 mr-2" />{t("manage.tabs.admins")}
@@ -867,6 +955,193 @@ export default function Manage() {
               </ul>
             </div>
           )}
+        </TabsContent>
+
+        {/* ── Import tab ─────────────────────────────────────── */}
+        <TabsContent value="import" className="space-y-6">
+          <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
+            <h2 className="font-serif text-2xl font-medium mb-6">Import Photos from URL</h2>
+            
+            {importStep === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Portfolio URL</label>
+                  <Input 
+                    placeholder="https://photographer-portfolio.com" 
+                    value={importUrl} 
+                    onChange={(e) => setImportUrl(e.target.value)} 
+                    className="bg-background"
+                  />
+                </div>
+                <Button 
+                  onClick={handleScanUrl} 
+                  disabled={!importUrl.trim() || scanUrlMutation.isPending}
+                >
+                  {scanUrlMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Scanning...</>
+                  ) : (
+                    <><Globe className="w-4 h-4 mr-2" /> Scan for Photos</>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {importStep === 2 && scanResult && (
+              <div className="space-y-8">
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <h3 className="font-serif text-xl">Select Photos</h3>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-muted-foreground">{selectedImageIndices.size} selected</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          if (selectedImageIndices.size === scanResult.images.length) {
+                            setSelectedImageIndices(new Set());
+                          } else {
+                            setSelectedImageIndices(new Set(scanResult.images.map((_, i) => i)));
+                          }
+                        }}
+                      >
+                        {selectedImageIndices.size === scanResult.images.length ? (
+                          <><Square className="w-4 h-4 mr-2" /> Deselect All</>
+                        ) : (
+                          <><SquareCheck className="w-4 h-4 mr-2" /> Select All</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {scanResult.photographerName && (
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Found portfolio for: <strong className="text-foreground">{scanResult.photographerName}</strong>
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto p-2 border border-border/50 rounded-lg bg-background/50">
+                    {scanResult.images.map((img, i) => {
+                      const isSelected = selectedImageIndices.has(i);
+                      return (
+                        <div 
+                          key={i} 
+                          className={`relative aspect-square rounded-md overflow-hidden border-2 transition-colors cursor-pointer ${isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}
+                          onClick={() => toggleSelectImage(i)}
+                        >
+                          <img src={img.src} alt={img.alt || "Untitled"} className="w-full h-full object-cover" />
+                          <div className="absolute top-2 left-2 bg-black/40 rounded p-0.5" style={{ pointerEvents: "all" }} onClick={(e) => e.stopPropagation()}>
+                            <Checkbox 
+                              checked={isSelected} 
+                              onCheckedChange={(c) => toggleSelectImage(i, !!c)} 
+                              className="border-white data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                          </div>
+                          <div className="absolute bottom-0 inset-x-0 bg-black/60 p-2">
+                            <p className="text-white text-xs truncate">{img.alt || "Untitled"}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <Separator className="bg-border/50" />
+
+                <div className="space-y-4">
+                  <h3 className="font-serif text-xl">Assignment & Import</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Photographer</label>
+                      <Select value={importPhotographerId} onValueChange={setImportPhotographerId}>
+                        <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">+ Add new photographer</SelectItem>
+                          {photographers?.map(p => (
+                            <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {importPhotographerId === "new" && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">New Photographer Name</label>
+                        <Input 
+                          value={importNewPhotographerName} 
+                          onChange={(e) => setImportNewPhotographerName(e.target.value)} 
+                          className="bg-background"
+                          placeholder="Name..."
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Club (Optional)</label>
+                      <Select value={importClubId} onValueChange={setImportClubId}>
+                        <SelectTrigger className="bg-background"><SelectValue placeholder="Select club..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {clubs?.map(c => (
+                            <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Theme (Optional)</label>
+                      <Select value={importThemeId} onValueChange={setImportThemeId}>
+                        <SelectTrigger className="bg-background"><SelectValue placeholder="Select theme..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {themes?.map(t => (
+                            <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <Button variant="outline" onClick={() => setImportStep(1)}>Back</Button>
+                    <Button 
+                      className="flex-1"
+                      onClick={handleImportPhotos}
+                      disabled={selectedImageIndices.size === 0 || importPhotosMutation.isPending || (importPhotographerId === "new" && !importNewPhotographerName.trim())}
+                    >
+                      {importPhotosMutation.isPending ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing {selectedImageIndices.size} photos...</>
+                      ) : (
+                        <><Download className="w-4 h-4 mr-2" /> Import {selectedImageIndices.size} selected photos</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {importStep === 3 && importResult && (
+              <div className="text-center py-8 space-y-6">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-serif text-2xl font-medium">Import Complete</h3>
+                <p className="text-muted-foreground text-lg">
+                  Imported {importResult.imported} photos successfully{importResult.failed > 0 ? `, ${importResult.failed} failed` : ''}.
+                </p>
+                <Button onClick={() => {
+                  setImportStep(1);
+                  setImportUrl("");
+                  setScanResult(null);
+                  setSelectedImageIndices(new Set());
+                }}>
+                  Import More
+                </Button>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* ── Admins tab ────────────────────────────────────── */}

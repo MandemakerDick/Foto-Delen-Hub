@@ -189,6 +189,24 @@ export class ObjectStorageService {
     return normalizedPath;
   }
 
+  /**
+   * Upload a raw buffer directly to object storage as a new entity.
+   * Used for server-side imports (e.g. fetched from an external URL).
+   * Returns the normalised `/objects/...` path that can be served via /api/storage.
+   */
+  async uploadBufferAsEntity(buffer: Buffer, contentType: string): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    const objectId = randomUUID();
+    // Strip any trailing slash so the path is clean
+    const baseDir = privateObjectDir.replace(/\/$/, "");
+    const fullPath = `${baseDir}/imports/${objectId}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.save(buffer, { contentType, resumable: false });
+    return `/objects/imports/${objectId}`;
+  }
+
   async canAccessObjectEntity({
     userId,
     objectFile,

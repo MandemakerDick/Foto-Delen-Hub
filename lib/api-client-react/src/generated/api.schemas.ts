@@ -409,6 +409,44 @@ export interface ThemeProposalInput {
   description?: string | null;
 }
 
+export interface UrlScanRequest {
+  url: string;
+}
+
+export interface DiscoveredImage {
+  src: string;
+  alt?: string | null;
+  width?: number | null;
+  height?: number | null;
+}
+
+export interface UrlScanResult {
+  url: string;
+  photographerName?: string | null;
+  images: DiscoveredImage[];
+}
+
+export interface UrlImportItem {
+  src: string;
+  title: string;
+  description?: string | null;
+}
+
+export interface UrlImportRequest {
+  /** @minItems 1 */
+  images: UrlImportItem[];
+  photographerId?: number | null;
+  photographerName?: string | null;
+  clubId?: number | null;
+  themeId?: number | null;
+}
+
+export interface UrlImportResult {
+  imported: number;
+  failed: number;
+  photos?: Photo[];
+}
+
 export interface ErrorEnvelope {
   error: string;
 }

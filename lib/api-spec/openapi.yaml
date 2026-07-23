@@ -848,6 +848,50 @@ paths:
         '404':
           description: Not found
 
+  /admins/import-from-url/scan:
+    post:
+      operationId: scanUrlForPhotos
+      tags: [admins]
+      summary: Scan a photographer portfolio URL and return discovered images (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UrlScanRequest'
+      responses:
+        '200':
+          description: Discovered images and guessed photographer name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlScanResult'
+        '400':
+          description: Invalid or unreachable URL
+        '401':
+          description: Unauthorized
+
+  /admins/import-from-url/import:
+    post:
+      operationId: importPhotosFromUrl
+      tags: [admins]
+      summary: Download and import selected images from a scanned page (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UrlImportRequest'
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlImportResult'
+        '401':
+          description: Unauthorized
+
   /invites:
     get:
       operationId: listInvites
@@ -1889,6 +1933,91 @@ components:
           type: string
         description:
           type: ["string", "null"]
+
+    UrlScanRequest:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+
+    DiscoveredImage:
+      type: object
+      required: [src]
+      properties:
+        src:
+          type: string
+        alt:
+          type: string
+          nullable: true
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+
+    UrlScanResult:
+      type: object
+      required: [url, images]
+      properties:
+        url:
+          type: string
+        photographerName:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscoveredImage'
+
+    UrlImportItem:
+      type: object
+      required: [src, title]
+      properties:
+        src:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    UrlImportRequest:
+      type: object
+      required: [images]
+      properties:
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/UrlImportItem'
+          minItems: 1
+        photographerId:
+          type: integer
+          nullable: true
+        photographerName:
+          type: string
+          nullable: true
+        clubId:
+          type: integer
+          nullable: true
+        themeId:
+          type: integer
+          nullable: true
+
+    UrlImportResult:
+      type: object
+      required: [imported, failed]
+      properties:
+        imported:
+          type: integer
+        failed:
+          type: integer
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Photo'
 
     ErrorEnvelope:
       type: object
