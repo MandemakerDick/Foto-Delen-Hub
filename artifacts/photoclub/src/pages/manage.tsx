@@ -102,6 +102,7 @@ export default function Manage() {
   
   const [importPhotographerId, setImportPhotographerId] = useState<string>("new");
   const [importNewPhotographerName, setImportNewPhotographerName] = useState("");
+  const [importNewPhotographerBio, setImportNewPhotographerBio] = useState("");
   const [importClubId, setImportClubId] = useState<string>("none");
   const [importThemeId, setImportThemeId] = useState<string>("none");
   const [importResult, setImportResult] = useState<{ imported: number; failed: number } | null>(null);
@@ -118,6 +119,7 @@ export default function Manage() {
           setScanResult(result);
           setSelectedImageIndices(new Set(result.images.map((_, i) => i)));
           setImportNewPhotographerName(result.photographerName || "");
+          setImportNewPhotographerBio(result.bio || "");
           setImportStep(2);
         },
         onError: () => toast({ title: t("common.error", "Error"), description: "Could not scan the provided URL. Please try again.", variant: "destructive" }),
@@ -153,6 +155,7 @@ export default function Manage() {
 
     if (importPhotographerId === "new") {
       data.photographerName = importNewPhotographerName.trim() || "Unknown Photographer";
+      if (importNewPhotographerBio.trim()) data.photographerBio = importNewPhotographerBio.trim();
     } else {
       data.photographerId = Number(importPhotographerId);
     }
@@ -1028,7 +1031,7 @@ export default function Manage() {
                         className={`relative aspect-square rounded-md overflow-hidden border-2 transition-colors cursor-pointer ${isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}
                         onClick={() => toggleSelectImage(i)}
                       >
-                        <img src={img.src} alt={img.alt || "Untitled"} className="w-full h-full object-cover" />
+                        <img src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`} alt={img.alt || "Untitled"} className="w-full h-full object-cover" />
                         <div className="absolute top-2 left-2 bg-black/40 rounded p-0.5" style={{ pointerEvents: "all" }} onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={isSelected}
@@ -1091,6 +1094,18 @@ export default function Manage() {
                   )}
                 </div>
 
+                {importPhotographerId === "new" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Bio (Optional)</label>
+                    <textarea
+                      value={importNewPhotographerBio}
+                      onChange={(e) => setImportNewPhotographerBio(e.target.value)}
+                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="Photographer bio extracted from the page — edit as needed..."
+                    />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Club (Optional)</label>
@@ -1150,6 +1165,8 @@ export default function Manage() {
                   setImportUrl("");
                   setScanResult(null);
                   setSelectedImageIndices(new Set());
+                  setImportNewPhotographerName("");
+                  setImportNewPhotographerBio("");
                 }}>
                   Import More
                 </Button>

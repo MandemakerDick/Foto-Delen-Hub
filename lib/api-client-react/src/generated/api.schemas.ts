@@ -423,6 +423,7 @@ export interface DiscoveredImage {
 export interface UrlScanResult {
   url: string;
   photographerName?: string | null;
+  bio?: string | null;
   images: DiscoveredImage[];
 }
 
@@ -437,6 +438,7 @@ export interface UrlImportRequest {
   images: UrlImportItem[];
   photographerId?: number | null;
   photographerName?: string | null;
+  photographerBio?: string | null;
   clubId?: number | null;
   themeId?: number | null;
 }

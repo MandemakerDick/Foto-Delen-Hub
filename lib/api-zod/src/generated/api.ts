@@ -694,6 +694,7 @@ export const ScanUrlForPhotosBody = zod.object({
 export const ScanUrlForPhotosResponse = zod.object({
   "url": zod.string(),
   "photographerName": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "images": zod.array(zod.object({
   "src": zod.string(),
   "alt": zod.string().nullish(),
@@ -717,6 +718,7 @@ export const ImportPhotosFromUrlBody = zod.object({
 })).min(1),
   "photographerId": zod.number().nullish(),
   "photographerName": zod.string().nullish(),
+  "photographerBio": zod.string().nullish(),
   "clubId": zod.number().nullish(),
   "themeId": zod.number().nullish()
 })

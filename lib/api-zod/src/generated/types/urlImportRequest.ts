@@ -12,6 +12,7 @@ export interface UrlImportRequest {
   images: UrlImportItem[];
   photographerId?: number | null;
   photographerName?: string | null;
+  photographerBio?: string | null;
   clubId?: number | null;
   themeId?: number | null;
 }

@@ -10,5 +10,6 @@ import type { DiscoveredImage } from './discoveredImage';
 export interface UrlScanResult {
   url: string;
   photographerName?: string | null;
+  bio?: string | null;
   images: DiscoveredImage[];
 }

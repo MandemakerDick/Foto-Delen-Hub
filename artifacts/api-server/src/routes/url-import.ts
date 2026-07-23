@@ -31,6 +31,37 @@ function resolveImageUrl(src: string, baseUrl: string): string | null {
   }
 }
 
+/**
+ * Extract a bio from the page: concatenate all <p> text blocks that look like
+ * prose (>80 chars each), up to ~1 200 characters total.  If the page has an
+ * og:description or meta description that is longer than a typical tagline
+ * (>120 chars) we prefer that instead — it tends to be the most authoritative
+ * summary.
+ */
+function guessBio($: ReturnType<typeof cheerio.load>): string | null {
+  // Prefer an explicit meta description when it reads like prose
+  const metaDesc =
+    $('meta[name="description"]').attr("content")?.trim() ||
+    $('meta[property="og:description"]').attr("content")?.trim() ||
+    "";
+  if (metaDesc.length > 120) return metaDesc;
+
+  // Otherwise collect paragraph text from the main content area
+  const paragraphs: string[] = [];
+  let total = 0;
+  $("p").each((_, el) => {
+    if (total >= 1200) return; // collected enough
+    const text = $(el).text().replace(/\s+/g, " ").trim();
+    if (text.length < 80) return; // skip short captions / UI labels
+    paragraphs.push(text);
+    total += text.length;
+  });
+
+  if (paragraphs.length === 0) return null;
+  const joined = paragraphs.join(" ").slice(0, 1200).trim();
+  return joined || null;
+}
+
 /** Best-effort guess at the photographer name from page metadata. */
 function guessPhotographerName($: ReturnType<typeof cheerio.load>, pageTitle: string): string | null {
   // Try explicit og:site_name or author meta first
@@ -139,6 +170,7 @@ router.post("/admins/import-from-url/scan", requireAdmin, async (req: any, res) 
   const $ = cheerio.load(html);
   const pageTitle = $("title").first().text().trim();
   const photographerName = guessPhotographerName($, pageTitle);
+  const bio = guessBio($);
 
   // Collect all <img> srcs, resolve to absolute, deduplicate
   const seen = new Set<string>();
@@ -177,7 +209,45 @@ router.post("/admins/import-from-url/scan", requireAdmin, async (req: any, res) 
     });
   });
 
-  res.json({ url: parsedUrl.href, photographerName, images });
+  res.json({ url: parsedUrl.href, photographerName, bio, images });
+});
+
+// ── GET /api/admins/import-from-url/proxy ────────────────────────────────────
+// Proxies an external image URL through the server so the browser never makes
+// a direct cross-origin request (avoids hotlinking blocks and CORS errors).
+
+router.get("/admins/import-from-url/proxy", requireAdmin, async (req: any, res) => {
+  const raw = req.query.url as string | undefined;
+  if (!raw) { res.status(400).json({ error: "Missing url parameter" }); return; }
+
+  let targetUrl: string;
+  try {
+    const parsed = new URL(raw);
+    if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("Bad protocol");
+    targetUrl = parsed.href;
+  } catch {
+    res.status(400).json({ error: "Invalid URL" }); return;
+  }
+
+  try {
+    const upstream = await fetch(targetUrl, {
+      headers: { "User-Agent": BROWSER_UA, "Referer": new URL(targetUrl).origin },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!upstream.ok) { res.status(502).json({ error: `Upstream ${upstream.status}` }); return; }
+
+    const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
+    if (!contentType.startsWith("image/")) { res.status(400).json({ error: "Not an image" }); return; }
+
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("Content-Disposition", "inline");
+    res.send(buffer);
+  } catch (err: any) {
+    req.log?.warn({ err, url: targetUrl }, "Proxy fetch failed");
+    res.status(502).json({ error: "Could not fetch image" });
+  }
 });
 
 // ── POST /api/admins/import-from-url/import ───────────────────────────────────
@@ -187,6 +257,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     images?: Array<{ src: string; title: string; description?: string | null }>;
     photographerId?: number | null;
     photographerName?: string | null;
+    photographerBio?: string | null;
     clubId?: number | null;
     themeId?: number | null;
   };
@@ -202,9 +273,10 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
 
   if (!photographerId && body.photographerName?.trim()) {
     const name = body.photographerName.trim();
+    const bio = body.photographerBio?.trim() || null;
     const [newPh] = await db
       .insert(photographersTable)
-      .values({ name, clubId: body.clubId ?? null, themeId1: null, themeId2: null })
+      .values({ name, bio, clubId: body.clubId ?? null, themeId1: null, themeId2: null })
       .returning({ id: photographersTable.id });
     photographerId = newPh.id;
   }
