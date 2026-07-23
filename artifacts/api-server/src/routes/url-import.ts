@@ -145,6 +145,10 @@ router.post("/admins/import-from-url/scan", requireAdmin, async (req: any, res) 
   const images: Array<{ src: string; alt: string | null; width: number | null; height: number | null }> = [];
 
   $("img").each((_, el) => {
+    // Skip images inside structural/navigation elements — they're almost always
+    // site logos, nav icons, or footer decorations, not portfolio photos.
+    if ($(el).closest("header, nav, footer").length > 0) return;
+
     const rawSrc =
       $(el).attr("src") ||
       $(el).attr("data-src") ||

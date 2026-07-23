@@ -95,7 +95,7 @@ export default function Manage() {
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
 
   // ── Import tab state ──────────────────────────────────────
-  const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
+  const [importStep, setImportStep] = useState<1 | 2 | 3 | 4>(1);
   const [importUrl, setImportUrl] = useState("");
   const [scanResult, setScanResult] = useState<UrlScanResult | null>(null);
   const [selectedImageIndices, setSelectedImageIndices] = useState<Set<number>>(new Set());
@@ -165,7 +165,7 @@ export default function Manage() {
       {
         onSuccess: (res) => {
           setImportResult({ imported: res.imported, failed: res.failed });
-          setImportStep(3);
+          setImportStep(4);
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
         },
@@ -987,142 +987,156 @@ export default function Manage() {
             )}
 
             {importStep === 2 && scanResult && (
-              <div className="space-y-8">
-                <div>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
                     <h3 className="font-serif text-xl">Select Photos</h3>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-muted-foreground">{selectedImageIndices.size} selected</span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          if (selectedImageIndices.size === scanResult.images.length) {
-                            setSelectedImageIndices(new Set());
-                          } else {
-                            setSelectedImageIndices(new Set(scanResult.images.map((_, i) => i)));
-                          }
-                        }}
-                      >
-                        {selectedImageIndices.size === scanResult.images.length ? (
-                          <><Square className="w-4 h-4 mr-2" /> Deselect All</>
-                        ) : (
-                          <><SquareCheck className="w-4 h-4 mr-2" /> Select All</>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {scanResult.photographerName && (
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Found portfolio for: <strong className="text-foreground">{scanResult.photographerName}</strong>
-                    </p>
-                  )}
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto p-2 border border-border/50 rounded-lg bg-background/50">
-                    {scanResult.images.map((img, i) => {
-                      const isSelected = selectedImageIndices.has(i);
-                      return (
-                        <div 
-                          key={i} 
-                          className={`relative aspect-square rounded-md overflow-hidden border-2 transition-colors cursor-pointer ${isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}
-                          onClick={() => toggleSelectImage(i)}
-                        >
-                          <img src={img.src} alt={img.alt || "Untitled"} className="w-full h-full object-cover" />
-                          <div className="absolute top-2 left-2 bg-black/40 rounded p-0.5" style={{ pointerEvents: "all" }} onClick={(e) => e.stopPropagation()}>
-                            <Checkbox 
-                              checked={isSelected} 
-                              onCheckedChange={(c) => toggleSelectImage(i, !!c)} 
-                              className="border-white data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                            />
-                          </div>
-                          <div className="absolute bottom-0 inset-x-0 bg-black/60 p-2">
-                            <p className="text-white text-xs truncate">{img.alt || "Untitled"}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <Separator className="bg-border/50" />
-
-                <div className="space-y-4">
-                  <h3 className="font-serif text-xl">Assignment & Import</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Photographer</label>
-                      <Select value={importPhotographerId} onValueChange={setImportPhotographerId}>
-                        <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">+ Add new photographer</SelectItem>
-                          {photographers?.map(p => (
-                            <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {importPhotographerId === "new" && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">New Photographer Name</label>
-                        <Input 
-                          value={importNewPhotographerName} 
-                          onChange={(e) => setImportNewPhotographerName(e.target.value)} 
-                          className="bg-background"
-                          placeholder="Name..."
-                        />
-                      </div>
+                    {scanResult.photographerName && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Found portfolio for: <strong className="text-foreground">{scanResult.photographerName}</strong>
+                      </p>
                     )}
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Club (Optional)</label>
-                      <Select value={importClubId} onValueChange={setImportClubId}>
-                        <SelectTrigger className="bg-background"><SelectValue placeholder="Select club..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {clubs?.map(c => (
-                            <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Theme (Optional)</label>
-                      <Select value={importThemeId} onValueChange={setImportThemeId}>
-                        <SelectTrigger className="bg-background"><SelectValue placeholder="Select theme..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {themes?.map(t => (
-                            <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button variant="outline" onClick={() => setImportStep(1)}>Back</Button>
-                    <Button 
-                      className="flex-1"
-                      onClick={handleImportPhotos}
-                      disabled={selectedImageIndices.size === 0 || importPhotosMutation.isPending || (importPhotographerId === "new" && !importNewPhotographerName.trim())}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-sm text-muted-foreground">{selectedImageIndices.size} of {scanResult.images.length} selected</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedImageIndices.size === scanResult.images.length) {
+                          setSelectedImageIndices(new Set());
+                        } else {
+                          setSelectedImageIndices(new Set(scanResult.images.map((_, i) => i)));
+                        }
+                      }}
                     >
-                      {importPhotosMutation.isPending ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing {selectedImageIndices.size} photos...</>
+                      {selectedImageIndices.size === scanResult.images.length ? (
+                        <><Square className="w-4 h-4 mr-2" /> Deselect All</>
                       ) : (
-                        <><Download className="w-4 h-4 mr-2" /> Import {selectedImageIndices.size} selected photos</>
+                        <><SquareCheck className="w-4 h-4 mr-2" /> Select All</>
                       )}
                     </Button>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[540px] overflow-y-auto p-2 border border-border/50 rounded-lg bg-background/50">
+                  {scanResult.images.map((img, i) => {
+                    const isSelected = selectedImageIndices.has(i);
+                    return (
+                      <div
+                        key={i}
+                        className={`relative aspect-square rounded-md overflow-hidden border-2 transition-colors cursor-pointer ${isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}
+                        onClick={() => toggleSelectImage(i)}
+                      >
+                        <img src={img.src} alt={img.alt || "Untitled"} className="w-full h-full object-cover" />
+                        <div className="absolute top-2 left-2 bg-black/40 rounded p-0.5" style={{ pointerEvents: "all" }} onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(c) => toggleSelectImage(i, !!c)}
+                            className="border-white data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                        </div>
+                        <div className="absolute bottom-0 inset-x-0 bg-black/60 p-2">
+                          <p className="text-white text-xs truncate">{img.alt || "Untitled"}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button variant="outline" onClick={() => setImportStep(1)}>Back</Button>
+                  <Button
+                    className="flex-1"
+                    disabled={selectedImageIndices.size === 0}
+                    onClick={() => setImportStep(3)}
+                  >
+                    Next: Assign &amp; Import ({selectedImageIndices.size} photos)
+                  </Button>
+                </div>
               </div>
             )}
 
-            {importStep === 3 && importResult && (
+            {importStep === 3 && scanResult && (
+              <div className="space-y-6">
+                <h3 className="font-serif text-xl">Assign &amp; Import</h3>
+                <p className="text-sm text-muted-foreground -mt-2">
+                  {selectedImageIndices.size} photos selected — assign them to a photographer, club, or theme.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Photographer</label>
+                    <Select value={importPhotographerId} onValueChange={setImportPhotographerId}>
+                      <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">+ Add new photographer</SelectItem>
+                        {photographers?.map(p => (
+                          <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {importPhotographerId === "new" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">New Photographer Name</label>
+                      <Input
+                        value={importNewPhotographerName}
+                        onChange={(e) => setImportNewPhotographerName(e.target.value)}
+                        className="bg-background"
+                        placeholder="Name..."
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Club (Optional)</label>
+                    <Select value={importClubId} onValueChange={setImportClubId}>
+                      <SelectTrigger className="bg-background"><SelectValue placeholder="Select club..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {clubs?.map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Theme (Optional)</label>
+                    <Select value={importThemeId} onValueChange={setImportThemeId}>
+                      <SelectTrigger className="bg-background"><SelectValue placeholder="Select theme..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {themes?.map(t => (
+                          <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button variant="outline" onClick={() => setImportStep(2)}>Back</Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleImportPhotos}
+                    disabled={selectedImageIndices.size === 0 || importPhotosMutation.isPending || (importPhotographerId === "new" && !importNewPhotographerName.trim())}
+                  >
+                    {importPhotosMutation.isPending ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing {selectedImageIndices.size} photos...</>
+                    ) : (
+                      <><Download className="w-4 h-4 mr-2" /> Import {selectedImageIndices.size} photos</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {importStep === 4 && importResult && (
               <div className="text-center py-8 space-y-6">
                 <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="w-8 h-8 text-primary" />
