@@ -17,7 +17,7 @@ export function PhotoCard({ photo, index }: { photo: Photo; index?: number }) {
         <img
           src={photo.imageUrl}
           alt={photo.title}
-          className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
+          className="block object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
