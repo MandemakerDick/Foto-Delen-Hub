@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Heart, MessageCircle } from "lucide-react";
 import type { Photo } from "@workspace/api-client-react";
 
-export function PhotoCard({ photo, index }: { photo: Photo; index?: number }) {
+export function PhotoCard({ photo, index, context }: { photo: Photo; index?: number; context?: string }) {
   const { t } = useTranslation();
+  const photoHref = context ? `/photos/${photo.id}?ctx=${encodeURIComponent(context)}` : `/photos/${photo.id}`;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -13,7 +14,7 @@ export function PhotoCard({ photo, index }: { photo: Photo; index?: number }) {
       transition={{ duration: 0.4, delay: index ? index * 0.05 : 0 }}
       className="group flex flex-col gap-3"
     >
-      <Link href={`/photos/${photo.id}`} className="block relative aspect-[4/5] overflow-hidden bg-black rounded-sm">
+      <Link href={photoHref} className="block relative aspect-[4/5] overflow-hidden bg-black rounded-sm">
         <img
           src={photo.imageUrl}
           alt={photo.title}

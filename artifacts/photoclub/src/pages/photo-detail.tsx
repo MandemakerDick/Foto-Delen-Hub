@@ -1,7 +1,7 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { Heart, Calendar, ArrowLeft, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil } from "lucide-react";
+import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,6 +9,7 @@ import { Show } from "@clerk/react";
 import {
   useGetPhoto,
   getGetPhotoQueryKey,
+  useListPhotos,
   getListPhotosQueryKey,
   useLikePhoto,
   useDeletePhoto,
@@ -62,7 +63,22 @@ export default function PhotoDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const photoId = Number(id);
+  const [location] = useLocation();
   const { toast } = useToast();
+
+  // Parse navigation context from ?ctx= query param
+  const ctx = new URLSearchParams(location.split("?")[1] || "").get("ctx") ?? "gallery";
+  const [ctxType, ctxId] = ctx.includes(":") ? ctx.split(":") : [ctx, ""];
+  const listParams =
+    ctxType === "photographer" ? { photographerId: Number(ctxId) } :
+    ctxType === "club"         ? { clubId: Number(ctxId) } :
+    ctxType === "theme"        ? { themeId: Number(ctxId) } :
+    {};
+  const { data: ctxPhotos = [] } = useListPhotos(listParams);
+  const ctxIndex = ctxPhotos.findIndex((p) => p.id === photoId);
+  const prevPhoto = ctxIndex > 0 ? ctxPhotos[ctxIndex - 1] : null;
+  const nextPhoto = ctxIndex !== -1 && ctxIndex < ctxPhotos.length - 1 ? ctxPhotos[ctxIndex + 1] : null;
+  const ctxParam = ctx !== "gallery" ? `?ctx=${encodeURIComponent(ctx)}` : "";
   const queryClient = useQueryClient();
 
   const { data: photo, isLoading, error } = useGetPhoto(photoId, {
@@ -243,12 +259,30 @@ export default function PhotoDetail() {
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Main Image */}
         <div className="w-full lg:w-2/3 flex flex-col gap-8">
-          <div className="flex items-start justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
+          <div className="relative flex items-start justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
             <img
               src={photo.imageUrl}
               alt={photo.title}
               className="max-h-[80vh] w-auto object-contain shadow-2xl"
             />
+            {prevPhoto && (
+              <Link
+                href={`/photos/${prevPhoto.id}${ctxParam}`}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+            )}
+            {nextPhoto && (
+              <Link
+                href={`/photos/${nextPhoto.id}${ctxParam}`}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors"
+                aria-label="Next photo"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Link>
+            )}
           </div>
 
           {/* Comments Section */}

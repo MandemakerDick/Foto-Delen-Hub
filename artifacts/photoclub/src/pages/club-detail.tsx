@@ -234,7 +234,7 @@ export default function ClubDetail() {
         ) : photos && photos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
             {photos.map((photo, i) => (
-              <PhotoCard key={photo.id} photo={photo} index={i} />
+              <PhotoCard key={photo.id} photo={photo} index={i} context={`club:${clubId}`} />
             ))}
           </div>
         ) : (
