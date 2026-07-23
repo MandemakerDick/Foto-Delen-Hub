@@ -2008,6 +2008,9 @@ components:
         clubId:
           type: integer
           nullable: true
+        clubName:
+          type: string
+          nullable: true
         themeId:
           type: integer
           nullable: true

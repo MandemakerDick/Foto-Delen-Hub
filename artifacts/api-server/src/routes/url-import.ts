@@ -7,7 +7,7 @@
  */
 import { Router } from "express";
 import * as cheerio from "cheerio";
-import { db, photosTable, photographersTable, commentsTable } from "@workspace/db";
+import { db, photosTable, photographersTable, commentsTable, clubsTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { setObjectAclPolicy, ObjectAclPolicy, ObjectPermission } from "../lib/objectAcl";
@@ -259,6 +259,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     photographerName?: string | null;
     photographerBio?: string | null;
     clubId?: number | null;
+    clubName?: string | null;
     themeId?: number | null;
   };
 
@@ -266,6 +267,17 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
   if (!images || images.length === 0) {
     res.status(400).json({ error: "At least one image is required" });
     return;
+  }
+
+  // Resolve club: use existing ID or create a new one from name
+  let clubId: number | null = body.clubId ?? null;
+
+  if (!clubId && body.clubName?.trim()) {
+    const [newClub] = await db
+      .insert(clubsTable)
+      .values({ name: body.clubName.trim() })
+      .returning({ id: clubsTable.id });
+    clubId = newClub.id;
   }
 
   // Resolve photographer: use existing ID or create a new one from name
@@ -276,7 +288,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     const bio = body.photographerBio?.trim() || null;
     const [newPh] = await db
       .insert(photographersTable)
-      .values({ name, bio, clubId: body.clubId ?? null, themeId1: null, themeId2: null })
+      .values({ name, bio, clubId, themeId1: null, themeId2: null })
       .returning({ id: photographersTable.id });
     photographerId = newPh.id;
   }
@@ -324,7 +336,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
           description: img.description?.trim() || null,
           imageUrl,
           photographerId: photographerId ?? null,
-          clubId: body.clubId ?? null,
+          clubId: clubId ?? null,
           themeId: body.themeId ?? null,
         })
         .returning();

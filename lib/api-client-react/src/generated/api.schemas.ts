@@ -440,6 +440,7 @@ export interface UrlImportRequest {
   photographerName?: string | null;
   photographerBio?: string | null;
   clubId?: number | null;
+  clubName?: string | null;
   themeId?: number | null;
 }
 
