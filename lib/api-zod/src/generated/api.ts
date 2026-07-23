@@ -723,7 +723,8 @@ export const ImportPhotosFromUrlBody = zod.object({
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
-  "themeName": zod.string().nullish()
+  "themeName": zod.string().nullish(),
+  "linkOnly": zod.boolean().nullish().describe('If true, store the original src URL directly instead of downloading to object storage')
 })
 
 export const ImportPhotosFromUrlResponse = zod.object({

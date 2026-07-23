@@ -262,6 +262,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     clubName?: string | null;
     themeId?: number | null;
     themeName?: string | null;
+    linkOnly?: boolean | null;
   };
 
   const images = body.images;
@@ -308,36 +309,45 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
   const importedPhotos: ReturnType<typeof mapPhoto>[] = [];
   let failed = 0;
 
+  const linkOnly = body.linkOnly === true;
+
   for (const img of images) {
     try {
-      // 1. Download the image
-      const response = await fetch(img.src, {
-        headers: { "User-Agent": BROWSER_UA },
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      let imageUrl: string;
 
-      const contentType = response.headers.get("content-type") ?? "image/jpeg";
-      if (!contentType.startsWith("image/")) throw new Error(`Not an image (${contentType})`);
+      if (linkOnly) {
+        // Link-only mode: use the original URL directly, no download
+        imageUrl = img.src;
+      } else {
+        // 1. Download the image
+        const response = await fetch(img.src, {
+          headers: { "User-Agent": BROWSER_UA },
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const buffer = Buffer.from(await response.arrayBuffer());
-      if (buffer.length < 1024) throw new Error("File too small — probably not a photo");
+        const contentType = response.headers.get("content-type") ?? "image/jpeg";
+        if (!contentType.startsWith("image/")) throw new Error(`Not an image (${contentType})`);
 
-      // 2. Upload to object storage
-      const objectPath = await objectStorageService.uploadBufferAsEntity(buffer, contentType);
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length < 1024) throw new Error("File too small — probably not a photo");
 
-      // 3. Set ACL: private (requires Clerk auth to serve)
-      try {
-        const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
-        await setObjectAclPolicy(objectFile, {
-          visibility: "private",
-          permission: ObjectPermission.READ,
-        } as unknown as ObjectAclPolicy);
-      } catch {
-        // ACL setting is best-effort; proceed even if it fails
+        // 2. Upload to object storage
+        const objectPath = await objectStorageService.uploadBufferAsEntity(buffer, contentType);
+
+        // 3. Set ACL: private (requires Clerk auth to serve)
+        try {
+          const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+          await setObjectAclPolicy(objectFile, {
+            visibility: "private",
+            permission: ObjectPermission.READ,
+          } as unknown as ObjectAclPolicy);
+        } catch {
+          // ACL setting is best-effort; proceed even if it fails
+        }
+
+        imageUrl = `/api/storage${objectPath}`;
       }
-
-      const imageUrl = `/api/storage${objectPath}`;
 
       // 4. Create photo record
       const title = img.title?.trim() || "Untitled";

@@ -2020,6 +2020,10 @@ components:
         themeName:
           type: string
           nullable: true
+        linkOnly:
+          type: boolean
+          nullable: true
+          description: If true, store the original src URL directly instead of downloading to object storage
 
     UrlImportResult:
       type: object

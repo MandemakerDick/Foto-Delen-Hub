@@ -444,6 +444,8 @@ export interface UrlImportRequest {
   clubName?: string | null;
   themeId?: number | null;
   themeName?: string | null;
+  /** If true, store the original src URL directly instead of downloading to object storage */
+  linkOnly?: boolean | null;
 }
 
 export interface UrlImportResult {

@@ -97,6 +97,7 @@ export default function Manage() {
   // ── Import tab state ──────────────────────────────────────
   const [importStep, setImportStep] = useState<1 | 2 | 3 | 4>(1);
   const [importUrl, setImportUrl] = useState("");
+  const [importLinkOnly, setImportLinkOnly] = useState(false);
   const [scanResult, setScanResult] = useState<UrlScanResult | null>(null);
   const [selectedImageIndices, setSelectedImageIndices] = useState<Set<number>>(new Set());
   
@@ -162,7 +163,7 @@ export default function Manage() {
           : {}),
       }));
 
-    const data: any = { images: selectedImages };
+    const data: any = { images: selectedImages, linkOnly: importLinkOnly };
 
     if (importPhotographerId === "new") {
       data.photographerName = importNewPhotographerName.trim() || "Unknown Photographer";
@@ -982,18 +983,51 @@ export default function Manage() {
             <h2 className="font-serif text-2xl font-medium mb-6">Import Photos from URL</h2>
             
             {importStep === 1 && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Portfolio URL</label>
-                  <Input 
-                    placeholder="https://photographer-portfolio.com" 
-                    value={importUrl} 
-                    onChange={(e) => setImportUrl(e.target.value)} 
+                  <Input
+                    placeholder="https://photographer-portfolio.com"
+                    value={importUrl}
+                    onChange={(e) => setImportUrl(e.target.value)}
                     className="bg-background"
                   />
                 </div>
-                <Button 
-                  onClick={handleScanUrl} 
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium block">Storage mode</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        className="mt-0.5 accent-primary"
+                        checked={!importLinkOnly}
+                        onChange={() => setImportLinkOnly(false)}
+                      />
+                      <div>
+                        <div className="text-sm font-medium">Download &amp; store</div>
+                        <div className="text-xs text-muted-foreground">Photos are downloaded and saved in your storage. Reliable — works even if the source disappears.</div>
+                      </div>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        className="mt-0.5 accent-primary"
+                        checked={importLinkOnly}
+                        onChange={() => setImportLinkOnly(true)}
+                      />
+                      <div>
+                        <div className="text-sm font-medium">Link only</div>
+                        <div className="text-xs text-muted-foreground">Records point to the original URL. No storage used, but photos may break if the source removes them.</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleScanUrl}
                   disabled={!importUrl.trim() || scanUrlMutation.isPending}
                 >
                   {scanUrlMutation.isPending ? (
@@ -1228,6 +1262,7 @@ export default function Manage() {
                   setImportClubId("none");
                   setImportNewClubName("");
                   setImportPhotoEdits([]);
+                  setImportLinkOnly(false);
                 }}>
                   Import More
                 </Button>
