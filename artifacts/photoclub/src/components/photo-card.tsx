@@ -13,7 +13,7 @@ export function PhotoCard({ photo, index }: { photo: Photo; index?: number }) {
       transition={{ duration: 0.4, delay: index ? index * 0.05 : 0 }}
       className="group flex flex-col gap-3"
     >
-      <Link href={`/photos/${photo.id}`} className="block relative aspect-[4/5] overflow-hidden bg-muted rounded-sm">
+      <Link href={`/photos/${photo.id}`} className="block relative aspect-[4/5] overflow-hidden bg-black rounded-sm">
         <img
           src={photo.imageUrl}
           alt={photo.title}
