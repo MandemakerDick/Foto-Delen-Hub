@@ -16,4 +16,5 @@ export interface UrlImportRequest {
   clubId?: number | null;
   clubName?: string | null;
   themeId?: number | null;
+  themeName?: string | null;
 }

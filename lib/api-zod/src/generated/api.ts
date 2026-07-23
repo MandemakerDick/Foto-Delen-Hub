@@ -721,7 +721,8 @@ export const ImportPhotosFromUrlBody = zod.object({
   "photographerBio": zod.string().nullish(),
   "clubId": zod.number().nullish(),
   "clubName": zod.string().nullish(),
-  "themeId": zod.number().nullish()
+  "themeId": zod.number().nullish(),
+  "themeName": zod.string().nullish()
 })
 
 export const ImportPhotosFromUrlResponse = zod.object({

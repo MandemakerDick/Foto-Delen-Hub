@@ -2014,6 +2014,9 @@ components:
         themeId:
           type: integer
           nullable: true
+        themeName:
+          type: string
+          nullable: true
 
     UrlImportResult:
       type: object

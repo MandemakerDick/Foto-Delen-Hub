@@ -7,7 +7,7 @@
  */
 import { Router } from "express";
 import * as cheerio from "cheerio";
-import { db, photosTable, photographersTable, commentsTable, clubsTable } from "@workspace/db";
+import { db, photosTable, photographersTable, commentsTable, clubsTable, themesTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { setObjectAclPolicy, ObjectAclPolicy, ObjectPermission } from "../lib/objectAcl";
@@ -261,6 +261,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     clubId?: number | null;
     clubName?: string | null;
     themeId?: number | null;
+    themeName?: string | null;
   };
 
   const images = body.images;
@@ -278,6 +279,17 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
       .values({ name: body.clubName.trim() })
       .returning({ id: clubsTable.id });
     clubId = newClub.id;
+  }
+
+  // Resolve theme: use existing ID or create a new one from name
+  let themeId: number | null = body.themeId ?? null;
+
+  if (!themeId && body.themeName?.trim()) {
+    const [newTheme] = await db
+      .insert(themesTable)
+      .values({ name: body.themeName.trim() })
+      .returning({ id: themesTable.id });
+    themeId = newTheme.id;
   }
 
   // Resolve photographer: use existing ID or create a new one from name
@@ -337,7 +349,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
           imageUrl,
           photographerId: photographerId ?? null,
           clubId: clubId ?? null,
-          themeId: body.themeId ?? null,
+          themeId: themeId ?? null,
         })
         .returning();
 

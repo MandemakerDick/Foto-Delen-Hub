@@ -106,6 +106,7 @@ export default function Manage() {
   const [importClubId, setImportClubId] = useState<string>("none");
   const [importNewClubName, setImportNewClubName] = useState("");
   const [importThemeId, setImportThemeId] = useState<string>("none");
+  const [importNewThemeName, setImportNewThemeName] = useState("");
   const [importResult, setImportResult] = useState<{ imported: number; failed: number } | null>(null);
 
   const scanUrlMutation = useScanUrlForPhotos();
@@ -166,7 +167,11 @@ export default function Manage() {
     } else if (importClubId !== "none") {
       data.clubId = Number(importClubId);
     }
-    if (importThemeId !== "none") data.themeId = Number(importThemeId);
+    if (importThemeId === "new") {
+      data.themeName = importNewThemeName.trim() || "New Theme";
+    } else if (importThemeId !== "none") {
+      data.themeId = Number(importThemeId);
+    }
 
     importPhotosMutation.mutate(
       { data },
@@ -177,6 +182,7 @@ export default function Manage() {
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListThemesQueryKey() });
         },
         onError: () => toast({ title: t("common.error", "Error"), description: "An error occurred during import.", variant: "destructive" }),
       }
@@ -1141,11 +1147,20 @@ export default function Manage() {
                       <SelectTrigger className="bg-background"><SelectValue placeholder="Select theme..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="new">+ Add new theme</SelectItem>
                         {themes?.map(t => (
                           <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {importThemeId === "new" && (
+                      <Input
+                        value={importNewThemeName}
+                        onChange={(e) => setImportNewThemeName(e.target.value)}
+                        className="bg-background mt-2"
+                        placeholder="Theme name..."
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1184,6 +1199,8 @@ export default function Manage() {
                   setImportNewPhotographerBio("");
                   setImportClubId("none");
                   setImportNewClubName("");
+                  setImportThemeId("none");
+                  setImportNewThemeName("");
                 }}>
                   Import More
                 </Button>
