@@ -17,6 +17,8 @@ export interface Club {
   websiteUrl?: string | null;
   /** @nullable */
   logoUrl?: string | null;
+  /** @nullable */
+  yearEstablished?: number | null;
   photoCount?: number;
   memberCount?: number;
   createdAt: string;

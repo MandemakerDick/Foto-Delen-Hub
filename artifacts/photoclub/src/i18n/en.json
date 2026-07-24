@@ -54,6 +54,7 @@
       "websiteLabel": "Website URL",
       "descriptionLabel": "Description",
       "logoLabel": "Logo",
+      "yearEstablishedLabel": "Year established",
       "logoHint": "Click to upload a club logo (optional)",
       "submitCreate": "Establish Community",
       "existingHeading": "Existing Clubs",

@@ -28,6 +28,7 @@ const clubSelectFields = {
   location: clubsTable.location,
   websiteUrl: clubsTable.websiteUrl,
   logoUrl: clubsTable.logoUrl,
+  yearEstablished: clubsTable.yearEstablished,
   createdAt: clubsTable.createdAt,
   photoCount: count(photosTable.id),
   memberCount: sql<number>`count(distinct ${photographersTable.id})`,

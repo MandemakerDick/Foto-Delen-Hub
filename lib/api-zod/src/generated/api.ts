@@ -31,6 +31,7 @@ export const ListClubsResponseItem = zod.object({
   "location": zod.string().nullish(),
   "websiteUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
+  "yearEstablished": zod.number().nullish(),
   "photoCount": zod.number().optional(),
   "memberCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -49,7 +50,8 @@ export const CreateClubBody = zod.object({
   "description": zod.string().optional(),
   "location": zod.string().optional(),
   "websiteUrl": zod.string().optional(),
-  "logoUrl": zod.string().optional()
+  "logoUrl": zod.string().optional(),
+  "yearEstablished": zod.number().optional()
 })
 
 
@@ -67,6 +69,7 @@ export const GetClubResponse = zod.object({
   "location": zod.string().nullish(),
   "websiteUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
+  "yearEstablished": zod.number().nullish(),
   "photoCount": zod.number().optional(),
   "memberCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -88,7 +91,8 @@ export const UpdateClubBody = zod.object({
   "description": zod.string().optional(),
   "location": zod.string().optional(),
   "websiteUrl": zod.string().optional(),
-  "logoUrl": zod.string().optional()
+  "logoUrl": zod.string().optional(),
+  "yearEstablished": zod.number().optional()
 })
 
 export const UpdateClubResponse = zod.object({
@@ -98,6 +102,7 @@ export const UpdateClubResponse = zod.object({
   "location": zod.string().nullish(),
   "websiteUrl": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
+  "yearEstablished": zod.number().nullish(),
   "photoCount": zod.number().optional(),
   "memberCount": zod.number().optional(),
   "createdAt": zod.string()

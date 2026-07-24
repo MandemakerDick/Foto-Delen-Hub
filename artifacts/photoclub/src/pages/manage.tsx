@@ -65,6 +65,10 @@ const clubSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   websiteUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  yearEstablished: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? undefined : Number(v)),
+    z.number().int().min(1800).max(new Date().getFullYear()).optional(),
+  ),
 });
 
 const themeSchema = z.object({
@@ -450,19 +454,20 @@ export default function Manage() {
     if (!club) return;
     setEditingClubId(clubId);
     setLogoUrl(club.logoUrl ?? null);
-    clubForm.reset({ name: club.name, description: club.description ?? "", location: club.location ?? "", websiteUrl: club.websiteUrl ?? "" });
+    clubForm.reset({ name: club.name, description: club.description ?? "", location: club.location ?? "", websiteUrl: club.websiteUrl ?? "", yearEstablished: club.yearEstablished ?? undefined });
     setTimeout(() => clubFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
   const cancelEditingClub = () => {
     setEditingClubId(null);
     setLogoUrl(null);
-    clubForm.reset({ name: "", description: "", location: "", websiteUrl: "" });
+    clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", yearEstablished: undefined });
   };
 
   const onClubSubmit = (values: ClubFormValues) => {
     const data: ClubFormValues & { logoUrl?: string } = { ...values };
     if (!data.websiteUrl) delete data.websiteUrl;
+    if (!data.yearEstablished) delete data.yearEstablished;
     if (logoUrl) data.logoUrl = logoUrl;
 
     if (editingClubId !== null) {
@@ -478,7 +483,7 @@ export default function Manage() {
       createClubMutation.mutate({ data }, {
         onSuccess: () => {
           toast({ title: t("manage.club.toastCreatedTitle"), description: t("manage.club.toastCreatedDesc", { name: values.name }) });
-          clubForm.reset({ name: "", description: "", location: "", websiteUrl: "" });
+          clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", yearEstablished: undefined });
           setLogoUrl(null);
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
@@ -672,6 +677,9 @@ export default function Manage() {
                 )} />
                 <FormField control={clubForm.control} name="location" render={({ field }) => (
                   <FormItem><FormLabel>{t("manage.club.locationLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={clubForm.control} name="yearEstablished" render={({ field }) => (
+                  <FormItem><FormLabel>{t("manage.club.yearEstablishedLabel")}</FormLabel><FormControl><Input {...field} type="number" min={1800} max={new Date().getFullYear()} placeholder={String(new Date().getFullYear())} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={clubForm.control} name="websiteUrl" render={({ field }) => (
                   <FormItem><FormLabel>{t("manage.club.websiteLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl><FormMessage /></FormItem>

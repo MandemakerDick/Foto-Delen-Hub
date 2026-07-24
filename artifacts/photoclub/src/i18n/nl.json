@@ -51,6 +51,7 @@
       "websiteLabel": "Website-URL",
       "descriptionLabel": "Beschrijving",
       "logoLabel": "Logo",
+      "yearEstablishedLabel": "Oprichtingsjaar",
       "logoHint": "Klik om een clublogo te uploaden (optioneel)",
       "submitCreate": "Club oprichten",
       "existingHeading": "Bestaande clubs",

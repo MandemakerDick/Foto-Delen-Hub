@@ -124,7 +124,7 @@ export default function ClubDetail() {
                 )}
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{t("clubDetail.established", { year: format(new Date(club.createdAt), "yyyy") })}</span>
+                  <span>{t("clubDetail.established", { year: club.yearEstablished ?? format(new Date(club.createdAt), "yyyy") })}</span>
                 </div>
               </div>
             </div>

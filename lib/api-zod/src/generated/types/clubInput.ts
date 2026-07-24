@@ -13,4 +13,5 @@ export interface ClubInput {
   location?: string;
   websiteUrl?: string;
   logoUrl?: string;
+  yearEstablished?: number;
 }

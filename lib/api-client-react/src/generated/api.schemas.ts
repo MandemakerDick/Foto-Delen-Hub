@@ -20,6 +20,8 @@ export interface Club {
   websiteUrl?: string | null;
   /** @nullable */
   logoUrl?: string | null;
+  /** @nullable */
+  yearEstablished?: number | null;
   photoCount?: number;
   memberCount?: number;
   createdAt: string;
@@ -32,6 +34,7 @@ export interface ClubInput {
   location?: string;
   websiteUrl?: string;
   logoUrl?: string;
+  yearEstablished?: number;
 }
 
 export interface Theme {
