@@ -141,7 +141,7 @@ export default function PhotographerDetail() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <h2 className="font-serif text-3xl font-bold">{t("photographerDetail.portfolio")}</h2>
 
-          {themes.length > 1 && (
+          {themes.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedThemeId === null ? "default" : "outline"}
