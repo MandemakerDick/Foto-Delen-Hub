@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, clubsTable, photographersTable, photosTable } from "@workspace/db";
-import { eq, ilike, count, sql } from "drizzle-orm";
+import { eq, ilike, count, countDistinct, sql } from "drizzle-orm";
 import {
   ListClubsQueryParams,
   CreateClubBody,
@@ -30,7 +30,7 @@ const clubSelectFields = {
   logoUrl: clubsTable.logoUrl,
   yearEstablished: clubsTable.yearEstablished,
   createdAt: clubsTable.createdAt,
-  photoCount: count(photosTable.id),
+  photoCount: countDistinct(photosTable.id),
   memberCount: sql<number>`count(distinct ${photographersTable.id})`,
 };
 
