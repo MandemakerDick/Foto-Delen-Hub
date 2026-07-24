@@ -14,7 +14,6 @@ import {
   useLikePhoto,
   useDeletePhoto,
   useUpdatePhoto,
-  useListPhotographers,
   useListClubs,
   useListThemes,
   useListComments,
@@ -100,7 +99,6 @@ export default function PhotoDetail() {
 
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
-  const { data: photographers } = useListPhotographers();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -108,8 +106,6 @@ export default function PhotoDetail() {
   const [editClubId, setEditClubId] = useState<string>("none");
   const [editThemeId, setEditThemeId] = useState<string>("none");
 
-  const [selectedLiker, setSelectedLiker] = useState<string>("");
-  const [selectedCommenter, setSelectedCommenter] = useState<string>("");
   const [commentBody, setCommentBody] = useState("");
 
   if (isLoading) {
@@ -139,12 +135,9 @@ export default function PhotoDetail() {
   }
 
   const handleLike = () => {
-    if (!selectedLiker) {
-      toast({ title: t("toasts.whoAreYouTitle"), description: t("toasts.whoAreYouDesc"), variant: "destructive" });
-      return;
-    }
+    if (!myProfile) return;
     likeMutation.mutate(
-      { id: photoId, data: { photographerId: Number(selectedLiker) } },
+      { id: photoId, data: { photographerId: myProfile.id } },
       {
         onSuccess: (updatedPhoto) => {
           queryClient.setQueryData(getGetPhotoQueryKey(photoId), updatedPhoto);
@@ -212,7 +205,7 @@ export default function PhotoDetail() {
         id: photoId,
         data: {
           body: commentBody.trim(),
-          ...(selectedCommenter ? { photographerId: Number(selectedCommenter) } : {}),
+          ...(myProfile ? { photographerId: myProfile.id } : {}),
         },
       },
       {
@@ -356,39 +349,32 @@ export default function PhotoDetail() {
             )}
 
             {/* Post a comment */}
-            <div className="border border-border/50 rounded-lg p-4 bg-secondary/10 space-y-3">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest">{t("photoDetail.leaveNote")}</p>
-              <Textarea
-                value={commentBody}
-                onChange={(e) => setCommentBody(e.target.value)}
-                placeholder={t("photoDetail.writePlaceholder")}
-                className="resize-none bg-background border-border/50 min-h-[80px] text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleComment();
-                }}
-              />
-              <div className="flex items-center gap-3">
-                <Select value={selectedCommenter} onValueChange={setSelectedCommenter}>
-                  <SelectTrigger className="flex-1 bg-background border-border/50 text-sm">
-                    <SelectValue placeholder={t("photoDetail.postingAs")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {photographers?.map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={handleComment}
-                  disabled={createCommentMutation.isPending || !commentBody.trim()}
-                  className="gap-2 shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                  {t("photoDetail.post")}
-                </Button>
+            {myProfile && (
+              <div className="border border-border/50 rounded-lg p-4 bg-secondary/10 space-y-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">{t("photoDetail.leaveNote")}</p>
+                <Textarea
+                  value={commentBody}
+                  onChange={(e) => setCommentBody(e.target.value)}
+                  placeholder={t("photoDetail.writePlaceholder")}
+                  className="resize-none bg-background border-border/50 min-h-[80px] text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleComment();
+                  }}
+                />
+                <div className="flex items-center gap-3">
+                  <span className="flex-1 text-sm text-muted-foreground">{t("photoDetail.postingAs")} <span className="text-foreground font-medium">{myProfile.name}</span></span>
+                  <Button
+                    onClick={handleComment}
+                    disabled={createCommentMutation.isPending || !commentBody.trim()}
+                    className="gap-2 shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                    {t("photoDetail.post")}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">{t("photoDetail.postTip")}</p>
               </div>
-              <p className="text-xs text-muted-foreground">{t("photoDetail.postTip")}</p>
-            </div>
+            )}
           </div>
         </div>
 
@@ -514,27 +500,22 @@ export default function PhotoDetail() {
 
           {/* Like Action */}
           <div className="flex items-center gap-4 mb-8 bg-secondary/30 p-4 rounded-lg border border-border/50">
-            <div className="flex-1">
-              <Select value={selectedLiker} onValueChange={setSelectedLiker}>
-                <SelectTrigger className="bg-background border-border/50">
-                  <SelectValue placeholder={t("photoDetail.likeSelect")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {photographers?.map((p) => (
-                    <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={handleLike}
-              disabled={likeMutation.isPending}
-              variant="outline"
-              className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-            >
-              <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
-              <span className="font-mono">{photo.likeCount || 0}</span>
-            </Button>
+            {myProfile ? (
+              <Button
+                onClick={handleLike}
+                disabled={likeMutation.isPending}
+                variant="outline"
+                className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+              >
+                <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
+                <span className="font-mono">{photo.likeCount || 0}</span>
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Heart className="w-4 h-4" />
+                <span className="font-mono">{photo.likeCount || 0}</span>
+              </div>
+            )}
           </div>
 
           {photo.description && (
