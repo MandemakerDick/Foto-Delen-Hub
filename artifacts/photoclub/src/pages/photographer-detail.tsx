@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { User, Users, Calendar, ArrowLeft, Image as ImageIcon } from "lucide-react";
@@ -5,6 +6,7 @@ import { format } from "date-fns";
 import { useGetPhotographer, getGetPhotographerQueryKey, useListPhotos } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function PhotographerDetail() {
   const { t } = useTranslation();
@@ -16,6 +18,25 @@ export default function PhotographerDetail() {
   });
 
   const { data: photos, isLoading: photosLoading } = useListPhotos({ photographerId });
+
+  const [selectedThemeId, setSelectedThemeId] = useState<number | null>(null);
+
+  // Derive unique themes present in this photographer's photos
+  const themes = useMemo(() => {
+    if (!photos) return [];
+    const seen = new Map<number, string>();
+    for (const p of photos) {
+      if (p.themeId && p.themeName && !seen.has(p.themeId)) {
+        seen.set(p.themeId, p.themeName);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [photos]);
+
+  const visiblePhotos = useMemo(
+    () => (selectedThemeId ? (photos ?? []).filter((p) => p.themeId === selectedThemeId) : (photos ?? [])),
+    [photos, selectedThemeId],
+  );
 
   if (photographerLoading) {
     return (
@@ -117,7 +138,33 @@ export default function PhotographerDetail() {
 
       {/* Portfolio Gallery */}
       <section className="py-16 container mx-auto px-4">
-        <h2 className="font-serif text-3xl font-bold mb-10 text-center">{t("photographerDetail.portfolio")}</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+          <h2 className="font-serif text-3xl font-bold">{t("photographerDetail.portfolio")}</h2>
+
+          {themes.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedThemeId === null ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedThemeId(null)}
+                className="text-xs font-mono"
+              >
+                {t("photographerDetail.allThemes")}
+              </Button>
+              {themes.map((theme) => (
+                <Button
+                  key={theme.id}
+                  variant={selectedThemeId === theme.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedThemeId(selectedThemeId === theme.id ? null : theme.id)}
+                  className="text-xs font-mono"
+                >
+                  {theme.name}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {photosLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
@@ -127,9 +174,9 @@ export default function PhotographerDetail() {
               </div>
             ))}
           </div>
-        ) : photos && photos.length > 0 ? (
+        ) : visiblePhotos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
-            {photos.map((photo, i) => (
+            {visiblePhotos.map((photo, i) => (
               <PhotoCard key={photo.id} photo={photo} index={i} context={`photographer:${photographerId}`} />
             ))}
           </div>
