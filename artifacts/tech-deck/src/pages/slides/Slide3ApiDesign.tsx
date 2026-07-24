@@ -247,7 +247,7 @@ export default function Slide3ApiDesign() {
               <div style={{ fontFamily: "'Courier New', monospace", fontSize: "1.1vw" }}>
                 <span style={{ color: "#BAE6FD" }}>/review</span>
                 <span style={{ opacity: 0.55 }}> → </span>
-                <span>ReviewClub (Vite SPA)</span>
+                <span>PhotoReviewHub (Vite SPA)</span>
               </div>
               <div style={{ fontFamily: "'Courier New', monospace", fontSize: "1.1vw" }}>
                 <span style={{ color: "#BAE6FD" }}>/</span>

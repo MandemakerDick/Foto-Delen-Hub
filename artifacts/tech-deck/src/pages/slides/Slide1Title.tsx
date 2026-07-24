@@ -132,7 +132,7 @@ export default function Slide1Title() {
               letterSpacing: "0.04em",
             }}
           >
-            REVIEWCLUB
+            PHOTOREVIEWHUB
           </div>
           <div
             style={{

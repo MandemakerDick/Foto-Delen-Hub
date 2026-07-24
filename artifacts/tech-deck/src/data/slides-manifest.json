@@ -3,7 +3,7 @@
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "position": 1,
     "filepath": "src/pages/slides/Slide1Title.tsx",
-    "title": "PHOTOCLUB / REVIEWCLUB",
+    "title": "PHOTOCLUB / PHOTOREVIEWHUB",
     "description": "Title slide — project overview and subtitle",
     "speakerNotes": ""
   },
@@ -28,7 +28,7 @@
     "position": 4,
     "filepath": "src/pages/slides/Slide4DbSchema.tsx",
     "title": "DB SCHEMA",
-    "description": "Database schema — PhotoClub and ReviewClub tables, Drizzle ORM, FK approach",
+    "description": "Database schema — PhotoClub and PhotoReviewHub tables, Drizzle ORM, FK approach",
     "speakerNotes": ""
   },
   {

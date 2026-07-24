@@ -149,7 +149,7 @@ export default function Slide4DbSchema() {
               </div>
             </div>
 
-            {/* ReviewClub */}
+            {/* PhotoReviewHub */}
             <div
               style={{
                 flex: 1,
@@ -168,7 +168,7 @@ export default function Slide4DbSchema() {
                   marginBottom: "1.2vh",
                 }}
               >
-                &gt; REVIEWCLUB
+                &gt; PHOTOREVIEWHUB
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.8vh" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "1vw" }}>

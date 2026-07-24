@@ -1,6 +1,6 @@
 kind = "slides"
 previewPath = "/tech-deck/"
-title = "PhotoClub / ReviewClub — Technical Deep-Dive"
+title = "PhotoClub / PhotoReviewHub — Technical Deep-Dive"
 version = "1.0.0"
 id = "artifacts/tech-deck"
 router = "path"

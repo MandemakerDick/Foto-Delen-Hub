@@ -180,7 +180,7 @@ export default function Slide5Deployment() {
               >
                 &gt; ARTIFACT 3
               </div>
-              <div style={{ fontSize: "1.3vw", fontWeight: 700 }}>ReviewClub</div>
+              <div style={{ fontSize: "1.3vw", fontWeight: 700 }}>PhotoReviewHub</div>
               <div style={{ fontSize: "1vw", opacity: 0.65, marginTop: "0.5vh" }}>
                 Vite SPA · /review prefix · admin panel
               </div>

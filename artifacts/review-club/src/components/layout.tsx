@@ -71,7 +71,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="font-serif text-xl font-bold tracking-tight text-foreground hover:text-primary transition-colors">
-              ReviewClub
+              PhotoReviewHub
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-primary" : "text-muted-foreground"}`}>
@@ -193,7 +193,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <footer className="border-t border-border/50 py-8 mt-12 text-center text-sm text-muted-foreground">
-        <p className="font-serif italic">&copy; {new Date().getFullYear()} ReviewClub. Focus on the frame.</p>
+        <p className="font-serif italic">&copy; {new Date().getFullYear()} PhotoReviewHub. Focus on the frame.</p>
       </footer>
     </div>
   );
