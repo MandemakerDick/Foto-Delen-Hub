@@ -14,6 +14,7 @@ import {
   getListPhotographersQueryKey,
   useGetAdminStatus,
   getGetAdminStatusQueryKey,
+  useProposeTheme,
 } from "@workspace/api-client-react";
 import { ObjectUploader } from "@workspace/object-storage-web";
 import { useMyProfile } from "@/hooks/use-my-profile";
@@ -66,6 +67,10 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
   const [uploadedObjectPath, setUploadedObjectPath] = useState<string | null>(null);
   const pendingObjectPathRef = useRef<string | null>(null);
 
+  const [showPropose, setShowPropose] = useState(false);
+  const [proposedName, setProposedName] = useState("");
+  const proposeThemeMutation = useProposeTheme();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { title: "", description: "" },
@@ -73,6 +78,21 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
 
   const selectedPhotographerId = form.watch("photographerId");
   const selectedPhotographer = photographers?.find((p) => p.id === selectedPhotographerId);
+
+  const handleProposeTheme = () => {
+    if (!proposedName.trim()) return;
+    proposeThemeMutation.mutate(
+      { data: { name: proposedName.trim() } },
+      {
+        onSuccess: () => {
+          toast({ title: t("upload.proposeThemeSuccess") });
+          setProposedName("");
+          setShowPropose(false);
+        },
+        onError: () => toast({ title: t("common.error"), description: t("upload.proposeThemeError"), variant: "destructive" }),
+      },
+    );
+  };
 
   const onSubmit = (values: FormValues) => {
     if (!uploadedImageUrl) {
@@ -247,6 +267,42 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
                         </SelectContent>
                       </Select>
                       <FormMessage />
+                      {!isAdmin && (
+                        <div className="pt-1">
+                          {!showPropose ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowPropose(true)}
+                              className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
+                            >
+                              {t("upload.proposeTheme")}
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Input
+                                value={proposedName}
+                                onChange={(e) => setProposedName(e.target.value)}
+                                placeholder={t("upload.proposeThemePlaceholder")}
+                                className="bg-background text-sm h-8"
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleProposeTheme(); } if (e.key === "Escape") setShowPropose(false); }}
+                                autoFocus
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="h-8 shrink-0"
+                                disabled={!proposedName.trim() || proposeThemeMutation.isPending}
+                                onClick={handleProposeTheme}
+                              >
+                                {proposeThemeMutation.isPending ? t("upload.proposeThemeSubmitting") : t("upload.proposeThemeBtn")}
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-8 px-2 shrink-0" onClick={() => setShowPropose(false)}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </FormItem>
                   )}
                 />
