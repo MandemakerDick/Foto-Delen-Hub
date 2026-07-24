@@ -6,9 +6,3 @@ id = "4jv_glfjKoTX-DlQdVXxv"
 uri = "file://.local/outputs/PhotoShare-Hub.pptx"
 type = "slides"
 title = "PhotoShare Hub.pptx"
-
-[[outputs]]
-id = "PNNz5gY8zuWkWBZJgkdN_"
-uri = "file://attached_assets/PhotographersHub-Guide.pdf"
-type = "pdf"
-title = "PhotographersHub — Photographer Guide"
