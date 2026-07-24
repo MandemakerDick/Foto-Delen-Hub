@@ -679,7 +679,7 @@ export default function Manage() {
                   <FormItem><FormLabel>{t("manage.club.locationLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={clubForm.control} name="yearEstablished" render={({ field }) => (
-                  <FormItem><FormLabel>{t("manage.club.yearEstablishedLabel")}</FormLabel><FormControl><Input {...field} type="number" min={1800} max={new Date().getFullYear()} placeholder={String(new Date().getFullYear())} className="bg-background" /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>{t("manage.club.yearEstablishedLabel")}</FormLabel><FormControl><Input {...field} value={field.value ?? ""} type="number" min={1800} max={new Date().getFullYear()} placeholder={String(new Date().getFullYear())} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={clubForm.control} name="websiteUrl" render={({ field }) => (
                   <FormItem><FormLabel>{t("manage.club.websiteLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" placeholder="https://..." /></FormControl><FormMessage /></FormItem>
