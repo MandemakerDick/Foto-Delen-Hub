@@ -72,18 +72,38 @@ router.get("/themes/proposals", requireAdmin, async (_req, res) => {
   res.json(rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
 });
 
-// POST /api/themes/propose — photographer proposes a new theme
-router.post("/themes/propose", requireAuth, async (req: any, res) => {
+// POST /api/themes/propose — photographer or admin proposes a new theme
+// Accepts either a Clerk session (photographer) or an admin session.
+async function requireAuthOrAdmin(req: any, res: any, next: any) {
+  // Try admin first (handles both Clerk-admin and session-admin)
+  const { userId } = (await import("@clerk/express")).getAuth(req);
+  if (userId) {
+    req.clerkUserId = userId;
+    return next();
+  }
+  if (req.session?.adminId) {
+    req.adminId = req.session.adminId;
+    return next();
+  }
+  res.status(401).json({ error: "Unauthorized" });
+}
+
+router.post("/themes/propose", requireAuthOrAdmin, async (req: any, res) => {
   const { name, description } = req.body as { name?: string; description?: string | null };
   if (!name?.trim()) {
     res.status(400).json({ error: "name is required" });
     return;
   }
 
-  const photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
-  if (!photographerId) {
-    res.status(403).json({ error: "No photographer profile found" });
-    return;
+  // Resolve photographer ID only for Clerk users (photographers).
+  // Admins propose without a photographer profile — proposedByPhotographerId stays null.
+  let photographerId: number | null = null;
+  if (req.clerkUserId && !req.adminId) {
+    photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
+    if (!photographerId) {
+      res.status(403).json({ error: "No photographer profile found" });
+      return;
+    }
   }
 
   const [proposal] = await db

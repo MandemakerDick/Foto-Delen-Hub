@@ -4,7 +4,7 @@ export const themeProposalsTable = pgTable("theme_proposals", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  proposedByPhotographerId: integer("proposed_by_photographer_id").notNull(),
+  proposedByPhotographerId: integer("proposed_by_photographer_id"),
   status: text("status", { enum: ["pending", "approved", "rejected"] })
     .notNull()
     .default("pending"),
