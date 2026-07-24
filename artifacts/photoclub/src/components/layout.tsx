@@ -60,12 +60,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {/* Clerk signed-in user */}
             <Show when="signed-in">
-              <Link href="/upload">
-                <Button variant="ghost" size="sm" className="hidden sm:flex gap-2">
-                  <PlusSquare className="w-4 h-4" />
-                  {t("nav.upload")}
-                </Button>
-              </Link>
               <Link href="/my-photos">
                 <Button
                   variant={location.startsWith("/my-photos") ? "default" : "outline"}
