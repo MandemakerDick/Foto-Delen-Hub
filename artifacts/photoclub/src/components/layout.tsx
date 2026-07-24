@@ -40,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             <Camera className="w-6 h-6" />
-            <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotoClub</span>
+            <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotographersHub</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -136,7 +136,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border/50 py-12 mt-20">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <Camera className="w-8 h-8 mx-auto mb-6 opacity-20" />
-          <p className="font-serif text-sm">&copy; {new Date().getFullYear()} PhotoClub. {t("footer.tagline")}</p>
+          <p className="font-serif text-sm">&copy; {new Date().getFullYear()} PhotographersHub. {t("footer.tagline")}</p>
         </div>
       </footer>
     </div>
