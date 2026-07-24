@@ -419,11 +419,11 @@
     "startBody": "Gebruik de zoekbalk op de homepage om foto's, fotografen en thema's te vinden.",
     "resultsFor": "Zoekresultaten voor",
     "photographersSection": "Fotografen",
-    "photographersHint": "Mensen waarvan de naam of bio overeenkomt.",
+    "photographersHint": "Mensen waarvan de naam, bio of voorkeursthema's overeenkomen.",
     "themesSection": "Thema's",
     "themesHint": "Collecties waarvan de naam overeenkomt.",
     "photosSection": "Foto's",
-    "photosHint": "Foto's waarvan de titel of beschrijving overeenkomt.",
+    "photosHint": "Foto's waarvan de titel overeenkomt.",
     "noPhotographers": "Geen fotografen komen overeen met “{{q}}”.",
     "noThemes": "Geen thema's komen overeen met “{{q}}”.",
     "noPhotos": "Geen foto's komen overeen met “{{q}}”."

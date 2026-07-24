@@ -419,11 +419,11 @@
     "startBody": "Use the search bar on the home page to find photographs, photographers, and themes.",
     "resultsFor": "Search results for",
     "photographersSection": "Photographers",
-    "photographersHint": "People whose name or bio matches.",
+    "photographersHint": "People whose name, bio or preferred themes match.",
     "themesSection": "Themes",
     "themesHint": "Collections whose name matches.",
     "photosSection": "Photographs",
-    "photosHint": "Images whose title or description matches.",
+    "photosHint": "Images whose title matches.",
     "noPhotographers": "No photographers match “{{q}}”.",
     "noThemes": "No themes match “{{q}}”.",
     "noPhotos": "No photographs match “{{q}}”."
