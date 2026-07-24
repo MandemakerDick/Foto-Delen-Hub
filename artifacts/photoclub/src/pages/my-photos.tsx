@@ -12,6 +12,7 @@ import {
   useDeletePhoto,
   useListPhotographers,
   useListThemes,
+  useListClubs,
   useUpdatePhotographer,
   useProposeTheme,
   getGetPhotographerQueryKey,
@@ -20,6 +21,7 @@ import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -309,6 +311,185 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   );
 }
 
+function EditProfilePanel({
+  profile,
+  onSaved,
+}: {
+  profile: PhotographerProfile;
+  onSaved: () => void;
+}) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateMutation = useUpdatePhotographer();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(profile.name);
+  const [bio, setBio] = useState(profile.bio ?? "");
+
+  const handleSave = () => {
+    updateMutation.mutate(
+      { id: profile.id, data: { name: name.trim(), bio: bio.trim() || undefined } },
+      {
+        onSuccess: () => {
+          toast({ title: t("myPhotos.profileSaved") });
+          queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
+          setOpen(false);
+          onSaved();
+        },
+        onError: () =>
+          toast({ title: t("common.error"), description: t("myPhotos.profileSaveError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  if (!open) {
+    return (
+      <div>
+        <div className="flex items-center gap-2">
+          <h1 className="font-serif text-3xl font-bold">{profile.name}</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+            onClick={() => setOpen(true)}
+          >
+            <Pencil className="w-3 h-3" />
+            {t("common.edit")}
+          </Button>
+        </div>
+        {profile.bio && <p className="text-sm text-muted-foreground mt-1 max-w-sm">{profile.bio}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 min-w-[260px] max-w-sm">
+      <Input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder={t("myPhotos.yourName")}
+        className="h-8 text-sm bg-background border-border/50"
+      />
+      <Textarea
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+        placeholder={t("myPhotos.bioPlaceholder")}
+        className="text-sm bg-background border-border/50 resize-none"
+        rows={3}
+      />
+      <div className="flex gap-1">
+        <Button
+          size="sm"
+          className="h-8 px-3 gap-1"
+          onClick={handleSave}
+          disabled={!name.trim() || updateMutation.isPending}
+        >
+          <Check className="w-3.5 h-3.5" />
+          {t("common.save")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => { setOpen(false); setName(profile.name); setBio(profile.bio ?? ""); }}
+        >
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EditClubPanel({
+  profile,
+  onSaved,
+}: {
+  profile: PhotographerProfile;
+  onSaved: () => void;
+}) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateMutation = useUpdatePhotographer();
+  const { data: clubs } = useListClubs();
+  const [open, setOpen] = useState(false);
+  const [clubId, setClubId] = useState(profile.clubId?.toString() ?? "none");
+
+  const handleSave = () => {
+    updateMutation.mutate(
+      { id: profile.id, data: { clubId: clubId !== "none" ? Number(clubId) : null } },
+      {
+        onSuccess: () => {
+          toast({ title: t("myPhotos.clubSaved") });
+          queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
+          setOpen(false);
+          onSaved();
+        },
+        onError: () =>
+          toast({ title: t("common.error"), description: t("myPhotos.clubSaveError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  if (!open) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        {profile.clubName ? (
+          <Badge variant="secondary" className="font-mono">{profile.clubName}</Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground">{t("myPhotos.noClub")}</span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+          onClick={() => setOpen(true)}
+        >
+          <Pencil className="w-3 h-3" />
+          {t("common.edit")}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+      <Select value={clubId} onValueChange={setClubId}>
+        <SelectTrigger className="w-52 bg-background border-border/50 h-8 text-sm">
+          <SelectValue placeholder={t("myPhotos.selectClub")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">{t("common.none")}</SelectItem>
+          {clubs?.map((c) => (
+            <SelectItem key={c.id} value={c.id.toString()}>
+              {c.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex gap-1">
+        <Button
+          size="sm"
+          className="h-8 px-3 gap-1"
+          onClick={handleSave}
+          disabled={updateMutation.isPending}
+        >
+          <Check className="w-3.5 h-3.5" />
+          {t("common.save")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => setOpen(false)}
+        >
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function EditThemesPanel({
   profile,
   onSaved,
@@ -534,10 +715,9 @@ function MyPhotosDashboard({
         <div className="flex items-center gap-4">
           <AvatarUploader profile={profile} onSaved={onProfileUpdated} />
           <div>
-            <h1 className="font-serif text-3xl font-bold">{profile.name}</h1>
-            {profile.clubName && <p className="text-sm text-muted-foreground">{profile.clubName}</p>}
+            <EditProfilePanel profile={profile} onSaved={onProfileUpdated} />
             {user?.primaryEmailAddress && (
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-xs text-muted-foreground font-mono mt-1">
                 {user.primaryEmailAddress.emailAddress}
               </p>
             )}
@@ -566,6 +746,12 @@ function MyPhotosDashboard({
             {t("nav.signOut")}
           </Button>
         </div>
+      </div>
+
+      {/* Club membership row */}
+      <div className="mb-6 pb-6 border-b border-border/40">
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.clubMembership")}</p>
+        <EditClubPanel profile={profile} onSaved={onProfileUpdated} />
       </div>
 
       {/* Specialty themes row */}
