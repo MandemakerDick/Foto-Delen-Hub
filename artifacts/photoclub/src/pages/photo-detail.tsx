@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from "wouter";
+import { useParams, Link, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil } from "lucide-react";
@@ -63,11 +63,11 @@ export default function PhotoDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const photoId = Number(id);
-  const [location] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
 
   // Parse navigation context from ?ctx= query param
-  const ctx = new URLSearchParams(location.split("?")[1] || "").get("ctx") ?? "gallery";
+  const ctx = new URLSearchParams(search).get("ctx") ?? "gallery";
   const [ctxType, ctxId] = ctx.includes(":") ? ctx.split(":") : [ctx, ""];
   const listParams =
     ctxType === "photographer" ? { photographerId: Number(ctxId) } :
