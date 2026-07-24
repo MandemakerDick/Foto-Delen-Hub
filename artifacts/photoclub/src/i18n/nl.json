@@ -379,7 +379,13 @@
     "signInBody": "Alleen geregistreerde fotografen kunnen foto's toevoegen aan de donkere kamer.",
     "signInButton": "Inloggen",
     "successTitle": "Foto toegevoegd",
-    "successBody": "Je foto staat nu in de galerij."
+    "successBody": "Je foto staat nu in de galerij.",
+    "proposeTheme": "Nieuw thema voorstellen",
+    "proposeThemePlaceholder": "Naam van het nieuwe thema…",
+    "proposeThemeBtn": "Indienen",
+    "proposeThemeSubmitting": "Indienen…",
+    "proposeThemeSuccess": "Thema voorgesteld — een beheerder beoordeelt het binnenkort.",
+    "proposeThemeError": "Kon het voorstel niet indienen."
   },
   "myPhotos": {
     "signInTitle": "Log in om je foto's te beheren",
@@ -402,12 +408,6 @@
     "noSpecialty": "Geen specialiteit thema's ingesteld",
     "themeSlot1": "Thema 1",
     "themeSlot2": "Thema 2",
-    "proposeTheme": "Nieuw thema voorstellen",
-    "proposeThemePlaceholder": "Themanaam...",
-    "proposeThemeBtn": "Voorstel indienen",
-    "proposeThemeSubmitting": "Indienen…",
-    "proposeThemeSuccess": "Voorstel ingediend — beheerders beoordelen het.",
-    "proposeThemeError": "Kon voorstel niet indienen.",
     "bioPlaceholder": "Vertel iets over jezelf en je fotografiestijl...",
     "profileSaved": "Profiel bijgewerkt",
     "profileSaveError": "Kon profiel niet opslaan.",

@@ -379,7 +379,13 @@
     "signInBody": "Only registered photographers can add photos to the darkroom.",
     "signInButton": "Sign in",
     "successTitle": "Photo Added",
-    "successBody": "Your photograph is now in the gallery."
+    "successBody": "Your photograph is now in the gallery.",
+    "proposeTheme": "Suggest a new theme",
+    "proposeThemePlaceholder": "New theme name…",
+    "proposeThemeBtn": "Submit",
+    "proposeThemeSubmitting": "Submitting…",
+    "proposeThemeSuccess": "Theme suggested — an admin will review it shortly.",
+    "proposeThemeError": "Could not submit your suggestion."
   },
   "myPhotos": {
     "signInTitle": "Sign in to manage your photos",
@@ -402,12 +408,6 @@
     "noSpecialty": "No specialty themes set",
     "themeSlot1": "Theme 1",
     "themeSlot2": "Theme 2",
-    "proposeTheme": "Propose a new theme",
-    "proposeThemePlaceholder": "Theme name...",
-    "proposeThemeBtn": "Submit proposal",
-    "proposeThemeSubmitting": "Submitting…",
-    "proposeThemeSuccess": "Proposal submitted — admins will review it.",
-    "proposeThemeError": "Could not submit proposal.",
     "bioPlaceholder": "Tell us about yourself and your photography style...",
     "profileSaved": "Profile updated",
     "profileSaveError": "Could not save profile.",
