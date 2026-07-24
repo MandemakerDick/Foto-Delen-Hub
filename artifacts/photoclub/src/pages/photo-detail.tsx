@@ -1,7 +1,7 @@
 import { useParams, Link, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil } from "lucide-react";
+import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil, X } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,6 +22,7 @@ import {
   useDeleteComment,
   useGetAdminStatus,
   getGetAdminStatusQueryKey,
+  useProposeTheme,
 } from "@workspace/api-client-react";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,9 @@ export default function PhotoDetail() {
   const [editThemeId, setEditThemeId] = useState<string>("none");
 
   const [commentBody, setCommentBody] = useState("");
+  const [showPropose, setShowPropose] = useState(false);
+  const [proposedName, setProposedName] = useState("");
+  const proposeThemeMutation = useProposeTheme();
 
   if (isLoading) {
     return (
@@ -133,6 +137,21 @@ export default function PhotoDetail() {
       </div>
     );
   }
+
+  const handleProposeTheme = () => {
+    if (!proposedName.trim()) return;
+    proposeThemeMutation.mutate(
+      { data: { name: proposedName.trim() } },
+      {
+        onSuccess: () => {
+          toast({ title: t("upload.proposeThemeSuccess") });
+          setProposedName("");
+          setShowPropose(false);
+        },
+        onError: () => toast({ title: t("common.error"), description: t("upload.proposeThemeError"), variant: "destructive" }),
+      },
+    );
+  };
 
   const handleLike = () => {
     if (!myProfile) return;
@@ -439,6 +458,32 @@ export default function PhotoDetail() {
                               ))}
                             </SelectContent>
                           </Select>
+                          {!showPropose ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowPropose(true)}
+                              className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-2 hover:underline mt-1 block"
+                            >
+                              {t("upload.proposeTheme")}
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-2">
+                              <Input
+                                value={proposedName}
+                                onChange={(e) => setProposedName(e.target.value)}
+                                placeholder={t("upload.proposeThemePlaceholder")}
+                                className="bg-background text-sm h-8"
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleProposeTheme(); } if (e.key === "Escape") { setShowPropose(false); setProposedName(""); } }}
+                                autoFocus
+                              />
+                              <Button type="button" size="sm" className="h-8 shrink-0" disabled={!proposedName.trim() || proposeThemeMutation.isPending} onClick={handleProposeTheme}>
+                                {proposeThemeMutation.isPending ? t("upload.proposeThemeSubmitting") : t("upload.proposeThemeBtn")}
+                              </Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-8 px-2 shrink-0" onClick={() => { setShowPropose(false); setProposedName(""); }}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
