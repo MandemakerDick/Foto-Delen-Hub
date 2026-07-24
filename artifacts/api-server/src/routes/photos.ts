@@ -164,10 +164,11 @@ router.get("/photos/:id", async (req, res) => {
   res.json(mapPhoto(rows[0]));
 });
 
-// PATCH /api/photos/:id — update a photo's metadata (owner only)
+// PATCH /api/photos/:id — update a photo's metadata (owner or admin)
 router.patch("/photos/:id", async (req, res) => {
   const { userId } = getAuth(req);
-  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  const isAdmin = !!(req.session as any)?.adminId;
+  if (!userId && !isAdmin) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const params = UpdatePhotoParams.safeParse({ id: Number(req.params.id) });
   const body = UpdatePhotoBody.safeParse(req.body);
@@ -176,15 +177,18 @@ router.patch("/photos/:id", async (req, res) => {
     return;
   }
 
-  const photographerId = await getPhotographerIdForClerkUser(userId);
   const existing = await db
     .select({ photographerId: photosTable.photographerId })
     .from(photosTable)
     .where(eq(photosTable.id, params.data.id));
   if (!existing[0]) { res.status(404).json({ error: "Not found" }); return; }
-  if (existing[0].photographerId !== photographerId) {
-    res.status(403).json({ error: "You can only edit your own photos" });
-    return;
+
+  if (!isAdmin) {
+    const photographerId = await getPhotographerIdForClerkUser(userId!);
+    if (existing[0].photographerId !== photographerId) {
+      res.status(403).json({ error: "You can only edit your own photos" });
+      return;
+    }
   }
 
   await db.update(photosTable).set(body.data).where(eq(photosTable.id, params.data.id));
@@ -192,23 +196,27 @@ router.patch("/photos/:id", async (req, res) => {
   res.json(mapPhoto(rows[0]));
 });
 
-// DELETE /api/photos/:id — delete a photo (owner only)
+// DELETE /api/photos/:id — delete a photo (owner or admin)
 router.delete("/photos/:id", async (req, res) => {
   const { userId } = getAuth(req);
-  if (!userId) { res.status(401).json({ error: "Sign in to delete photos" }); return; }
+  const isAdmin = !!(req.session as any)?.adminId;
+  if (!userId && !isAdmin) { res.status(401).json({ error: "Sign in to delete photos" }); return; }
 
   const params = DeletePhotoParams.safeParse({ id: Number(req.params.id) });
   if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const photographerId = await getPhotographerIdForClerkUser(userId);
   const existing = await db
     .select({ photographerId: photosTable.photographerId })
     .from(photosTable)
     .where(eq(photosTable.id, params.data.id));
   if (!existing[0]) { res.status(404).json({ error: "Not found" }); return; }
-  if (existing[0].photographerId !== photographerId) {
-    res.status(403).json({ error: "You can only delete your own photos" });
-    return;
+
+  if (!isAdmin) {
+    const photographerId = await getPhotographerIdForClerkUser(userId!);
+    if (existing[0].photographerId !== photographerId) {
+      res.status(403).json({ error: "You can only delete your own photos" });
+      return;
+    }
   }
 
   await db.delete(photosTable).where(eq(photosTable.id, params.data.id));
