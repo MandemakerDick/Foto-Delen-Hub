@@ -462,26 +462,28 @@ export default function PhotoDetail() {
                             <button
                               type="button"
                               onClick={() => setShowPropose(true)}
-                              className="text-xs text-muted-foreground hover:text-primary transition-colors underline-offset-2 hover:underline mt-1 block"
+                              className="mt-2 w-full text-sm font-medium text-primary border border-primary/40 rounded-md py-1.5 px-3 hover:bg-primary/10 transition-colors text-left"
                             >
-                              {t("upload.proposeTheme")}
+                              + {t("upload.proposeTheme")}
                             </button>
                           ) : (
-                            <div className="flex items-center gap-2 mt-2">
+                            <div className="mt-2 space-y-2 p-3 border border-primary/40 rounded-md bg-primary/5">
                               <Input
                                 value={proposedName}
                                 onChange={(e) => setProposedName(e.target.value)}
                                 placeholder={t("upload.proposeThemePlaceholder")}
-                                className="bg-background text-sm h-8"
+                                className="bg-background h-10"
                                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleProposeTheme(); } if (e.key === "Escape") { setShowPropose(false); setProposedName(""); } }}
                                 autoFocus
                               />
-                              <Button type="button" size="sm" className="h-8 shrink-0" disabled={!proposedName.trim() || proposeThemeMutation.isPending} onClick={handleProposeTheme}>
-                                {proposeThemeMutation.isPending ? t("upload.proposeThemeSubmitting") : t("upload.proposeThemeBtn")}
-                              </Button>
-                              <Button type="button" size="sm" variant="ghost" className="h-8 px-2 shrink-0" onClick={() => { setShowPropose(false); setProposedName(""); }}>
-                                <X className="w-3 h-3" />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button type="button" className="flex-1 h-9" disabled={!proposedName.trim() || proposeThemeMutation.isPending} onClick={handleProposeTheme}>
+                                  {proposeThemeMutation.isPending ? t("upload.proposeThemeSubmitting") : t("upload.proposeThemeBtn")}
+                                </Button>
+                                <Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setShowPropose(false); setProposedName(""); }}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>
