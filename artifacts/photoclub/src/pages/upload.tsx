@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { LogIn, Link2, UploadCloud, X, CheckCircle2 } from "lucide-react";
-import { Show } from "@clerk/react";
+import { Show, SignInButton } from "@clerk/react";
 import {
   useCreatePhoto,
   useListClubs,
@@ -379,9 +379,9 @@ function SignedOutUpload() {
       </div>
       <h2 className="font-serif text-3xl mb-3">{t("upload.signInTitle")}</h2>
       <p className="text-muted-foreground mb-8">{t("upload.signInBody")}</p>
-      <Link href="/admin/login">
+      <SignInButton mode="modal">
         <Button size="lg">{t("upload.signInButton")}</Button>
-      </Link>
+      </SignInButton>
     </div>
   );
 }

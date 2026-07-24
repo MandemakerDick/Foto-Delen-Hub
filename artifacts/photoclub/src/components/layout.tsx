@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Camera, Users, LayoutDashboard, User, PlusSquare, Settings, LogIn, ImageIcon, ShieldCheck, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
-import { Show, useAuth, useUser } from "@clerk/react";
+import { Show, useAuth, useUser, SignInButton } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -102,13 +102,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
-            {/* Clerk sign-in button — only when not already authenticated any way */}
+            {/* Photographer sign-in (Clerk) — only when not already authenticated any way */}
             {!isSessionAdmin && (
               <Show when="signed-out">
-                <Link href="/admin/login">
+                <SignInButton mode="modal">
                   <Button variant="outline" size="sm" className="gap-2 border-border/50">
                     <LogIn className="w-4 h-4" />
                     <span className="hidden sm:inline">{t("nav.signIn")}</span>
+                  </Button>
+                </SignInButton>
+                <Link href="/admin/login">
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground/60 hover:text-muted-foreground px-2">
+                    {t("nav.adminLogin")}
                   </Button>
                 </Link>
               </Show>

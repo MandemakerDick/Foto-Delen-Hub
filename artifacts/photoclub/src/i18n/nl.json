@@ -7,7 +7,8 @@
     "upload": "Uploaden",
     "myPhotos": "Mijn foto's",
     "signIn": "Inloggen",
-    "signOut": "Uitloggen"
+    "signOut": "Uitloggen",
+    "adminLogin": "Beheer"
   },
   "common": {
     "search": "Zoeken",

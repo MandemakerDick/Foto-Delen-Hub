@@ -7,7 +7,8 @@
     "upload": "Upload",
     "myPhotos": "My Photos",
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "adminLogin": "Admin"
   },
   "common": {
     "search": "Search",
