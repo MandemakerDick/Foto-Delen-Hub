@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useUser, useClerk, Show } from "@clerk/react";
@@ -392,6 +392,12 @@ function EditClubPanel({
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>(profile.clubs?.map((c) => c.id) ?? []);
 
+  // Re-sync selections whenever the profile changes and the panel is closed,
+  // so re-opening always reflects the latest saved state.
+  useEffect(() => {
+    if (!open) setSelectedIds(profile.clubs?.map((c) => c.id) ?? []);
+  }, [profile, open]);
+
   const toggleClub = (id: number, checked: boolean) =>
     setSelectedIds((prev) => checked ? [...prev, id] : prev.filter((x) => x !== id));
 
@@ -487,6 +493,11 @@ function EditThemesPanel({
   const [showPropose, setShowPropose] = useState(false);
   const [proposeName, setProposeName] = useState("");
   const proposeMutation = useProposeTheme();
+
+  // Re-sync selections whenever the profile changes and the panel is closed.
+  useEffect(() => {
+    if (!open) setSelectedThemeIds(profile.themes?.map((t) => t.id) ?? []);
+  }, [profile, open]);
 
   const handleSave = () => {
     updateMutation.mutate(
