@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,8 +44,7 @@ type PhotographerProfile = {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
-  clubId: number | null;
-  clubName: string | null;
+  clubs: { id: number; name: string }[];
   themeId1: number | null;
   themeName1: string | null;
   themeId2: number | null;
@@ -413,11 +413,14 @@ function EditClubPanel({
   const updateMutation = useUpdatePhotographer();
   const { data: clubs } = useListClubs();
   const [open, setOpen] = useState(false);
-  const [clubId, setClubId] = useState(profile.clubId?.toString() ?? "none");
+  const [selectedIds, setSelectedIds] = useState<number[]>(profile.clubs?.map((c) => c.id) ?? []);
+
+  const toggleClub = (id: number, checked: boolean) =>
+    setSelectedIds((prev) => checked ? [...prev, id] : prev.filter((x) => x !== id));
 
   const handleSave = () => {
     updateMutation.mutate(
-      { id: profile.id, data: { clubId: clubId !== "none" ? Number(clubId) : null } },
+      { id: profile.id, data: { clubIds: selectedIds } },
       {
         onSuccess: () => {
           toast({ title: t("myPhotos.clubSaved") });
@@ -434,8 +437,8 @@ function EditClubPanel({
   if (!open) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        {profile.clubName ? (
-          <Badge variant="secondary" className="font-mono">{profile.clubName}</Badge>
+        {profile.clubs && profile.clubs.length > 0 ? (
+          profile.clubs.map((c) => <Badge key={c.id} variant="secondary" className="font-mono">{c.name}</Badge>)
         ) : (
           <span className="text-xs text-muted-foreground">{t("myPhotos.noClub")}</span>
         )}
@@ -453,20 +456,19 @@ function EditClubPanel({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-      <Select value={clubId} onValueChange={setClubId}>
-        <SelectTrigger className="w-52 bg-background border-border/50 h-8 text-sm">
-          <SelectValue placeholder={t("myPhotos.selectClub")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">{t("common.none")}</SelectItem>
-          {clubs?.map((c) => (
-            <SelectItem key={c.id} value={c.id.toString()}>
-              {c.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        {clubs?.map((c) => (
+          <div key={c.id} className="flex items-center gap-2">
+            <Checkbox
+              id={`my-club-${c.id}`}
+              checked={selectedIds.includes(c.id)}
+              onCheckedChange={(checked) => toggleClub(c.id, !!checked)}
+            />
+            <label htmlFor={`my-club-${c.id}`} className="text-sm cursor-pointer select-none">{c.name}</label>
+          </div>
+        ))}
+      </div>
       <div className="flex gap-1">
         <Button
           size="sm"

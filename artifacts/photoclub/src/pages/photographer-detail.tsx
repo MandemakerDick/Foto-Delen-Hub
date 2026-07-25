@@ -113,15 +113,16 @@ export default function PhotographerDetail() {
               )}
 
               <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm text-muted-foreground">
-                {photographer.clubId && (
+                {photographer.clubs?.map((club) => (
                   <Link
-                    href={`/clubs/${photographer.clubId}`}
+                    key={club.id}
+                    href={`/clubs/${club.id}`}
                     className="flex items-center gap-2 hover:text-primary transition-colors"
                   >
                     <Users className="w-4 h-4" />
-                    <span className="uppercase tracking-widest">{photographer.clubName}</span>
+                    <span className="uppercase tracking-widest">{club.name}</span>
                   </Link>
-                )}
+                ))}
                 <div className="flex items-center gap-2 font-mono">
                   <ImageIcon className="w-4 h-4" />
                   <span>{photographer.photoCount || 0} {t("common.photos")}</span>

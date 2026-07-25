@@ -5,6 +5,7 @@
  * PhotoClub API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PhotographerClub } from './photographerClub';
 
 export interface Photographer {
   id: number;
@@ -13,10 +14,7 @@ export interface Photographer {
   bio?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
-  /** @nullable */
-  clubId?: number | null;
-  /** @nullable */
-  clubName?: string | null;
+  clubs: PhotographerClub[];
   /** @nullable */
   themeId1?: number | null;
   /** @nullable */

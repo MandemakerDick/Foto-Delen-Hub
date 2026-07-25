@@ -240,8 +240,10 @@ export const ListPhotographersResponseItem = zod.object({
   "name": zod.string(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
-  "clubId": zod.number().nullish(),
-  "clubName": zod.string().nullish(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
   "themeId1": zod.number().nullish(),
   "themeName1": zod.string().nullish(),
   "themeId2": zod.number().nullish(),
@@ -262,7 +264,7 @@ export const CreatePhotographerBody = zod.object({
   "name": zod.string().min(1),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubId": zod.number().optional(),
+  "clubIds": zod.array(zod.number()).optional(),
   "themeId1": zod.number().optional(),
   "themeId2": zod.number().optional()
 })
@@ -280,8 +282,10 @@ export const GetPhotographerResponse = zod.object({
   "name": zod.string(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
-  "clubId": zod.number().nullish(),
-  "clubName": zod.string().nullish(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
   "themeId1": zod.number().nullish(),
   "themeName1": zod.string().nullish(),
   "themeId2": zod.number().nullish(),
@@ -305,7 +309,7 @@ export const UpdatePhotographerBody = zod.object({
   "name": zod.string().min(1).optional(),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubId": zod.number().nullish(),
+  "clubIds": zod.array(zod.number()).optional(),
   "themeId1": zod.number().nullish(),
   "themeId2": zod.number().nullish()
 })
@@ -315,8 +319,10 @@ export const UpdatePhotographerResponse = zod.object({
   "name": zod.string(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
-  "clubId": zod.number().nullish(),
-  "clubName": zod.string().nullish(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
   "themeId1": zod.number().nullish(),
   "themeName1": zod.string().nullish(),
   "themeId2": zod.number().nullish(),

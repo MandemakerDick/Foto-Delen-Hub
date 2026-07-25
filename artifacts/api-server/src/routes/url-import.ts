@@ -7,7 +7,7 @@
  */
 import { Router } from "express";
 import * as cheerio from "cheerio";
-import { db, photosTable, photographersTable, commentsTable, clubsTable, themesTable } from "@workspace/db";
+import { db, photosTable, photographersTable, commentsTable, clubsTable, themesTable, photographerClubsTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { setObjectAclPolicy, ObjectAclPolicy, ObjectPermission } from "../lib/objectAcl";
@@ -311,9 +311,13 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     const bio = body.photographerBio?.trim() || null;
     const [newPh] = await db
       .insert(photographersTable)
-      .values({ name, bio, clubId, themeId1: null, themeId2: null })
+      .values({ name, bio, themeId1: null, themeId2: null })
       .returning({ id: photographersTable.id });
     photographerId = newPh.id;
+    // Link the photographer to the club via the junction table
+    if (clubId) {
+      await db.insert(photographerClubsTable).values({ photographerId: newPh.id, clubId });
+    }
   }
 
   const importedPhotos: ReturnType<typeof mapPhoto>[] = [];

@@ -7,7 +7,6 @@ export const photographersTable = pgTable("photographers", {
   name: text("name").notNull(),
   bio: text("bio"),
   avatarUrl: text("avatar_url"),
-  clubId: integer("club_id"),
   themeId1: integer("theme_id_1"),
   themeId2: integer("theme_id_2"),
   clerkUserId: text("clerk_user_id"),

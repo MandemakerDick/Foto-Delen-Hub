@@ -31,6 +31,7 @@ export * from './listReviewSessionsParams';
 export * from './listThemesParams';
 export * from './photo';
 export * from './photographer';
+export * from './photographerClub';
 export * from './photographerInput';
 export * from './photographerUpdate';
 export * from './photoInput';

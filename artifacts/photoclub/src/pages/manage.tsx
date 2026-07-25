@@ -79,7 +79,7 @@ const themeSchema = z.object({
 const photographerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().optional(),
-  clubId: z.coerce.number().optional(),
+  clubIds: z.array(z.number()).optional().default([]),
 });
 
 type ClubFormValues = z.infer<typeof clubSchema>;
@@ -548,7 +548,7 @@ export default function Manage() {
     setAvatarUrl(p.avatarUrl ?? null);
     setTheme1(p.themeId1?.toString() ?? "none");
     setTheme2(p.themeId2?.toString() ?? "none");
-    photographerForm.reset({ name: p.name, bio: p.bio ?? "", clubId: p.clubId ?? undefined });
+    photographerForm.reset({ name: p.name, bio: p.bio ?? "", clubIds: p.clubs?.map((c) => c.id) ?? [] });
     setTimeout(() => photographerFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
 
@@ -557,7 +557,7 @@ export default function Manage() {
     setAvatarUrl(null);
     setTheme1("none");
     setTheme2("none");
-    photographerForm.reset({ name: "", bio: "" });
+    photographerForm.reset({ name: "", bio: "", clubIds: [] });
   };
 
   const onPhotographerSubmit = (values: PhotographerFormValues) => {
@@ -886,17 +886,24 @@ export default function Manage() {
                   <FormItem><FormLabel>{t("manage.photographer.nameLabel")}</FormLabel><FormControl><Input {...field} className="bg-background" /></FormControl><FormMessage /></FormItem>
                 )} />
 
-                <FormField control={photographerForm.control} name="clubId" render={({ field }) => (
+                <FormField control={photographerForm.control} name="clubIds" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("manage.photographer.primaryClubLabel")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value?.toString() ?? ""}>
-                      <FormControl>
-                        <SelectTrigger className="bg-background"><SelectValue placeholder={t("manage.photographer.primaryClubPlaceholder")} /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clubs?.map((c) => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>{t("manage.photographer.clubsLabel")}</FormLabel>
+                    <div className="flex flex-col gap-2 pt-1">
+                      {clubs?.map((c) => (
+                        <div key={c.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`club-${c.id}`}
+                            checked={(field.value ?? []).includes(c.id)}
+                            onCheckedChange={(checked) => {
+                              const current = field.value ?? [];
+                              field.onChange(checked ? [...current, c.id] : current.filter((id) => id !== c.id));
+                            }}
+                          />
+                          <label htmlFor={`club-${c.id}`} className="text-sm cursor-pointer select-none">{c.name}</label>
+                        </div>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -951,7 +958,7 @@ export default function Manage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{p.name}</p>
-                      {p.clubName && <p className="text-xs text-muted-foreground truncate">{p.clubName}</p>}
+                      {p.clubs && p.clubs.length > 0 && <p className="text-xs text-muted-foreground truncate">{p.clubs.map((c) => c.name).join(", ")}</p>}
                     </div>
                     <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} {t("manage.photographer.printsSuffix")}</span>
                     <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>

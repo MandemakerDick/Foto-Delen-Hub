@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, clubsTable, photographersTable, photosTable } from "@workspace/db";
-import { eq, ilike, count, countDistinct, sql } from "drizzle-orm";
+import { db, clubsTable, photosTable, photographerClubsTable } from "@workspace/db";
+import { eq, ilike, countDistinct, sql } from "drizzle-orm";
 import {
   ListClubsQueryParams,
   CreateClubBody,
@@ -31,7 +31,7 @@ const clubSelectFields = {
   yearEstablished: clubsTable.yearEstablished,
   createdAt: clubsTable.createdAt,
   photoCount: countDistinct(photosTable.id),
-  memberCount: sql<number>`count(distinct ${photographersTable.id})`,
+  memberCount: sql<number>`count(distinct ${photographerClubsTable.photographerId})`,
 };
 
 /** Apply the standard LEFT JOINs needed to compute photo / member counts. */
@@ -40,7 +40,7 @@ function clubBaseQuery() {
     .select(clubSelectFields)
     .from(clubsTable)
     .leftJoin(photosTable, eq(photosTable.clubId, clubsTable.id))
-    .leftJoin(photographersTable, eq(photographersTable.clubId, clubsTable.id));
+    .leftJoin(photographerClubsTable, eq(photographerClubsTable.clubId, clubsTable.id));
 }
 
 /** Serialise a club row — convert the Date to an ISO string for JSON output. */

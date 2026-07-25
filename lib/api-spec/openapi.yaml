@@ -1392,9 +1392,18 @@ components:
         description:
           type: string
 
+    PhotographerClub:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
     Photographer:
       type: object
-      required: [id, name, createdAt]
+      required: [id, name, clubs, createdAt]
       properties:
         id:
           type: integer
@@ -1404,10 +1413,10 @@ components:
           type: ["string", "null"]
         avatarUrl:
           type: ["string", "null"]
-        clubId:
-          type: ["integer", "null"]
-        clubName:
-          type: ["string", "null"]
+        clubs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotographerClub'
         themeId1:
           type: ["integer", "null"]
         themeName1:
@@ -1432,8 +1441,10 @@ components:
           type: string
         avatarUrl:
           type: string
-        clubId:
-          type: integer
+        clubIds:
+          type: array
+          items:
+            type: integer
         themeId1:
           type: integer
         themeId2:
@@ -1449,8 +1460,10 @@ components:
           type: string
         avatarUrl:
           type: string
-        clubId:
-          type: ["integer", "null"]
+        clubIds:
+          type: array
+          items:
+            type: integer
         themeId1:
           type: ["integer", "null"]
         themeId2:

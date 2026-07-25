@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
 import { alias } from "drizzle-orm/pg-core";
-import { db, photographersTable, clubsTable, themesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, photographersTable, themesTable, photographerClubsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 
 // Aliases let us join the themes table twice in the same query without
 // column-name conflicts (a photographer can have up to two favourite themes).
@@ -10,6 +10,14 @@ const t1 = alias(themesTable, "t1");
 const t2 = alias(themesTable, "t2");
 
 const router = Router();
+
+/** Correlated subquery: returns clubs as a JSON array for a given photographer row. */
+const clubsSubquery = sql<{ id: number; name: string }[]>`(
+  SELECT COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name) ORDER BY c.name), '[]'::json)
+  FROM photographer_clubs pc
+  JOIN clubs c ON c.id = pc.club_id
+  WHERE pc.photographer_id = ${photographersTable.id}
+)`;
 
 /**
  * Middleware: require a Clerk-authenticated session.
@@ -28,7 +36,7 @@ export function requireAuth(req: any, res: any, next: any) {
 
 /**
  * Fetch the photographer profile linked to a Clerk user, including their
- * club and both favourite theme names resolved via JOIN.
+ * clubs (array) and both favourite theme names resolved via JOIN.
  */
 async function getPhotographerByClerkId(clerkUserId: string) {
   const rows = await db
@@ -37,8 +45,7 @@ async function getPhotographerByClerkId(clerkUserId: string) {
       name: photographersTable.name,
       bio: photographersTable.bio,
       avatarUrl: photographersTable.avatarUrl,
-      clubId: photographersTable.clubId,
-      clubName: clubsTable.name,
+      clubs: clubsSubquery,
       themeId1: photographersTable.themeId1,
       themeName1: t1.name,
       themeId2: photographersTable.themeId2,
@@ -47,7 +54,6 @@ async function getPhotographerByClerkId(clerkUserId: string) {
       createdAt: photographersTable.createdAt,
     })
     .from(photographersTable)
-    .leftJoin(clubsTable, eq(photographersTable.clubId, clubsTable.id))
     .leftJoin(t1, eq(photographersTable.themeId1, t1.id))
     .leftJoin(t2, eq(photographersTable.themeId2, t2.id))
     .where(eq(photographersTable.clerkUserId, clerkUserId));
@@ -100,7 +106,7 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
 // POST /api/me/profile — create a new photographer profile linked to the Clerk account.
 // Only one profile per Clerk account is allowed.
 router.post("/me/profile", requireAuth, async (req: any, res) => {
-  const { name, bio, avatarUrl, clubId, themeId1, themeId2 } = req.body;
+  const { name, bio, avatarUrl, clubIds, themeId1, themeId2 } = req.body;
   if (!name || typeof name !== "string") {
     res.status(400).json({ error: "name required" });
     return;
@@ -112,10 +118,17 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
     return;
   }
 
-  await db
+  const [newPhotographer] = await db
     .insert(photographersTable)
-    .values({ name, bio, avatarUrl, clubId, themeId1, themeId2, clerkUserId: req.clerkUserId })
+    .values({ name, bio, avatarUrl, themeId1, themeId2, clerkUserId: req.clerkUserId })
     .returning();
+
+  // Link club memberships via junction table
+  if (Array.isArray(clubIds) && clubIds.length > 0) {
+    await db.insert(photographerClubsTable).values(
+      clubIds.map((clubId: number) => ({ photographerId: newPhotographer.id, clubId })),
+    );
+  }
 
   const profile = await getPhotographerByClerkId(req.clerkUserId);
   res.status(201).json({ ...profile!, createdAt: profile!.createdAt.toISOString() });
