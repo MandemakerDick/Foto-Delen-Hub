@@ -197,8 +197,8 @@ function ClerkProviderWithRoutes() {
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       localization={{
-        signIn: { start: { title: "Welcome back", subtitle: "Sign in to your PhotographersHub account" } },
-        signUp: { start: { title: "Join PhotographersHub", subtitle: "Create your photographer account" } },
+        signIn: { start: { title: "Welcome back", subtitle: "Sign in to your PhotoMatrix account" } },
+        signUp: { start: { title: "Join PhotoMatrix", subtitle: "Create your photographer account" } },
       }}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}

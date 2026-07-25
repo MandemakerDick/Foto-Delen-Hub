@@ -30,6 +30,7 @@ export default function Home() {
       <section className="relative overflow-hidden py-24 md:py-32 bg-secondary border-b border-border/50">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/50 via-background to-background" />
         <div className="container relative z-10 mx-auto px-4 max-w-4xl text-center flex flex-col items-center gap-8">
+          <img src="/photomatrix-logo.png" alt="PhotoMatrix" className="w-64 md:w-80 h-auto mix-blend-screen" />
           <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight">
             {t("home.heroTitle1")} <span className="text-primary italic">{t("home.heroTitle2")}</span>
           </h1>
