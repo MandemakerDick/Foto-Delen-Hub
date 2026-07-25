@@ -125,7 +125,14 @@ router.get("/photographers", async (req, res) => {
             ),
         )
       : themeId
-        ? or(eq(photographersTable.themeId1, themeId), eq(photographersTable.themeId2, themeId))
+        ? exists(
+            db
+              .select({ one: sql<number>`1` })
+              .from(photosTable)
+              .where(
+                sql`${photosTable.photographerId} = ${photographersTable.id} AND ${photosTable.themeId} = ${themeId}`,
+              ),
+          )
         : undefined;
 
   const rows = await photographerBaseQuery()
