@@ -38,8 +38,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30">
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src={`${basePath}/photomatrix-logo.png`} alt="PhotoMatrix" className="h-9 w-auto mix-blend-screen" />
+          <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+            <Camera className="w-6 h-6" />
+            <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotoMatrix</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
