@@ -55,7 +55,9 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
   const { toast } = useToast();
   const { profile, loading } = useMyProfile();
 
-  const { data: clubs } = useListClubs();
+  const { data: allClubs } = useListClubs();
+  // Non-admin photographers may only assign photos to their own clubs.
+  const clubs = isAdmin ? allClubs : allClubs?.filter((c) => profile?.clubs?.some((pc) => pc.id === c.id));
   const { data: themes } = useListThemes();
   const { data: photographers } = useListPhotographers(
     {},

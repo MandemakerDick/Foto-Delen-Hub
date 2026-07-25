@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable } from "@workspace/db";
-import { eq, ilike, desc, sql, count } from "drizzle-orm";
+import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable } from "@workspace/db";
+import { eq, ilike, desc, sql, count, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,
@@ -143,6 +143,23 @@ router.post("/photos", async (req: any, res) => {
     return;
   }
 
+  // Clerk photographers (non-admins) may only upload to clubs they belong to.
+  if (userId && !sessionAdminId && body.data.clubId) {
+    const membership = await db
+      .select({ one: sql<number>`1` })
+      .from(photographerClubsTable)
+      .where(
+        and(
+          eq(photographerClubsTable.photographerId, photographerId!),
+          eq(photographerClubsTable.clubId, body.data.clubId),
+        ),
+      );
+    if (!membership.length) {
+      res.status(403).json({ error: "You can only upload photos to clubs you are a member of" });
+      return;
+    }
+  }
+
   const [photo] = await db.insert(photosTable).values(body.data).returning();
   // Re-fetch via buildPhotoSelect so the response includes all joined fields
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
@@ -188,6 +205,22 @@ router.patch("/photos/:id", async (req, res) => {
     if (existing[0].photographerId !== photographerId) {
       res.status(403).json({ error: "You can only edit your own photos" });
       return;
+    }
+    // If the update changes the club, verify the photographer is a member of the new club.
+    if (body.data.clubId != null) {
+      const membership = await db
+        .select({ one: sql<number>`1` })
+        .from(photographerClubsTable)
+        .where(
+          and(
+            eq(photographerClubsTable.photographerId, photographerId!),
+            eq(photographerClubsTable.clubId, body.data.clubId),
+          ),
+        );
+      if (!membership.length) {
+        res.status(403).json({ error: "You can only assign photos to clubs you are a member of" });
+        return;
+      }
     }
   }
 

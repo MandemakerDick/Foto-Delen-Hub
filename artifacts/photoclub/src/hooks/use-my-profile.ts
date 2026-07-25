@@ -6,8 +6,7 @@ export type MyProfile = {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
-  clubId: number | null;
-  clubName: string | null;
+  clubs: { id: number; name: string }[];
   createdAt: string;
 };
 

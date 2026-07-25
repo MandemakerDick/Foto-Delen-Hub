@@ -98,8 +98,11 @@ export default function PhotoDetail() {
   const { profile: myProfile } = useMyProfile();
   const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
 
-  const { data: clubs } = useListClubs();
+  const { data: allClubs } = useListClubs();
   const { data: themes } = useListThemes();
+  // Non-admins may only reassign a photo to a club they belong to.
+  const isAdmin = !!adminStatus?.isAdmin;
+  const clubs = isAdmin ? allClubs : allClubs?.filter((c) => myProfile?.clubs?.some((pc) => pc.id === c.id));
 
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
