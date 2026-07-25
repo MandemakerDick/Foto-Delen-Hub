@@ -120,7 +120,12 @@
       "toastUpdateError": "Could not update photographer.",
       "deleteBtn": "Delete",
       "deleteConfirm": "Delete {{name}} and all their photos? This cannot be undone.",
-      "toastDeletedTitle": "Photographer deleted",
+      "deleteDialogTitle": "Remove Photographer",
+      "deleteDialogDesc": "This will permanently delete <strong>{{name}}</strong> and all their photos. A notification email will be sent to the photographer.",
+      "deleteReasonLabel": "Reason (sent to photographer)",
+      "deleteReasonPlaceholder": "Explain why this account is being removed...",
+      "deleteDialogConfirm": "Remove Photographer",
+      "toastDeletedTitle": "Photographer removed",
       "toastDeleteError": "Could not delete photographer."
     },
     "admins": {

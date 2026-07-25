@@ -9,7 +9,8 @@ import {
   UpdatePhotographerBody,
   UpdatePhotographerParams,
 } from "@workspace/api-zod";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
+import { ReplitConnectors } from "@replit/connectors-sdk";
 
 const router = Router();
 
@@ -244,6 +245,8 @@ router.patch("/photographers/:id", async (req, res) => {
 
 // DELETE /api/photographers/:id — remove a photographer and all their photos.
 // Photos are deleted first because there is no DB-level CASCADE on that FK.
+// Accepts optional JSON body { reason: string } — if provided and the photographer
+// has a Clerk account, a notification email is sent before deletion.
 router.delete("/photographers/:id", async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) {
@@ -251,8 +254,10 @@ router.delete("/photographers/:id", async (req, res) => {
     return;
   }
 
+  const reason: string | undefined = typeof req.body?.reason === "string" ? req.body.reason.trim() : undefined;
+
   const existing = await db
-    .select({ id: photographersTable.id })
+    .select({ id: photographersTable.id, name: photographersTable.name, clerkUserId: photographersTable.clerkUserId })
     .from(photographersTable)
     .where(eq(photographersTable.id, id))
     .limit(1);
@@ -260,6 +265,32 @@ router.delete("/photographers/:id", async (req, res) => {
   if (!existing[0]) {
     res.status(404).json({ error: "Not found" });
     return;
+  }
+
+  // Send notification email if photographer has a Clerk account and a reason was given.
+  const { name, clerkUserId } = existing[0];
+  if (clerkUserId && reason) {
+    try {
+      const clerkUser = await clerkClient.users.getUser(clerkUserId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress;
+      if (email) {
+        const connectors = new ReplitConnectors();
+        const fromAddress = process.env.EMAIL_FROM ?? "PhotoMatrix <onboarding@resend.dev>";
+        await connectors.proxy("resend", "/emails", {
+          method: "POST",
+          body: JSON.stringify({
+            from: fromAddress,
+            to: [email],
+            subject: "Your PhotoMatrix account has been removed",
+            html: `<p>Dear ${name},</p><p>Your PhotoMatrix account has been removed by an administrator.</p><p><strong>Reason:</strong> ${reason}</p><p>If you have questions, please contact your club administrator.</p><p>— The PhotoMatrix Team</p>`,
+            text: `Dear ${name},\n\nYour PhotoMatrix account has been removed by an administrator.\n\nReason: ${reason}\n\nIf you have any questions, please contact your club administrator.\n\n— The PhotoMatrix Team`,
+          }),
+        });
+      }
+    } catch (err) {
+      // Log but don't block the deletion if the email fails.
+      console.error("Failed to send removal notification email:", err);
+    }
   }
 
   await db.delete(photosTable).where(eq(photosTable.photographerId, id));

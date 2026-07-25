@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -410,6 +411,32 @@ export default function Manage() {
   const createPhotographerMutation = useCreatePhotographer();
   const updatePhotographerMutation = useUpdatePhotographer();
   const deletePhotographerMutation = useDeletePhotographer();
+
+  // ── Photographer delete dialog state ──────────────────────
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteSubmitting(true);
+    try {
+      const res = await fetch(`/api/photographers/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: deleteReason }),
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      toast({ title: t("manage.photographer.toastDeletedTitle") });
+      queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
+      setDeleteTarget(null);
+      setDeleteReason("");
+    } catch {
+      toast({ title: t("common.error"), description: t("manage.photographer.toastDeleteError"), variant: "destructive" });
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }
 
   // ── Club state ────────────────────────────────────────────
   const [editingClubId, setEditingClubId] = useState<number | null>(null);
@@ -972,14 +999,8 @@ export default function Manage() {
                       className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
                       disabled={deletePhotographerMutation.isPending}
                       onClick={() => {
-                        if (!confirm(t("manage.photographer.deleteConfirm", { name: p.name }))) return;
-                        deletePhotographerMutation.mutate({ id: p.id }, {
-                          onSuccess: () => {
-                            toast({ title: t("manage.photographer.toastDeletedTitle") });
-                            queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
-                          },
-                          onError: () => toast({ title: t("common.error"), description: t("manage.photographer.toastDeleteError"), variant: "destructive" }),
-                        });
+                        setDeleteReason("");
+                        setDeleteTarget({ id: p.id, name: p.name });
                       }}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1617,6 +1638,35 @@ export default function Manage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* ── Photographer removal dialog ─────────────────────── */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteReason(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("manage.photographer.deleteDialogTitle")}</DialogTitle>
+            <DialogDescription dangerouslySetInnerHTML={{ __html: t("manage.photographer.deleteDialogDesc", { name: deleteTarget?.name ?? "" }) }} />
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium">{t("manage.photographer.deleteReasonLabel")}</label>
+            <Textarea
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder={t("manage.photographer.deleteReasonPlaceholder")}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => { setDeleteTarget(null); setDeleteReason(""); }} disabled={deleteSubmitting}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleteSubmitting || !deleteReason.trim()}>
+              {deleteSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {t("manage.photographer.deleteDialogConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

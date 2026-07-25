@@ -116,7 +116,12 @@
       "toastCreateError": "Kon fotograaf niet aanmaken.",
       "toastUpdateError": "Kon fotograaf niet bijwerken.",
       "deleteBtn": "Verwijderen",
-      "deleteConfirm": "{{name}} en al zijn/haar foto’s verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "deleteConfirm": "{{name}} en al zijn/haar foto's verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "deleteDialogTitle": "Fotograaf verwijderen",
+      "deleteDialogDesc": "Dit verwijdert <strong>{{name}}</strong> en al zijn/haar foto's definitief. De fotograaf ontvangt een e-mailmelding.",
+      "deleteReasonLabel": "Reden (wordt naar fotograaf verstuurd)",
+      "deleteReasonPlaceholder": "Leg uit waarom dit account wordt verwijderd...",
+      "deleteDialogConfirm": "Fotograaf verwijderen",
       "toastDeletedTitle": "Fotograaf verwijderd",
       "toastDeleteError": "Kon fotograaf niet verwijderen."
     },
