@@ -52,6 +52,11 @@ export interface ThemeInput {
   description?: string;
 }
 
+export interface PhotographerTheme {
+  id: number;
+  name: string;
+}
+
 export interface PhotographerClub {
   id: number;
   name: string;
@@ -65,14 +70,7 @@ export interface Photographer {
   /** @nullable */
   avatarUrl?: string | null;
   clubs: PhotographerClub[];
-  /** @nullable */
-  themeId1?: number | null;
-  /** @nullable */
-  themeName1?: string | null;
-  /** @nullable */
-  themeId2?: number | null;
-  /** @nullable */
-  themeName2?: string | null;
+  themes: PhotographerTheme[];
   photoCount?: number;
   createdAt: string;
 }
@@ -83,8 +81,7 @@ export interface PhotographerInput {
   bio?: string;
   avatarUrl?: string;
   clubIds?: number[];
-  themeId1?: number;
-  themeId2?: number;
+  themeIds?: number[];
 }
 
 export interface PhotographerUpdate {
@@ -93,10 +90,7 @@ export interface PhotographerUpdate {
   bio?: string;
   avatarUrl?: string;
   clubIds?: number[];
-  /** @nullable */
-  themeId1?: number | null;
-  /** @nullable */
-  themeId2?: number | null;
+  themeIds?: number[];
 }
 
 export interface Photo {

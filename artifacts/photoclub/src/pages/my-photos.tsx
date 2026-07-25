@@ -45,10 +45,7 @@ type PhotographerProfile = {
   bio: string | null;
   avatarUrl: string | null;
   clubs: { id: number; name: string }[];
-  themeId1: number | null;
-  themeName1: string | null;
-  themeId2: number | null;
-  themeName2: string | null;
+  themes: { id: number; name: string }[];
   createdAt: string;
 };
 
@@ -170,8 +167,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   const [mode, setMode] = useState<"link" | "create">("link");
   const [selectedId, setSelectedId] = useState("");
   const [newName, setNewName] = useState("");
-  const [theme1, setTheme1] = useState("none");
-  const [theme2, setTheme2] = useState("none");
+  const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
 
   const handleLink = async () => {
@@ -197,8 +193,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
     if (!newName.trim()) return;
     setBusy(true);
     const body: Record<string, unknown> = { name: newName.trim() };
-    if (theme1 !== "none") body.themeId1 = Number(theme1);
-    if (theme2 !== "none") body.themeId2 = Number(theme2);
+    if (selectedThemeIds.length > 0) body.themeIds = selectedThemeIds;
     const res = await fetch("/api/me/profile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -214,9 +209,6 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
       toast({ title: t("common.error"), description: err.error, variant: "destructive" });
     }
   };
-
-  // Prevent picking the same theme twice
-  const theme2Options = themes?.filter((t) => t.id.toString() !== theme1) ?? [];
 
   return (
     <div className="max-w-md mx-auto text-center py-16 px-4">
@@ -266,40 +258,25 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
 
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 pl-0.5">
-              {t("myPhotos.specialty1")} <span className="normal-case">({t("common.optional")})</span>
+              {t("myPhotos.preferredThemesLabel")} <span className="normal-case">({t("common.optional")})</span>
             </p>
-            <Select value={theme1} onValueChange={(v) => { setTheme1(v); if (v === theme2) setTheme2("none"); }}>
-              <SelectTrigger className="bg-secondary/20 border-border/50">
-                <SelectValue placeholder={t("common.none")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">{t("common.none")}</SelectItem>
-                {themes?.map((theme) => (
-                  <SelectItem key={theme.id} value={theme.id.toString()}>
-                    {theme.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 pl-0.5">
-              {t("myPhotos.specialty2")} <span className="normal-case">({t("common.optional")})</span>
-            </p>
-            <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
-              <SelectTrigger className="bg-secondary/20 border-border/50">
-                <SelectValue placeholder={t("common.none")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">{t("common.none")}</SelectItem>
-                {theme2Options.map((theme) => (
-                  <SelectItem key={theme.id} value={theme.id.toString()}>
-                    {theme.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2 pt-1">
+              {themes?.map((theme) => (
+                <div key={theme.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`lp-theme-${theme.id}`}
+                    checked={selectedThemeIds.includes(theme.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedThemeIds(checked
+                        ? [...selectedThemeIds, theme.id]
+                        : selectedThemeIds.filter((id) => id !== theme.id)
+                      );
+                    }}
+                  />
+                  <label htmlFor={`lp-theme-${theme.id}`} className="text-sm cursor-pointer select-none">{theme.name}</label>
+                </div>
+              ))}
+            </div>
           </div>
 
           <Button onClick={handleCreate} disabled={!newName.trim() || busy} className="w-full">
@@ -505,23 +482,17 @@ function EditThemesPanel({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [theme1, setTheme1] = useState(profile.themeId1?.toString() ?? "none");
-  const [theme2, setTheme2] = useState(profile.themeId2?.toString() ?? "none");
+  const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>(profile.themes.map((t) => t.id));
   const [open, setOpen] = useState(false);
   const [showPropose, setShowPropose] = useState(false);
   const [proposeName, setProposeName] = useState("");
   const proposeMutation = useProposeTheme();
 
-  const theme2Options = themes?.filter((th) => th.id.toString() !== theme1) ?? [];
-
   const handleSave = () => {
     updateMutation.mutate(
       {
         id: profile.id,
-        data: {
-          themeId1: theme1 !== "none" ? Number(theme1) : null,
-          themeId2: theme2 !== "none" ? Number(theme2) : null,
-        },
+        data: { themeIds: selectedThemeIds },
       },
       {
         onSuccess: () => {
@@ -538,13 +509,12 @@ function EditThemesPanel({
   };
 
   if (!open) {
-    const themeNames = [profile.themeName1, profile.themeName2].filter(Boolean) as string[];
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        {themeNames.length > 0 ? (
-          themeNames.map((n) => (
-            <Badge key={n} variant="secondary" className="font-mono">
-              {n}
+        {profile.themes.length > 0 ? (
+          profile.themes.map((t) => (
+            <Badge key={t.id} variant="secondary" className="font-mono">
+              {t.name}
             </Badge>
           ))
         ) : (
@@ -564,41 +534,24 @@ function EditThemesPanel({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-      <Select
-        value={theme1}
-        onValueChange={(v) => {
-          setTheme1(v);
-          if (v === theme2) setTheme2("none");
-        }}
-      >
-        <SelectTrigger className="w-44 bg-background border-border/50 h-8 text-sm">
-          <SelectValue placeholder={t("myPhotos.themeSlot1")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">{t("common.none")}</SelectItem>
-          {themes?.map((th) => (
-            <SelectItem key={th.id} value={th.id.toString()}>
-              {th.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
-        <SelectTrigger className="w-44 bg-background border-border/50 h-8 text-sm">
-          <SelectValue placeholder={t("myPhotos.themeSlot2")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">{t("common.none")}</SelectItem>
-          {theme2Options.map((th) => (
-            <SelectItem key={th.id} value={th.id.toString()}>
-              {th.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        {themes?.map((th) => (
+          <div key={th.id} className="flex items-center gap-2">
+            <Checkbox
+              id={`et-theme-${th.id}`}
+              checked={selectedThemeIds.includes(th.id)}
+              onCheckedChange={(checked) => {
+                setSelectedThemeIds(checked
+                  ? [...selectedThemeIds, th.id]
+                  : selectedThemeIds.filter((id) => id !== th.id)
+                );
+              }}
+            />
+            <label htmlFor={`et-theme-${th.id}`} className="text-sm cursor-pointer select-none">{th.name}</label>
+          </div>
+        ))}
+      </div>
       <div className="flex gap-1">
         <Button
           size="sm"

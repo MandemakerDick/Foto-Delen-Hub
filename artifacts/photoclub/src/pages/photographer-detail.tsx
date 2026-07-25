@@ -63,7 +63,7 @@ export default function PhotographerDetail() {
     );
   }
 
-  const themeNames = [photographer.themeName1, photographer.themeName2].filter(Boolean) as string[];
+  const themeNames = (photographer.themes ?? []).map((t) => t.name);
 
   return (
     <div className="flex flex-col">

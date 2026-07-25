@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { alias } from "drizzle-orm/pg-core";
-import { db, photographersTable, photosTable, themesTable, photographerClubsTable } from "@workspace/db";
+import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable } from "@workspace/db";
 import { eq, ilike, count, or, sql, exists } from "drizzle-orm";
 import {
   ListPhotographersQueryParams,
@@ -14,10 +13,6 @@ import { ReplitConnectors } from "@replit/connectors-sdk";
 
 const router = Router();
 
-// Aliases let us join the themes table twice without column-name conflicts.
-const t1 = alias(themesTable, "t1");
-const t2 = alias(themesTable, "t2");
-
 /** Correlated subquery: returns clubs as a JSON array for a given photographer row. */
 const clubsSubquery = sql<{ id: number; name: string }[]>`(
   SELECT COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name) ORDER BY c.name), '[]'::json)
@@ -26,9 +21,17 @@ const clubsSubquery = sql<{ id: number; name: string }[]>`(
   WHERE pc.photographer_id = ${photographersTable.id}
 )`;
 
+/** Correlated subquery: returns preferred themes as a JSON array for a given photographer row. */
+const themesSubquery = sql<{ id: number; name: string }[]>`(
+  SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name) ORDER BY t.name), '[]'::json)
+  FROM photographer_themes pt
+  JOIN themes t ON t.id = pt.theme_id
+  WHERE pt.photographer_id = ${photographersTable.id}
+)`;
+
 /**
  * Shared SELECT field list for photographer queries.
- * clubs is resolved via a correlated subquery — no extra GROUP BY column needed.
+ * clubs and themes are resolved via correlated subqueries — no extra GROUP BY columns needed.
  * photoCount is aggregated via a LEFT JOIN on photos.
  */
 function selectFields() {
@@ -38,10 +41,7 @@ function selectFields() {
     bio: photographersTable.bio,
     avatarUrl: photographersTable.avatarUrl,
     clubs: clubsSubquery,
-    themeId1: photographersTable.themeId1,
-    themeName1: t1.name,
-    themeId2: photographersTable.themeId2,
-    themeName2: t2.name,
+    themes: themesSubquery,
     createdAt: photographersTable.createdAt,
     photoCount: count(photosTable.id),
   };
@@ -52,20 +52,12 @@ function photographerBaseQuery() {
   return db
     .select(selectFields())
     .from(photographersTable)
-    .leftJoin(t1, eq(photographersTable.themeId1, t1.id))
-    .leftJoin(t2, eq(photographersTable.themeId2, t2.id))
     .leftJoin(photosTable, eq(photosTable.photographerId, photographersTable.id));
 }
 
 /** GROUP BY list required whenever aggregate columns are used (photoCount). */
 function groupByFields() {
-  return [
-    photographersTable.id,
-    t1.id,
-    t1.name,
-    t2.id,
-    t2.name,
-  ] as const;
+  return [photographersTable.id] as const;
 }
 
 /** Serialise a photographer row — convert the Date to ISO string for JSON. */
@@ -75,17 +67,14 @@ function buildRow(r: {
   bio: string | null;
   avatarUrl: string | null;
   clubs: { id: number; name: string }[];
-  themeId1: number | null;
-  themeId2: number | null;
-  themeName1: string | null;
-  themeName2: string | null;
+  themes: { id: number; name: string }[];
   createdAt: Date;
   photoCount: number;
 }) {
   return { ...r, createdAt: r.createdAt.toISOString() };
 }
 
-/** Insert club memberships for a photographer into the junction table. */
+/** Replace club memberships for a photographer in the junction table. */
 async function setClubMemberships(photographerId: number, clubIds: number[]) {
   await db.delete(photographerClubsTable).where(eq(photographerClubsTable.photographerId, photographerId));
   if (clubIds.length > 0) {
@@ -95,8 +84,18 @@ async function setClubMemberships(photographerId: number, clubIds: number[]) {
   }
 }
 
+/** Replace theme preferences for a photographer in the junction table. */
+async function setThemeMemberships(photographerId: number, themeIds: number[]) {
+  await db.delete(photographerThemesTable).where(eq(photographerThemesTable.photographerId, photographerId));
+  if (themeIds.length > 0) {
+    await db.insert(photographerThemesTable).values(
+      themeIds.map((themeId) => ({ photographerId, themeId })),
+    );
+  }
+}
+
 // GET /api/photographers — list all photographers, optionally filtered by
-// name search, club membership, or preferred theme (themeId1 OR themeId2).
+// name/bio/preferred-theme search, club membership, or submitted photos under a theme.
 router.get("/photographers", async (req, res) => {
   const query = ListPhotographersQueryParams.safeParse({
     search: req.query.search,
@@ -113,8 +112,15 @@ router.get("/photographers", async (req, res) => {
     ? or(
         ilike(photographersTable.name, `%${search}%`),
         ilike(photographersTable.bio, `%${search}%`),
-        ilike(t1.name, `%${search}%`),
-        ilike(t2.name, `%${search}%`),
+        exists(
+          db
+            .select({ one: sql<number>`1` })
+            .from(photographerThemesTable)
+            .innerJoin(themesTable, eq(photographerThemesTable.themeId, themesTable.id))
+            .where(
+              sql`${photographerThemesTable.photographerId} = ${photographersTable.id} AND ${themesTable.name} ILIKE ${`%${search}%`}`,
+            ),
+        ),
       )
     : clubId
       ? exists(
@@ -151,12 +157,17 @@ router.post("/photographers", async (req, res) => {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
-  const { clubIds, ...photographerData } = body.data;
+  const { clubIds, themeIds, ...photographerData } = body.data;
   const [photographer] = await db.insert(photographersTable).values(photographerData).returning();
 
   if (clubIds && clubIds.length > 0) {
     await db.insert(photographerClubsTable).values(
       clubIds.map((clubId) => ({ photographerId: photographer.id, clubId })),
+    );
+  }
+  if (themeIds && themeIds.length > 0) {
+    await db.insert(photographerThemesTable).values(
+      themeIds.map((themeId) => ({ photographerId: photographer.id, themeId })),
     );
   }
 
@@ -220,7 +231,7 @@ router.patch("/photographers/:id", async (req, res) => {
     }
   }
 
-  const { clubIds, ...photographerFields } = body.data;
+  const { clubIds, themeIds, ...photographerFields } = body.data;
 
   // Update scalar photographer fields (skip if nothing to update)
   if (Object.keys(photographerFields).length > 0) {
@@ -230,6 +241,10 @@ router.patch("/photographers/:id", async (req, res) => {
   // Replace club memberships if clubIds was provided
   if (clubIds !== undefined) {
     await setClubMemberships(id, clubIds);
+  }
+  // Replace theme preferences if themeIds was provided
+  if (themeIds !== undefined) {
+    await setThemeMemberships(id, themeIds);
   }
 
   const rows = await photographerBaseQuery()
@@ -295,6 +310,7 @@ router.delete("/photographers/:id", async (req, res) => {
 
   await db.delete(photosTable).where(eq(photosTable.photographerId, id));
   await db.delete(photographerClubsTable).where(eq(photographerClubsTable.photographerId, id));
+  await db.delete(photographerThemesTable).where(eq(photographerThemesTable.photographerId, id));
   await db.delete(photographersTable).where(eq(photographersTable.id, id));
 
   res.status(204).end();

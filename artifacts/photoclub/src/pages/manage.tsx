@@ -455,9 +455,7 @@ export default function Manage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const pendingObjectPathRef = useRef<string | null>(null);
-  const [theme1, setTheme1] = useState("none");
-  const [theme2, setTheme2] = useState("none");
-  const theme2Options = themes?.filter((th) => th.id.toString() !== theme1) ?? [];
+  const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([]);
 
   // ── Forms ─────────────────────────────────────────────────
   const clubForm = useForm<ClubFormValues>({
@@ -573,8 +571,7 @@ export default function Manage() {
     if (!p) return;
     setEditingPhotographerId(photographerId);
     setAvatarUrl(p.avatarUrl ?? null);
-    setTheme1(p.themeId1?.toString() ?? "none");
-    setTheme2(p.themeId2?.toString() ?? "none");
+    setSelectedThemeIds(p.themes?.map((th) => th.id) ?? []);
     photographerForm.reset({ name: p.name, bio: p.bio ?? "", clubIds: p.clubs?.map((c) => c.id) ?? [] });
     setTimeout(() => photographerFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
@@ -582,22 +579,16 @@ export default function Manage() {
   const cancelEditingPhotographer = () => {
     setEditingPhotographerId(null);
     setAvatarUrl(null);
-    setTheme1("none");
-    setTheme2("none");
+    setSelectedThemeIds([]);
     photographerForm.reset({ name: "", bio: "", clubIds: [] });
   };
 
   const onPhotographerSubmit = (values: PhotographerFormValues) => {
-    const themeData = {
-      ...(theme1 !== "none" ? { themeId1: Number(theme1) } : { themeId1: null }),
-      ...(theme2 !== "none" ? { themeId2: Number(theme2) } : { themeId2: null }),
-    };
-
     if (editingPhotographerId !== null) {
       const data = {
         ...values,
         ...(avatarUrl ? { avatarUrl } : {}),
-        ...themeData,
+        themeIds: selectedThemeIds,
       };
       updatePhotographerMutation.mutate({ id: editingPhotographerId, data }, {
         onSuccess: () => {
@@ -611,8 +602,7 @@ export default function Manage() {
       const data = {
         ...values,
         ...(avatarUrl ? { avatarUrl } : {}),
-        ...(theme1 !== "none" ? { themeId1: Number(theme1) } : {}),
-        ...(theme2 !== "none" ? { themeId2: Number(theme2) } : {}),
+        themeIds: selectedThemeIds,
       };
       createPhotographerMutation.mutate({ data }, {
         onSuccess: () => {
@@ -935,26 +925,24 @@ export default function Manage() {
                   </FormItem>
                 )} />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-sm font-medium mb-1.5">{t("manage.photographer.specialty1")}</p>
-                    <Select value={theme1} onValueChange={(v) => { setTheme1(v); if (v === theme2) setTheme2("none"); }}>
-                      <SelectTrigger className="bg-background"><SelectValue placeholder={t("common.none")} /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t("common.none")}</SelectItem>
-                        {themes?.map((th) => <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1.5">{t("manage.photographer.specialty2")}</p>
-                    <Select value={theme2} onValueChange={setTheme2} disabled={theme1 === "none"}>
-                      <SelectTrigger className="bg-background disabled:opacity-50"><SelectValue placeholder={t("common.none")} /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t("common.none")}</SelectItem>
-                        {theme2Options.map((th) => <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                <div>
+                  <p className="text-sm font-medium mb-1.5">{t("manage.photographer.preferredThemes")}</p>
+                  <div className="flex flex-col gap-2 pt-1">
+                    {themes?.map((th) => (
+                      <div key={th.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`theme-${th.id}`}
+                          checked={selectedThemeIds.includes(th.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedThemeIds(checked
+                              ? [...selectedThemeIds, th.id]
+                              : selectedThemeIds.filter((id) => id !== th.id)
+                            );
+                          }}
+                        />
+                        <label htmlFor={`theme-${th.id}`} className="text-sm cursor-pointer select-none">{th.name}</label>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

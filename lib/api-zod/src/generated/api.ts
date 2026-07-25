@@ -244,10 +244,7 @@ export const ListPhotographersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })),
-  "themeId1": zod.number().nullish(),
-  "themeName1": zod.string().nullish(),
-  "themeId2": zod.number().nullish(),
-  "themeName2": zod.string().nullish(),
+  "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -265,8 +262,7 @@ export const CreatePhotographerBody = zod.object({
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
   "clubIds": zod.array(zod.number()).optional(),
-  "themeId1": zod.number().optional(),
-  "themeId2": zod.number().optional()
+  "themeIds": zod.array(zod.number()).optional()
 })
 
 
@@ -286,10 +282,7 @@ export const GetPhotographerResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })),
-  "themeId1": zod.number().nullish(),
-  "themeName1": zod.string().nullish(),
-  "themeId2": zod.number().nullish(),
-  "themeName2": zod.string().nullish(),
+  "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -310,8 +303,7 @@ export const UpdatePhotographerBody = zod.object({
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
   "clubIds": zod.array(zod.number()).optional(),
-  "themeId1": zod.number().nullish(),
-  "themeId2": zod.number().nullish()
+  "themeIds": zod.array(zod.number()).optional()
 })
 
 export const UpdatePhotographerResponse = zod.object({
@@ -323,10 +315,7 @@ export const UpdatePhotographerResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })),
-  "themeId1": zod.number().nullish(),
-  "themeName1": zod.string().nullish(),
-  "themeId2": zod.number().nullish(),
-  "themeName2": zod.string().nullish(),
+  "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })

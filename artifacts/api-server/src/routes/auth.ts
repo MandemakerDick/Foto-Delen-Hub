@@ -1,13 +1,7 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { alias } from "drizzle-orm/pg-core";
-import { db, photographersTable, themesTable, photographerClubsTable } from "@workspace/db";
+import { db, photographersTable, photographerClubsTable, photographerThemesTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
-
-// Aliases let us join the themes table twice in the same query without
-// column-name conflicts (a photographer can have up to two favourite themes).
-const t1 = alias(themesTable, "t1");
-const t2 = alias(themesTable, "t2");
 
 const router = Router();
 
@@ -19,10 +13,17 @@ const clubsSubquery = sql<{ id: number; name: string }[]>`(
   WHERE pc.photographer_id = ${photographersTable.id}
 )`;
 
+/** Correlated subquery: returns preferred themes as a JSON array for a given photographer row. */
+const themesSubquery = sql<{ id: number; name: string }[]>`(
+  SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name) ORDER BY t.name), '[]'::json)
+  FROM photographer_themes pt
+  JOIN themes t ON t.id = pt.theme_id
+  WHERE pt.photographer_id = ${photographersTable.id}
+)`;
+
 /**
  * Middleware: require a Clerk-authenticated session.
  * Attaches req.clerkUserId on success; returns 401 otherwise.
- * Used on routes that need a logged-in Clerk user (not session admins).
  */
 export function requireAuth(req: any, res: any, next: any) {
   const { userId } = getAuth(req);
@@ -36,7 +37,7 @@ export function requireAuth(req: any, res: any, next: any) {
 
 /**
  * Fetch the photographer profile linked to a Clerk user, including their
- * clubs (array) and both favourite theme names resolved via JOIN.
+ * clubs and preferred themes resolved via correlated subqueries.
  */
 async function getPhotographerByClerkId(clerkUserId: string) {
   const rows = await db
@@ -46,16 +47,11 @@ async function getPhotographerByClerkId(clerkUserId: string) {
       bio: photographersTable.bio,
       avatarUrl: photographersTable.avatarUrl,
       clubs: clubsSubquery,
-      themeId1: photographersTable.themeId1,
-      themeName1: t1.name,
-      themeId2: photographersTable.themeId2,
-      themeName2: t2.name,
+      themes: themesSubquery,
       clerkUserId: photographersTable.clerkUserId,
       createdAt: photographersTable.createdAt,
     })
     .from(photographersTable)
-    .leftJoin(t1, eq(photographersTable.themeId1, t1.id))
-    .leftJoin(t2, eq(photographersTable.themeId2, t2.id))
     .where(eq(photographersTable.clerkUserId, clerkUserId));
   return rows[0] ?? null;
 }
@@ -106,7 +102,7 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
 // POST /api/me/profile — create a new photographer profile linked to the Clerk account.
 // Only one profile per Clerk account is allowed.
 router.post("/me/profile", requireAuth, async (req: any, res) => {
-  const { name, bio, avatarUrl, clubIds, themeId1, themeId2 } = req.body;
+  const { name, bio, avatarUrl, clubIds, themeIds } = req.body;
   if (!name || typeof name !== "string") {
     res.status(400).json({ error: "name required" });
     return;
@@ -120,13 +116,20 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
 
   const [newPhotographer] = await db
     .insert(photographersTable)
-    .values({ name, bio, avatarUrl, themeId1, themeId2, clerkUserId: req.clerkUserId })
+    .values({ name, bio, avatarUrl, clerkUserId: req.clerkUserId })
     .returning();
 
   // Link club memberships via junction table
   if (Array.isArray(clubIds) && clubIds.length > 0) {
     await db.insert(photographerClubsTable).values(
       clubIds.map((clubId: number) => ({ photographerId: newPhotographer.id, clubId })),
+    );
+  }
+
+  // Link theme preferences via junction table
+  if (Array.isArray(themeIds) && themeIds.length > 0) {
+    await db.insert(photographerThemesTable).values(
+      themeIds.map((themeId: number) => ({ photographerId: newPhotographer.id, themeId })),
     );
   }
 

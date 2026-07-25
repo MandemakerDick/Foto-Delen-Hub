@@ -119,18 +119,13 @@ export default function Photographers() {
                   </div>
                 )}
 
-                {(photographer.themeName1 || photographer.themeName2) && (
+                {photographer.themes && photographer.themes.length > 0 && (
                   <div className="flex flex-wrap gap-1 justify-center mb-3">
-                    {photographer.themeName1 && (
-                      <Badge variant="secondary" className="text-xs font-mono">
-                        {photographer.themeName1}
+                    {photographer.themes.map((theme) => (
+                      <Badge key={theme.id} variant="secondary" className="text-xs font-mono">
+                        {theme.name}
                       </Badge>
-                    )}
-                    {photographer.themeName2 && (
-                      <Badge variant="secondary" className="text-xs font-mono">
-                        {photographer.themeName2}
-                      </Badge>
-                    )}
+                    ))}
                   </div>
                 )}
 

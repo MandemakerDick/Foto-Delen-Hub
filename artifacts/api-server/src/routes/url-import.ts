@@ -311,7 +311,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
     const bio = body.photographerBio?.trim() || null;
     const [newPh] = await db
       .insert(photographersTable)
-      .values({ name, bio, themeId1: null, themeId2: null })
+      .values({ name, bio })
       .returning({ id: photographersTable.id });
     photographerId = newPh.id;
     // Link the photographer to the club via the junction table

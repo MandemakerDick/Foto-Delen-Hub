@@ -8,3 +8,4 @@ export * from "./invites";
 export * from "./review-sessions";
 export * from "./theme-proposals";
 export * from "./photographer-clubs";
+export * from "./photographer-themes";
