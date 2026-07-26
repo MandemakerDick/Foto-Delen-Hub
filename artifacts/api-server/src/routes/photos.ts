@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable } from "@workspace/db";
-import { eq, ilike, desc, sql, count, and } from "drizzle-orm";
+import { eq, ilike, desc, asc, sql, count, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,
@@ -12,6 +12,7 @@ import {
   DeletePhotoParams,
   LikePhotoParams,
   LikePhotoBody,
+  ReorderPhotosBody,
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 
@@ -105,7 +106,9 @@ router.get("/photos", async (req, res) => {
     q = q.where(eq(photosTable.photographerId, photographerId)) as typeof q;
   }
 
-  const photos = await q.orderBy(desc(photosTable.createdAt));
+  const photos = photographerId
+    ? await q.orderBy(asc(sql`${photosTable.sortOrder} NULLS LAST`), desc(photosTable.createdAt))
+    : await q.orderBy(desc(photosTable.createdAt));
   res.json(photos.map(mapPhoto));
 });
 
@@ -253,6 +256,33 @@ router.delete("/photos/:id", async (req, res) => {
   }
 
   await db.delete(photosTable).where(eq(photosTable.id, params.data.id));
+  res.status(204).send();
+});
+
+// PATCH /api/me/photos/order — set sort_order for all photos belonging to the authenticated photographer.
+// Body: { photoIds: number[] } — full ordered list; index becomes sort_order value.
+router.patch("/me/photos/order", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to reorder photos" }); return; }
+
+  const body = ReorderPhotosBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: "Invalid body" }); return; }
+
+  const photographerId = await getPhotographerIdForClerkUser(userId);
+  if (!photographerId) { res.status(404).json({ error: "Photographer profile not found" }); return; }
+
+  // Verify all supplied IDs belong to this photographer, then bulk-update in parallel.
+  const owned = await db
+    .select({ id: photosTable.id })
+    .from(photosTable)
+    .where(and(eq(photosTable.photographerId, photographerId)));
+  const ownedIds = new Set(owned.map((r) => r.id));
+
+  const updates = body.data.photoIds
+    .filter((id) => ownedIds.has(id))
+    .map((id, idx) => db.update(photosTable).set({ sortOrder: idx }).where(eq(photosTable.id, id)));
+
+  await Promise.all(updates);
   res.status(204).send();
 });
 

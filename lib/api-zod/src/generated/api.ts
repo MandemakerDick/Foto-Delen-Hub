@@ -1070,6 +1070,13 @@ export const UpdatePhotoReviewResponse = zod.object({
 
 
 /**
+ * @summary Reorder the authenticated photographer's photos
+ */
+export const ReorderPhotosBody = zod.object({
+  photoIds: zod.array(zod.number()),
+})
+
+/**
  * @summary Redeem an invite token to gain contributor access
  */
 export const RedeemInviteBody = zod.object({

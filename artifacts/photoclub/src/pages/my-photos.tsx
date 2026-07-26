@@ -4,7 +4,18 @@ import { useTranslation } from "react-i18next";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle } from "lucide-react";
+import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle, GripVertical, ArrowUpDown } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import {
   useListPhotos,
@@ -15,6 +26,7 @@ import {
   useListClubs,
   useUpdatePhotographer,
   useProposeTheme,
+  useReorderPhotos,
   getGetPhotographerQueryKey,
 } from "@workspace/api-client-react";
 import { ObjectUploader } from "@workspace/object-storage-web";
@@ -448,7 +460,12 @@ function EditClubPanel({
     return (
       <div className="flex items-center gap-2 flex-wrap">
         {profile.clubs && profile.clubs.length > 0 ? (
-          profile.clubs.map((c) => <Badge key={c.id} variant="secondary" className="font-mono">{c.name}</Badge>)
+          profile.clubs.map((c) => (
+            <Badge key={c.id} variant="secondary" className="font-mono gap-1.5">
+              {c.name}
+              {c.memberSince && <span className="opacity-50">· {c.memberSince}</span>}
+            </Badge>
+          ))
         ) : (
           <span className="text-xs text-muted-foreground">{t("myPhotos.noClub")}</span>
         )}
@@ -471,20 +488,19 @@ function EditClubPanel({
         {clubs?.map((c) => {
           const checked = selectedIds.includes(c.id);
           return (
-            <div key={c.id} className="flex items-center gap-2 flex-wrap">
+            <div key={c.id} className="flex items-center gap-2">
               <Checkbox
                 id={`my-club-${c.id}`}
                 checked={checked}
                 onCheckedChange={(v) => toggleClub(c.id, !!v)}
               />
-              <label htmlFor={`my-club-${c.id}`} className="text-sm cursor-pointer select-none flex-1">{c.name}</label>
               {checked && (
                 <Input
                   type="number"
                   min={1900}
                   max={new Date().getFullYear()}
                   placeholder={t("myPhotos.memberSincePlaceholder")}
-                  className="h-7 w-20 text-xs"
+                  className="h-7 w-20 text-xs shrink-0"
                   value={memberSinces[c.id] ?? ""}
                   onChange={(e) => setMemberSinces((prev) => ({
                     ...prev,
@@ -492,6 +508,7 @@ function EditClubPanel({
                   }))}
                 />
               )}
+              <label htmlFor={`my-club-${c.id}`} className="text-sm cursor-pointer select-none">{c.name}</label>
             </div>
           );
         })}
@@ -688,6 +705,31 @@ function EditThemesPanel({
   );
 }
 
+type PhotoItem = { id: number; title: string; imageUrl: string };
+
+function SortablePhotoCard({ photo }: { photo: PhotoItem }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 20 : undefined }}
+      className="group relative"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 z-10 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </div>
+      <div className="aspect-[4/5] overflow-hidden bg-muted rounded-sm ring-2 ring-transparent group-hover:ring-primary/40 transition-all">
+        <img src={photo.imageUrl} alt={photo.title} className="w-full h-full object-cover" loading="lazy" />
+      </div>
+      <p className="mt-2 font-serif text-sm font-medium leading-tight line-clamp-1">{photo.title}</p>
+    </div>
+  );
+}
+
 function MyPhotosDashboard({
   profile,
   onProfileUpdated,
@@ -722,6 +764,51 @@ function MyPhotosDashboard({
           toast({ title: t("common.error"), description: t("toasts.photoDeleteError"), variant: "destructive" }),
       },
     );
+  };
+
+  const [isReordering, setIsReordering] = useState(false);
+  const [localOrder, setLocalOrder] = useState<PhotoItem[]>([]);
+  const reorderMutation = useReorderPhotos();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
+
+  const startReordering = () => {
+    setLocalOrder(photos.map((p) => ({ id: p.id, title: p.title, imageUrl: p.imageUrl })));
+    setIsReordering(true);
+  };
+
+  const cancelReordering = () => {
+    setIsReordering(false);
+    setLocalOrder([]);
+  };
+
+  const saveOrder = () => {
+    reorderMutation.mutate(
+      { photoIds: localOrder.map((p) => p.id) },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: profile.id }) });
+          setIsReordering(false);
+          setLocalOrder([]);
+          toast({ title: t("myPhotos.orderSaved") });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("myPhotos.orderSaveError"), variant: "destructive" }),
+      },
+    );
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setLocalOrder((items) => {
+        const oldIndex = items.findIndex((p) => p.id === Number(active.id));
+        const newIndex = items.findIndex((p) => p.id === Number(over.id));
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   return (
@@ -796,6 +883,30 @@ function MyPhotosDashboard({
         </div>
       </div>
 
+      {/* Photo grid header */}
+      {photos.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-widest">{t("search.photosSection")}</p>
+          {!isReordering ? (
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={startReordering}>
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              {t("myPhotos.reorderPhotos")}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={cancelReordering} disabled={reorderMutation.isPending}>
+                <X className="w-3.5 h-3.5" />
+                {t("myPhotos.cancelReorder")}
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={saveOrder} disabled={reorderMutation.isPending}>
+                <Check className="w-3.5 h-3.5" />
+                {t("myPhotos.saveOrder")}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Photo grid */}
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -815,6 +926,16 @@ function MyPhotosDashboard({
             </Button>
           </Link>
         </div>
+      ) : isReordering ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={localOrder.map((p) => p.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {localOrder.map((photo) => (
+                <SortablePhotoCard key={photo.id} photo={photo} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <AnimatePresence>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

@@ -11,6 +11,7 @@ export const photosTable = pgTable("photos", {
   clubId: integer("club_id"),
   themeId: integer("theme_id"),
   likeCount: integer("like_count").notNull().default(0),
+  sortOrder: integer("sort_order"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

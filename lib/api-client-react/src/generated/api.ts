@@ -4597,6 +4597,37 @@ export type GetInviteSessionQueryError = ErrorType<unknown>
  * @summary Check if current session has contributor access via invite
  */
 
+export const getReorderPhotosUrl = () => `/api/me/photos/order`;
+
+export const reorderPhotos = async (photoIds: number[], options?: RequestInit): Promise<void> => {
+  return customFetch<void>(getReorderPhotosUrl(), {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify({ photoIds }),
+  });
+};
+
+export const getReorderPhotosMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof reorderPhotos>>, TError, { photoIds: number[] }, TContext> }
+): UseMutationOptions<Awaited<ReturnType<typeof reorderPhotos>>, TError, { photoIds: number[] }, TContext> => {
+  const mutationKey = ['reorderPhotos'];
+  const { mutation: mutationOptions } = options ?? {};
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderPhotos>>, { photoIds: number[] }> = ({ photoIds }) =>
+    reorderPhotos(photoIds);
+  return { mutationKey, mutationFn, ...mutationOptions };
+};
+
+export type ReorderPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof reorderPhotos>>>;
+export type ReorderPhotosMutationError = ErrorType<unknown>;
+
+export const useReorderPhotos = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof reorderPhotos>>, TError, { photoIds: number[] }, TContext> }
+) => {
+  const mutationOptions = getReorderPhotosMutationOptions(options);
+  return useMutation(mutationOptions);
+};
+
 export function useGetInviteSession<TData = Awaited<ReturnType<typeof getInviteSession>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInviteSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
