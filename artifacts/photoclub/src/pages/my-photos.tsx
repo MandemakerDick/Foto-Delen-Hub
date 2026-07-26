@@ -56,7 +56,7 @@ function useMyProfile() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/me", { credentials: "include" });
+      const res = await fetch("/api/me", { credentials: "include", cache: "no-store" });
       if (res.status === 404) {
         setProfile(null);
       } else if (res.ok) {
