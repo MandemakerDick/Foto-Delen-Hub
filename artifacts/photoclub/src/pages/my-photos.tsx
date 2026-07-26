@@ -73,7 +73,10 @@ function useMyProfile() {
     fetchProfile();
   });
 
-  return { profile, loading, refetch: fetchProfile };
+  const updateProfile = (partial: Partial<PhotographerProfile>) =>
+    setProfile((prev) => (prev ? { ...prev, ...partial } : prev));
+
+  return { profile, loading, refetch: fetchProfile, updateProfile };
 }
 
 function AvatarUploader({
@@ -380,9 +383,11 @@ function EditProfilePanel({
 function EditClubPanel({
   profile,
   onSaved,
+  onProfilePartialUpdate,
 }: {
   profile: PhotographerProfile;
   onSaved: () => void;
+  onProfilePartialUpdate: (partial: Partial<PhotographerProfile>) => void;
 }) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -405,7 +410,10 @@ function EditClubPanel({
     updateMutation.mutate(
       { id: profile.id, data: { clubIds: selectedIds } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          // Immediately update the displayed badges from the mutation response
+          // so the UI reflects the new clubs without waiting for a round-trip refetch.
+          if (data?.clubs) onProfilePartialUpdate({ clubs: data.clubs });
           toast({ title: t("myPhotos.clubSaved") });
           queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
           setOpen(false);
@@ -478,9 +486,11 @@ function EditClubPanel({
 function EditThemesPanel({
   profile,
   onSaved,
+  onProfilePartialUpdate,
 }: {
   profile: PhotographerProfile;
   onSaved: () => void;
+  onProfilePartialUpdate: (partial: Partial<PhotographerProfile>) => void;
 }) {
   const { t } = useTranslation();
   const { data: themes } = useListThemes();
@@ -506,7 +516,8 @@ function EditThemesPanel({
         data: { themeIds: selectedThemeIds },
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (data?.themes) onProfilePartialUpdate({ themes: data.themes });
           toast({ title: t("toasts.themesUpdatedTitle"), description: t("toasts.themesUpdatedDesc") });
           queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
           setOpen(false);
@@ -643,9 +654,11 @@ function EditThemesPanel({
 function MyPhotosDashboard({
   profile,
   onProfileUpdated,
+  onProfilePartialUpdate,
 }: {
   profile: PhotographerProfile;
   onProfileUpdated: () => void;
+  onProfilePartialUpdate: (partial: Partial<PhotographerProfile>) => void;
 }) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -717,13 +730,13 @@ function MyPhotosDashboard({
       {/* Club membership row */}
       <div className="mb-6 pb-6 border-b border-border/40">
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.clubMembership")}</p>
-        <EditClubPanel profile={profile} onSaved={onProfileUpdated} />
+        <EditClubPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
       </div>
 
       {/* Specialty themes row */}
       <div className="mb-8 pb-6 border-b border-border/40">
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.specialtyThemes")}</p>
-        <EditThemesPanel profile={profile} onSaved={onProfileUpdated} />
+        <EditThemesPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
       </div>
 
       {/* Stats bar */}
@@ -857,7 +870,7 @@ function SignInFallback() {
 }
 
 export default function MyPhotos() {
-  const { profile, loading, refetch } = useMyProfile();
+  const { profile, loading, refetch, updateProfile } = useMyProfile();
 
   return (
     <Show
@@ -882,7 +895,7 @@ export default function MyPhotos() {
       ) : profile === null ? (
         <LinkProfilePanel onLinked={refetch} />
       ) : profile ? (
-        <MyPhotosDashboard profile={profile} onProfileUpdated={refetch} />
+        <MyPhotosDashboard profile={profile} onProfileUpdated={refetch} onProfilePartialUpdate={updateProfile} />
       ) : null}
     </Show>
   );
