@@ -56,8 +56,11 @@ async function getPhotographerByClerkId(clerkUserId: string) {
   return rows[0] ?? null;
 }
 
-// GET /api/me — return the photographer profile for the signed-in Clerk user
+// GET /api/me — return the photographer profile for the signed-in Clerk user.
+// Must never be cached: the response is user-specific and changes on every
+// profile update, so the browser must always fetch fresh data.
 router.get("/me", requireAuth, async (req: any, res) => {
+  res.setHeader("Cache-Control", "no-store");
   const profile = await getPhotographerByClerkId(req.clerkUserId);
   if (!profile) {
     res.status(404).json({ error: "No photographer profile linked" });
