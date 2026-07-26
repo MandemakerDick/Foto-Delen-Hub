@@ -257,11 +257,16 @@ export const ListPhotographersResponse = zod.array(ListPhotographersResponseItem
 
 
 
+export const ClubMembershipInput = zod.object({
+  "id": zod.number(),
+  "memberSince": zod.number().nullable().optional()
+})
+
 export const CreatePhotographerBody = zod.object({
   "name": zod.string().min(1),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubIds": zod.array(zod.number()).optional(),
+  "clubs": zod.array(ClubMembershipInput).optional(),
   "themeIds": zod.array(zod.number()).optional()
 })
 
@@ -279,9 +284,10 @@ export const GetPhotographerResponse = zod.object({
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
-  "id": zod.number(),
-  "name": zod.string()
-})),
+    "id": zod.number(),
+    "name": zod.string(),
+    "memberSince": zod.number().nullable().optional()
+  })),
   "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -302,7 +308,7 @@ export const UpdatePhotographerBody = zod.object({
   "name": zod.string().min(1).optional(),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubIds": zod.array(zod.number()).optional(),
+  "clubs": zod.array(ClubMembershipInput).optional(),
   "themeIds": zod.array(zod.number()).optional()
 })
 
@@ -312,9 +318,10 @@ export const UpdatePhotographerResponse = zod.object({
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
-  "id": zod.number(),
-  "name": zod.string()
-})),
+    "id": zod.number(),
+    "name": zod.string(),
+    "memberSince": zod.number().nullable().optional()
+  })),
   "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()

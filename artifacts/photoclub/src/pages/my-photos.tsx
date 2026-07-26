@@ -44,7 +44,7 @@ type PhotographerProfile = {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
-  clubs: { id: number; name: string }[];
+  clubs: { id: number; name: string; memberSince?: number | null }[];
   themes: { id: number; name: string }[];
   createdAt: string;
 };
@@ -399,19 +399,34 @@ function EditClubPanel({
   const { data: clubs } = useListClubs();
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>(profile.clubs?.map((c) => c.id) ?? []);
+  const [memberSinces, setMemberSinces] = useState<Record<number, number | undefined>>(
+    () => Object.fromEntries(
+      (profile.clubs ?? []).filter((c) => c.memberSince).map((c) => [c.id, c.memberSince!]),
+    ),
+  );
 
   // Re-sync selections whenever the profile changes and the panel is closed,
   // so re-opening always reflects the latest saved state.
   useEffect(() => {
-    if (!open) setSelectedIds(profile.clubs?.map((c) => c.id) ?? []);
+    if (!open) {
+      setSelectedIds(profile.clubs?.map((c) => c.id) ?? []);
+      setMemberSinces(Object.fromEntries(
+        (profile.clubs ?? []).filter((c) => c.memberSince).map((c) => [c.id, c.memberSince!]),
+      ));
+    }
   }, [profile, open]);
 
-  const toggleClub = (id: number, checked: boolean) =>
+  const toggleClub = (id: number, checked: boolean) => {
     setSelectedIds((prev) => checked ? [...prev, id] : prev.filter((x) => x !== id));
+    if (!checked) setMemberSinces((prev) => { const next = { ...prev }; delete next[id]; return next; });
+  };
 
   const handleSave = () => {
     updateMutation.mutate(
-      { id: profile.id, data: { clubIds: selectedIds } },
+      {
+        id: profile.id,
+        data: { clubs: selectedIds.map((id) => ({ id, memberSince: memberSinces[id] ?? null })) },
+      },
       {
         onSuccess: (data) => {
           // Update profile immediately from the PATCH response — the most
@@ -453,16 +468,33 @@ function EditClubPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
-        {clubs?.map((c) => (
-          <div key={c.id} className="flex items-center gap-2">
-            <Checkbox
-              id={`my-club-${c.id}`}
-              checked={selectedIds.includes(c.id)}
-              onCheckedChange={(checked) => toggleClub(c.id, !!checked)}
-            />
-            <label htmlFor={`my-club-${c.id}`} className="text-sm cursor-pointer select-none">{c.name}</label>
-          </div>
-        ))}
+        {clubs?.map((c) => {
+          const checked = selectedIds.includes(c.id);
+          return (
+            <div key={c.id} className="flex items-center gap-2 flex-wrap">
+              <Checkbox
+                id={`my-club-${c.id}`}
+                checked={checked}
+                onCheckedChange={(v) => toggleClub(c.id, !!v)}
+              />
+              <label htmlFor={`my-club-${c.id}`} className="text-sm cursor-pointer select-none flex-1">{c.name}</label>
+              {checked && (
+                <Input
+                  type="number"
+                  min={1900}
+                  max={new Date().getFullYear()}
+                  placeholder={t("myPhotos.memberSincePlaceholder")}
+                  className="h-7 w-20 text-xs"
+                  value={memberSinces[c.id] ?? ""}
+                  onChange={(e) => setMemberSinces((prev) => ({
+                    ...prev,
+                    [c.id]: e.target.value ? Number(e.target.value) : undefined,
+                  }))}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
       <div className="flex gap-1">
         <Button

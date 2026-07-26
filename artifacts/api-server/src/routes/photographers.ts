@@ -15,8 +15,8 @@ import { requireAdmin } from "./admins";
 const router = Router();
 
 /** Correlated subquery: returns clubs as a JSON array for a given photographer row. */
-const clubsSubquery = sql<{ id: number; name: string }[]>`(
-  SELECT COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name) ORDER BY c.name), '[]'::json)
+const clubsSubquery = sql<{ id: number; name: string; memberSince: number | null }[]>`(
+  SELECT COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name, 'memberSince', pc.member_since) ORDER BY c.name), '[]'::json)
   FROM photographer_clubs pc
   JOIN clubs c ON c.id = pc.club_id
   WHERE pc.photographer_id = ${photographersTable.id}
@@ -67,7 +67,7 @@ function buildRow(r: {
   name: string;
   bio: string | null;
   avatarUrl: string | null;
-  clubs: { id: number; name: string }[];
+  clubs: { id: number; name: string; memberSince: number | null }[];
   themes: { id: number; name: string }[];
   createdAt: Date;
   photoCount: number;
@@ -76,11 +76,18 @@ function buildRow(r: {
 }
 
 /** Replace club memberships for a photographer in the junction table. */
-async function setClubMemberships(photographerId: number, clubIds: number[]) {
+async function setClubMemberships(
+  photographerId: number,
+  clubs: { id: number; memberSince?: number | null }[],
+) {
   await db.delete(photographerClubsTable).where(eq(photographerClubsTable.photographerId, photographerId));
-  if (clubIds.length > 0) {
+  if (clubs.length > 0) {
     await db.insert(photographerClubsTable).values(
-      clubIds.map((clubId) => ({ photographerId, clubId })),
+      clubs.map(({ id: clubId, memberSince }) => ({
+        photographerId,
+        clubId,
+        memberSince: memberSince ?? null,
+      })),
     );
   }
 }
@@ -158,13 +165,11 @@ router.post("/photographers", async (req, res) => {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
-  const { clubIds, themeIds, ...photographerData } = body.data;
+  const { clubs, themeIds, ...photographerData } = body.data;
   const [photographer] = await db.insert(photographersTable).values(photographerData).returning();
 
-  if (clubIds && clubIds.length > 0) {
-    await db.insert(photographerClubsTable).values(
-      clubIds.map((clubId) => ({ photographerId: photographer.id, clubId })),
-    );
+  if (clubs && clubs.length > 0) {
+    await setClubMemberships(photographer.id, clubs);
   }
   if (themeIds && themeIds.length > 0) {
     await db.insert(photographerThemesTable).values(
@@ -232,16 +237,16 @@ router.patch("/photographers/:id", async (req, res) => {
     }
   }
 
-  const { clubIds, themeIds, ...photographerFields } = body.data;
+  const { clubs, themeIds, ...photographerFields } = body.data;
 
   // Update scalar photographer fields (skip if nothing to update)
   if (Object.keys(photographerFields).length > 0) {
     await db.update(photographersTable).set(photographerFields).where(eq(photographersTable.id, id));
   }
 
-  // Replace club memberships if clubIds was provided
-  if (clubIds !== undefined) {
-    await setClubMemberships(id, clubIds);
+  // Replace club memberships if clubs was provided
+  if (clubs !== undefined) {
+    await setClubMemberships(id, clubs);
   }
   // Replace theme preferences if themeIds was provided
   if (themeIds !== undefined) {

@@ -45,7 +45,7 @@ async function getPhotographerByClerkId(clerkUserId: string) {
 
   const [clubs, themes] = await Promise.all([
     db
-      .select({ id: clubsTable.id, name: clubsTable.name })
+      .select({ id: clubsTable.id, name: clubsTable.name, memberSince: photographerClubsTable.memberSince })
       .from(photographerClubsTable)
       .innerJoin(clubsTable, eq(clubsTable.id, photographerClubsTable.clubId))
       .where(eq(photographerClubsTable.photographerId, photographer.id))

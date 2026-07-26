@@ -9,4 +9,6 @@
 export interface PhotographerClub {
   id: number;
   name: string;
+  /** Year the photographer joined this club (not the club's founding year) */
+  memberSince?: number | null;
 }

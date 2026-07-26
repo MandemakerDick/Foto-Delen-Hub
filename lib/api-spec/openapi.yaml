@@ -1400,6 +1400,19 @@ components:
           type: integer
         name:
           type: string
+        memberSince:
+          type: ["integer", "null"]
+          description: Year the photographer joined this club (not the club's founding year)
+
+    ClubMembershipInput:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+        memberSince:
+          type: ["integer", "null"]
+          description: Year the photographer joined this club
 
     Photographer:
       type: object
@@ -1441,10 +1454,10 @@ components:
           type: string
         avatarUrl:
           type: string
-        clubIds:
+        clubs:
           type: array
           items:
-            type: integer
+            $ref: '#/components/schemas/ClubMembershipInput'
         themeId1:
           type: integer
         themeId2:
@@ -1460,10 +1473,10 @@ components:
           type: string
         avatarUrl:
           type: string
-        clubIds:
+        clubs:
           type: array
           items:
-            type: integer
+            $ref: '#/components/schemas/ClubMembershipInput'
         themeId1:
           type: ["integer", "null"]
         themeId2:

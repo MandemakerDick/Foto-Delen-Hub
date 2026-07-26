@@ -11,7 +11,7 @@ export interface PhotographerInput {
   name: string;
   bio?: string;
   avatarUrl?: string;
-  clubIds?: number[];
+  clubs?: Array<{ id: number; memberSince?: number | null }>;
   themeId1?: number;
   themeId2?: number;
 }

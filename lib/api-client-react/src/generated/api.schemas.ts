@@ -60,6 +60,8 @@ export interface PhotographerTheme {
 export interface PhotographerClub {
   id: number;
   name: string;
+  /** Year the photographer joined this club (not the club's founding year) */
+  memberSince?: number | null;
 }
 
 export interface Photographer {
@@ -80,7 +82,7 @@ export interface PhotographerInput {
   name: string;
   bio?: string;
   avatarUrl?: string;
-  clubIds?: number[];
+  clubs?: Array<{ id: number; memberSince?: number | null }>;
   themeIds?: number[];
 }
 
@@ -89,7 +91,7 @@ export interface PhotographerUpdate {
   name?: string;
   bio?: string;
   avatarUrl?: string;
-  clubIds?: number[];
+  clubs?: Array<{ id: number; memberSince?: number | null }>;
   themeIds?: number[];
 }
 

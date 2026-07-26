@@ -456,6 +456,8 @@ export default function Manage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const pendingObjectPathRef = useRef<string | null>(null);
   const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([]);
+  // memberSinces[clubId] = year the photographer joined that club
+  const [memberSinces, setMemberSinces] = useState<Record<number, number | undefined>>({});
 
   // ── Forms ─────────────────────────────────────────────────
   const clubForm = useForm<ClubFormValues>({
@@ -572,6 +574,11 @@ export default function Manage() {
     setEditingPhotographerId(photographerId);
     setAvatarUrl(p.avatarUrl ?? null);
     setSelectedThemeIds(p.themes?.map((th) => th.id) ?? []);
+    const sinces: Record<number, number | undefined> = {};
+    for (const c of p.clubs ?? []) {
+      if (c.memberSince) sinces[c.id] = c.memberSince;
+    }
+    setMemberSinces(sinces);
     photographerForm.reset({ name: p.name, bio: p.bio ?? "", clubIds: p.clubs?.map((c) => c.id) ?? [] });
     setTimeout(() => photographerFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
@@ -580,14 +587,21 @@ export default function Manage() {
     setEditingPhotographerId(null);
     setAvatarUrl(null);
     setSelectedThemeIds([]);
+    setMemberSinces({});
     photographerForm.reset({ name: "", bio: "", clubIds: [] });
   };
 
   const onPhotographerSubmit = (values: PhotographerFormValues) => {
+    const clubs = (values.clubIds ?? []).map((id) => ({
+      id,
+      memberSince: memberSinces[id] ?? null,
+    }));
     if (editingPhotographerId !== null) {
       const data = {
-        ...values,
+        name: values.name,
+        bio: values.bio,
         ...(avatarUrl ? { avatarUrl } : {}),
+        clubs,
         themeIds: selectedThemeIds,
       };
       updatePhotographerMutation.mutate({ id: editingPhotographerId, data }, {
@@ -600,8 +614,10 @@ export default function Manage() {
       });
     } else {
       const data = {
-        ...values,
+        name: values.name,
+        bio: values.bio,
         ...(avatarUrl ? { avatarUrl } : {}),
+        clubs,
         themeIds: selectedThemeIds,
       };
       createPhotographerMutation.mutate({ data }, {
@@ -907,19 +923,37 @@ export default function Manage() {
                   <FormItem>
                     <FormLabel>{t("manage.photographer.clubsLabel")}</FormLabel>
                     <div className="flex flex-col gap-2 pt-1">
-                      {clubs?.map((c) => (
-                        <div key={c.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`club-${c.id}`}
-                            checked={(field.value ?? []).includes(c.id)}
-                            onCheckedChange={(checked) => {
-                              const current = field.value ?? [];
-                              field.onChange(checked ? [...current, c.id] : current.filter((id) => id !== c.id));
-                            }}
-                          />
-                          <label htmlFor={`club-${c.id}`} className="text-sm cursor-pointer select-none">{c.name}</label>
-                        </div>
-                      ))}
+                      {clubs?.map((c) => {
+                        const checked = (field.value ?? []).includes(c.id);
+                        return (
+                          <div key={c.id} className="flex items-center gap-2 flex-wrap">
+                            <Checkbox
+                              id={`club-${c.id}`}
+                              checked={checked}
+                              onCheckedChange={(v) => {
+                                const current = field.value ?? [];
+                                field.onChange(v ? [...current, c.id] : current.filter((id) => id !== c.id));
+                                if (!v) setMemberSinces((prev) => { const next = { ...prev }; delete next[c.id]; return next; });
+                              }}
+                            />
+                            <label htmlFor={`club-${c.id}`} className="text-sm cursor-pointer select-none flex-1">{c.name}</label>
+                            {checked && (
+                              <Input
+                                type="number"
+                                min={1900}
+                                max={new Date().getFullYear()}
+                                placeholder={t("manage.photographer.memberSincePlaceholder")}
+                                className="h-7 w-24 text-xs bg-background"
+                                value={memberSinces[c.id] ?? ""}
+                                onChange={(e) => setMemberSinces((prev) => ({
+                                  ...prev,
+                                  [c.id]: e.target.value ? Number(e.target.value) : undefined,
+                                }))}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     <FormMessage />
                   </FormItem>
