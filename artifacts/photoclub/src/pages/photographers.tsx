@@ -115,7 +115,7 @@ export default function Photographers() {
                 {photographer.clubs && photographer.clubs.length > 0 && (
                   <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest mb-2">
                     <Users className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{photographer.clubs.map((c) => c.name).join(", ")}</span>
+                    <span className="truncate">{photographer.clubs.map((c) => c.memberSince ? `${c.name} · ${c.memberSince}` : c.name).join(", ")}</span>
                   </div>
                 )}
 

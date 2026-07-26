@@ -1007,7 +1007,7 @@ export default function Manage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{p.name}</p>
-                      {p.clubs && p.clubs.length > 0 && <p className="text-xs text-muted-foreground truncate">{p.clubs.map((c) => c.name).join(", ")}</p>}
+                      {p.clubs && p.clubs.length > 0 && <p className="text-xs text-muted-foreground truncate">{p.clubs.map((c) => c.memberSince ? `${c.name} · ${c.memberSince}` : c.name).join(", ")}</p>}
                     </div>
                     <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} {t("manage.photographer.printsSuffix")}</span>
                     <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>

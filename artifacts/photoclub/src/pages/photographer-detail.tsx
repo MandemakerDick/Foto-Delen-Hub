@@ -121,6 +121,7 @@ export default function PhotographerDetail() {
                   >
                     <Users className="w-4 h-4" />
                     <span className="uppercase tracking-widest">{club.name}</span>
+                    {club.memberSince && <span className="font-mono text-xs opacity-60">· {club.memberSince}</span>}
                   </Link>
                 ))}
                 <div className="flex items-center gap-2 font-mono">
