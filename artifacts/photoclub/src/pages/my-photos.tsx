@@ -414,13 +414,14 @@ function EditClubPanel({
       { id: profile.id, data: { clubIds: selectedIds } },
       {
         onSuccess: (data) => {
-          // Immediately update the displayed badges from the mutation response
-          // so the UI reflects the new clubs without waiting for a round-trip refetch.
+          // Update profile immediately from the PATCH response — the most
+          // authoritative source of truth. Do NOT call onSaved() (fetchProfile)
+          // here: the round-trip GET /api/me could return a stale cached value
+          // and overwrite the correct data we just received.
           if (data?.clubs) onProfilePartialUpdate({ clubs: data.clubs });
           toast({ title: t("myPhotos.clubSaved") });
           queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
           setOpen(false);
-          onSaved();
         },
         onError: () =>
           toast({ title: t("common.error"), description: t("myPhotos.clubSaveError"), variant: "destructive" }),
@@ -520,11 +521,12 @@ function EditThemesPanel({
       },
       {
         onSuccess: (data) => {
+          // Same rationale as EditClubPanel: trust the PATCH response directly,
+          // do not re-fetch GET /api/me which may return a stale cached value.
           if (data?.themes) onProfilePartialUpdate({ themes: data.themes });
           toast({ title: t("toasts.themesUpdatedTitle"), description: t("toasts.themesUpdatedDesc") });
           queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(profile.id) });
           setOpen(false);
-          onSaved();
         },
         onError: () => {
           toast({ title: t("common.error"), description: t("toasts.themesUpdateError"), variant: "destructive" });

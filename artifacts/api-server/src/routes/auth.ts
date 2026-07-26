@@ -1,25 +1,9 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { db, photographersTable, photographerClubsTable, photographerThemesTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { db, photographersTable, photographerClubsTable, photographerThemesTable, clubsTable, themesTable } from "@workspace/db";
+import { eq, asc } from "drizzle-orm";
 
 const router = Router();
-
-/** Correlated subquery: returns clubs as a JSON array for a given photographer row. */
-const clubsSubquery = sql<{ id: number; name: string }[]>`(
-  SELECT COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name) ORDER BY c.name), '[]'::json)
-  FROM photographer_clubs pc
-  JOIN clubs c ON c.id = pc.club_id
-  WHERE pc.photographer_id = ${photographersTable.id}
-)`;
-
-/** Correlated subquery: returns preferred themes as a JSON array for a given photographer row. */
-const themesSubquery = sql<{ id: number; name: string }[]>`(
-  SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name) ORDER BY t.name), '[]'::json)
-  FROM photographer_themes pt
-  JOIN themes t ON t.id = pt.theme_id
-  WHERE pt.photographer_id = ${photographersTable.id}
-)`;
 
 /**
  * Middleware: require a Clerk-authenticated session.
@@ -37,7 +21,11 @@ export function requireAuth(req: any, res: any, next: any) {
 
 /**
  * Fetch the photographer profile linked to a Clerk user, including their
- * clubs and preferred themes resolved via correlated subqueries.
+ * clubs and preferred themes.
+ *
+ * Uses three separate queries instead of a single correlated-subquery SELECT
+ * to guarantee correct results regardless of Drizzle ORM version or PostgreSQL
+ * query-planner behaviour.
  */
 async function getPhotographerByClerkId(clerkUserId: string) {
   const rows = await db
@@ -46,14 +34,31 @@ async function getPhotographerByClerkId(clerkUserId: string) {
       name: photographersTable.name,
       bio: photographersTable.bio,
       avatarUrl: photographersTable.avatarUrl,
-      clubs: clubsSubquery,
-      themes: themesSubquery,
       clerkUserId: photographersTable.clerkUserId,
       createdAt: photographersTable.createdAt,
     })
     .from(photographersTable)
     .where(eq(photographersTable.clerkUserId, clerkUserId));
-  return rows[0] ?? null;
+
+  if (!rows[0]) return null;
+  const photographer = rows[0];
+
+  const [clubs, themes] = await Promise.all([
+    db
+      .select({ id: clubsTable.id, name: clubsTable.name })
+      .from(photographerClubsTable)
+      .innerJoin(clubsTable, eq(clubsTable.id, photographerClubsTable.clubId))
+      .where(eq(photographerClubsTable.photographerId, photographer.id))
+      .orderBy(asc(clubsTable.name)),
+    db
+      .select({ id: themesTable.id, name: themesTable.name })
+      .from(photographerThemesTable)
+      .innerJoin(themesTable, eq(themesTable.id, photographerThemesTable.themeId))
+      .where(eq(photographerThemesTable.photographerId, photographer.id))
+      .orderBy(asc(themesTable.name)),
+  ]);
+
+  return { ...photographer, clubs, themes };
 }
 
 // GET /api/me — return the photographer profile for the signed-in Clerk user.
