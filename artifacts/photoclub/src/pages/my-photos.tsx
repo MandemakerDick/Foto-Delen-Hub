@@ -51,10 +51,13 @@ type PhotographerProfile = {
 
 function useMyProfile() {
   const [profile, setProfile] = useState<PhotographerProfile | null | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  // initialLoading gates the skeleton/spinner shown on first page load.
+  // Subsequent refetches (e.g. after saving clubs/themes) must NOT set this
+  // back to true, otherwise MyPhotosDashboard unmounts mid-save and the
+  // in-progress profile update is lost.
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const fetchProfile = async () => {
-    setLoading(true);
     try {
       const res = await fetch("/api/me", { credentials: "include", cache: "no-store" });
       if (res.status === 404) {
@@ -65,7 +68,7 @@ function useMyProfile() {
     } catch {
       setProfile(null);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -76,7 +79,7 @@ function useMyProfile() {
   const updateProfile = (partial: Partial<PhotographerProfile>) =>
     setProfile((prev) => (prev ? { ...prev, ...partial } : prev));
 
-  return { profile, loading, refetch: fetchProfile, updateProfile };
+  return { profile, loading: initialLoading, refetch: fetchProfile, updateProfile };
 }
 
 function AvatarUploader({
