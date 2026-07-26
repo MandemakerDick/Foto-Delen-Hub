@@ -1,4 +1,4 @@
-# Foto-Delen-Hub
+# PhotoMatrix & PhotoReviewHub
 
 A monorepo containing two photography web applications and a shared API server, built for Dutch photography clubs.
 
@@ -6,13 +6,14 @@ A monorepo containing two photography web applications and a shared API server, 
 
 ## Applications
 
-### 📷 PhotographersHub
+### 📷 PhotoMatrix
 
 A public-facing portfolio platform where photographers can share their work, organised by clubs and themes. Members sign in with Clerk, manage their own photos and profile, and can propose new themes.
 
 **Key features:**
 - Photo gallery with theme and club filters
 - Photographer profiles with club memberships (many-to-many)
+- Preferred themes per photographer (many-to-many)
 - Theme-based collections with contributor counts
 - Photo upload with URL import support
 - Likes and comments on photos
@@ -36,13 +37,13 @@ A structured peer-review platform for club members. Admins create timed sessions
 
 ## Screenshots
 
-### PhotographersHub — Home
-![PhotographersHub home](docs/screenshots/screenshot-photoclub-home.jpg)
+### PhotoMatrix — Home
+![PhotoMatrix home](docs/screenshots/screenshot-photoclub-home.jpg)
 
-### PhotographersHub — Photographers
+### PhotoMatrix — Photographers
 ![Photographers overview](docs/screenshots/screenshot-photoclub-photographers.jpg)
 
-### PhotographersHub — Themes
+### PhotoMatrix — Themes
 ![Themes overview](docs/screenshots/screenshot-photoclub-themes.jpg)
 
 ### PhotoReviewHub — Sessions
@@ -53,9 +54,9 @@ A structured peer-review platform for club members. Admins create timed sessions
 ## Architecture
 
 ```
-Foto-Delen-Hub/
+PhotoMatrix-monorepo/
 ├── artifacts/
-│   ├── photoclub/        # PhotographersHub — React + Vite frontend
+│   ├── photoclub/        # PhotoMatrix      — React + Vite frontend
 │   ├── review-club/      # PhotoReviewHub   — React + Vite frontend
 │   ├── api-server/       # Shared Express API (REST + OpenAPI)
 │   └── tech-deck/        # Technical slide deck (internal reference)
@@ -85,8 +86,6 @@ Foto-Delen-Hub/
 | `name` | text | |
 | `bio` | text | |
 | `avatar_url` | text | |
-| `theme_id_1` | integer | First preferred theme |
-| `theme_id_2` | integer | Second preferred theme |
 | `clerk_user_id` | text | Links to Clerk account |
 | `created_at` | timestamp | |
 
@@ -98,6 +97,15 @@ Foto-Delen-Hub/
 | `joined_at` | timestamp | |
 
 > A photographer can belong to multiple clubs.
+
+### `photographer_themes` *(junction)*
+| Column | Type | Notes |
+|---|---|---|
+| `photographer_id` | integer PK | FK → photographers |
+| `theme_id` | integer PK | FK → themes |
+| `added_at` | timestamp | |
+
+> A photographer can have any number of preferred themes.
 
 ### `clubs`
 | Column | Type | Notes |
@@ -224,13 +232,11 @@ Foto-Delen-Hub/
 ## Entity Relationship Overview
 
 ```
-clubs ──────────────── photographer_clubs ─── photographers
-  │                                                  │
-  │                                           theme_id_1 / theme_id_2
-  │                                                  │
-  └── review_sessions                             themes ◄── theme_proposals
-            │                                       │
-        session_photos ◄── photos ──────────────────┘
+clubs ──────────────── photographer_clubs ─── photographers ─── photographer_themes
+  │                                                                      │
+  └── review_sessions                                                 themes ◄── theme_proposals
+            │                                                            │
+        session_photos ◄── photos ──────────────────────────────────────┘
             │          │
      session_reviewers  └── comments
             │
