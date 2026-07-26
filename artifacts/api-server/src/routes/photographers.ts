@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-zod";
 import { getAuth, clerkClient } from "@clerk/express";
 import { ReplitConnectors } from "@replit/connectors-sdk";
+import { requireAdmin } from "./admins";
 
 const router = Router();
 
@@ -262,7 +263,7 @@ router.patch("/photographers/:id", async (req, res) => {
 // Photos are deleted first because there is no DB-level CASCADE on that FK.
 // Accepts optional JSON body { reason: string } — if provided and the photographer
 // has a Clerk account, a notification email is sent before deletion.
-router.delete("/photographers/:id", async (req, res) => {
+router.delete("/photographers/:id", requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
