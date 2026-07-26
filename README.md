@@ -140,6 +140,8 @@ PhotoMatrix-monorepo/
 | `like_count` | integer | Default 0 |
 | `created_at` | timestamp | |
 
+> Each photo belongs to exactly one photographer (`photographer_id` direct FK — no junction table). The many-to-many relationships (clubs, themes) are on the *photographer*, not the photo.
+
 ### `comments`
 | Column | Type | Notes |
 |---|---|---|
