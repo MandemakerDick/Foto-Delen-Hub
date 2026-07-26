@@ -107,7 +107,7 @@ router.get("/photos", async (req, res) => {
   }
 
   const photos = photographerId
-    ? await q.orderBy(asc(sql`${photosTable.sortOrder} NULLS LAST`), desc(photosTable.createdAt))
+    ? await q.orderBy(sql`${photosTable.sortOrder} ASC NULLS LAST`, desc(photosTable.createdAt))
     : await q.orderBy(desc(photosTable.createdAt));
   res.json(photos.map(mapPhoto));
 });
