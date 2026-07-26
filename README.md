@@ -200,7 +200,7 @@ PhotoMatrix-monorepo/
 | `created_at` | timestamp | |
 | `closed_at` | timestamp | |
 
-### `session_photos`
+### `session_photos` *(associative entity)*
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -209,6 +209,8 @@ PhotoMatrix-monorepo/
 | `photographer_id` | integer | FK → photographers |
 | `sort_order` | integer | Admin-controlled display order |
 | `submitted_at` | timestamp | |
+
+> Although it links `review_sessions` and `photos`, `session_photos` is more than a pure junction table: it has its own surrogate PK, carries submission metadata (`photographer_id`, `sort_order`, `submitted_at`), and is itself referenced by `photo_reviews` (`session_photo_id`). It represents the concept of *"this photo as submitted to this specific review session"* — a submission record in its own right.
 
 ### `session_reviewers`
 | Column | Type | Notes |
@@ -234,13 +236,20 @@ PhotoMatrix-monorepo/
 ## Entity Relationship Overview
 
 ```
-clubs ──────────────── photographer_clubs ─── photographers ─── photographer_themes
-  │                                                │                     │
-  └── review_sessions                              │                  themes ◄── theme_proposals
-            │                                      │                     │
-        session_photos ◄── photos ─────────────────┘─────────────────────┘
-            │          │
-     session_reviewers  └── comments
-            │
-       photo_reviews
+clubs ──────── photographer_clubs ──── photographers ──── photographer_themes
+  │                  (junction)              │                  (junction)      │
+  │                                          │                               themes
+  │                                          │                                  ▲
+  └──► review_sessions             photos ◄──┘                         theme_proposals
+             │                       │  └──► comments
+             │                       │
+             └──► session_photos ◄───┘   (associative entity: owns its own PK,
+             │    (session_id, photo_id,   carries metadata, referenced by
+             │     photographer_id, …)     photo_reviews)
+             │         │
+             │         └──► photo_reviews
+             │
+             └──► session_reviewers
 ```
+
+Arrow direction: `A ──► B` means A holds a FK to B (A references B).
