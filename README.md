@@ -233,10 +233,10 @@ PhotoMatrix-monorepo/
 
 ```
 clubs ──────────────── photographer_clubs ─── photographers ─── photographer_themes
-  │                                                                      │
-  └── review_sessions                                                 themes ◄── theme_proposals
-            │                                                            │
-        session_photos ◄── photos ──────────────────────────────────────┘
+  │                                                │                     │
+  └── review_sessions                              │                  themes ◄── theme_proposals
+            │                                      │                     │
+        session_photos ◄── photos ─────────────────┘─────────────────────┘
             │          │
      session_reviewers  └── comments
             │
