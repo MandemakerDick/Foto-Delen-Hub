@@ -94,7 +94,8 @@ PhotoMatrix-monorepo/
 |---|---|---|
 | `photographer_id` | integer PK | FK → photographers |
 | `club_id` | integer PK | FK → clubs |
-| `joined_at` | timestamp | |
+| `joined_at` | timestamp | When the DB record was created |
+| `member_since` | integer | Year the photographer joined this club (e.g. 2019) — distinct from `joined_at` and from the club's own `year_established` |
 
 > A photographer can belong to multiple clubs.
 
@@ -138,6 +139,7 @@ PhotoMatrix-monorepo/
 | `club_id` | integer | Club the photo was submitted under |
 | `theme_id` | integer | FK → themes |
 | `like_count` | integer | Default 0 |
+| `sort_order` | integer | Photographer-controlled display order; `null` falls back to `created_at DESC` |
 | `created_at` | timestamp | |
 
 > Each photo belongs to exactly one photographer (`photographer_id` direct FK — no junction table). The many-to-many relationships (clubs, themes) are on the *photographer*, not the photo.
