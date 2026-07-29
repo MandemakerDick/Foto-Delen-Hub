@@ -971,7 +971,7 @@ export default function Manage() {
                                 if (!v) setMemberSinces((prev) => { const next = { ...prev }; delete next[c.id]; return next; });
                               }}
                             />
-                            <label htmlFor={`club-${c.id}`} className="text-sm cursor-pointer select-none flex-1">{c.name}</label>
+                            <label htmlFor={`club-${c.id}`} className="text-sm cursor-pointer select-none">{c.name}</label>
                             {checked && (
                               <Input
                                 type="number"
