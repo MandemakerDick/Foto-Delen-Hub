@@ -238,20 +238,24 @@ PhotoMatrix-monorepo/
 ## Entity Relationship Overview
 
 ```
-clubs ──────── photographer_clubs ──── photographers ──── photographer_themes
-  │                  (junction)              │                  (junction)      │
-  │                                          │                               themes
-  │                                          │                                  ▲
-  └──► review_sessions             photos ◄──┘                         theme_proposals
-             │                       │  └──► comments
-             │                       │
-             └──► session_photos ◄───┘   (associative entity: owns its own PK,
-             │    (session_id, photo_id,   carries metadata, referenced by
-             │     photographer_id, …)     photo_reviews)
-             │         │
-             │         └──► photo_reviews
-             │
-             └──► session_reviewers
+admins ◄──── invite_tokens
+
+clubs ◄──── photographer_clubs ────► photographers ◄──── photographer_themes ────► themes
+  ▲              (junction)               ▲                   (junction)
+  │                                       │                               theme_proposals
+  │                              ┌────────┘                           (──► photographers)
+  │                           photos (──► photographers, ──► clubs, ──► themes)
+  │                              ▲
+  │                           comments (──► photos, ──► photographers)
+  │
+  └──── review_sessions (──► clubs, ──► admins)
+              ▲
+              ├──── session_photos (──► review_sessions, ──► photos, ──► photographers)
+              │         │
+              │         └──── photo_reviews (──► session_photos, ──► photographers)
+              │
+              └──── session_reviewers (──► review_sessions, ──► photographers)
 ```
 
 Arrow direction: `A ──► B` means A holds a FK to B (A references B).
+Vertical connectors (`│`, `├────`, `└────`) below a `▲`-marked table mean the indented table references the one above it; the inline `(──► X)` annotations confirm all FK targets explicitly.
