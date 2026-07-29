@@ -6,3 +6,9 @@ id = "4jv_glfjKoTX-DlQdVXxv"
 uri = "file://.local/outputs/PhotoShare-Hub.pptx"
 type = "slides"
 title = "PhotoShare Hub.pptx"
+
+[[outputs]]
+id = "-8mEKsnG-B5Jgs0GHH8jq"
+uri = "file://docs/user-guide.pdf"
+type = "pdf"
+title = "PhotoMatrix User Guide"
