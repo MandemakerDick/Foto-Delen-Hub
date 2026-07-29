@@ -715,14 +715,35 @@ type ThemeProposal = {
 
 function MyProposalsSection({ photographerId }: { photographerId: number }) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [proposals, setProposals] = useState<ThemeProposal[] | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
 
-  useEffect(() => {
+  const fetchProposals = () => {
     fetch("/api/themes/my-proposals", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setProposals(data))
       .catch(() => setProposals([]));
-  }, [photographerId]);
+  };
+
+  useEffect(() => { fetchProposals(); }, [photographerId]);
+
+  const handleWithdraw = async (id: number) => {
+    setWithdrawingId(id);
+    try {
+      const res = await fetch(`/api/themes/my-proposals/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error();
+      toast({ title: t("myPhotos.proposalWithdrawn") });
+      fetchProposals();
+    } catch {
+      toast({ title: t("myPhotos.withdrawError"), variant: "destructive" });
+    } finally {
+      setWithdrawingId(null);
+    }
+  };
 
   // Don't render the section at all if there are no proposals
   if (!proposals || proposals.length === 0) return null;
@@ -742,10 +763,19 @@ function MyProposalsSection({ photographerId }: { photographerId: number }) {
               </span>
             </div>
             {p.status === "pending" && (
-              <Badge variant="secondary" className="gap-1 shrink-0 text-amber-600 bg-amber-500/10 border-amber-500/20">
-                <Clock className="w-3 h-3" />
-                {t("myPhotos.proposalStatusPending")}
-              </Badge>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="secondary" className="gap-1 text-amber-600 bg-amber-500/10 border-amber-500/20">
+                  <Clock className="w-3 h-3" />
+                  {t("myPhotos.proposalStatusPending")}
+                </Badge>
+                <button
+                  onClick={() => handleWithdraw(p.id)}
+                  disabled={withdrawingId === p.id}
+                  className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                >
+                  {t("myPhotos.withdrawProposal")}
+                </button>
+              </div>
             )}
             {p.status === "approved" && (
               <Badge variant="secondary" className="gap-1 shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">

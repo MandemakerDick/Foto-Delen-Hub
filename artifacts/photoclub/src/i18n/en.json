@@ -441,7 +441,10 @@
     "noProposals": "No theme proposals submitted yet.",
     "proposalStatusPending": "Pending",
     "proposalStatusApproved": "Approved",
-    "proposalStatusRejected": "Rejected"
+    "proposalStatusRejected": "Rejected",
+    "withdrawProposal": "Withdraw",
+    "proposalWithdrawn": "Proposal withdrawn",
+    "withdrawError": "Could not withdraw proposal"
   },
   "search": {
     "startTitle": "Start searching",

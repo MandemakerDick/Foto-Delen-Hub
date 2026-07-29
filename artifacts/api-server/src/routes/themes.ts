@@ -11,6 +11,43 @@ import {
 import { requireAdmin } from "./admins";
 import { requireAuth } from "./auth";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
+import { clerkClient } from "@clerk/express";
+import { ReplitConnectors } from "@replit/connectors-sdk";
+
+/** Send an email to a photographer notifying them of their proposal outcome. */
+async function sendProposalStatusEmail(
+  clerkUserId: string | null | undefined,
+  proposalName: string,
+  status: "approved" | "rejected",
+) {
+  if (!clerkUserId) return;
+  try {
+    const clerkUser = await clerkClient.users.getUser(clerkUserId);
+    const email = clerkUser.emailAddresses[0]?.emailAddress;
+    if (!email) return;
+    const connectors = new ReplitConnectors();
+    const from = process.env.EMAIL_FROM ?? "PhotoMatrix <onboarding@resend.dev>";
+    const isApproved = status === "approved";
+    await connectors.proxy("resend", "/emails", {
+      method: "POST",
+      body: JSON.stringify({
+        from,
+        to: [email],
+        subject: isApproved
+          ? `Your theme proposal "${proposalName}" has been approved`
+          : `Your theme proposal "${proposalName}" was not accepted`,
+        html: isApproved
+          ? `<p>Good news! Your theme proposal <strong>"${proposalName}"</strong> has been approved and added to the theme library. You can now tag your photos with this theme.</p><p>— The PhotoMatrix Team</p>`
+          : `<p>Thank you for your suggestion. Unfortunately, your theme proposal <strong>"${proposalName}"</strong> has not been accepted at this time.</p><p>Feel free to submit another — we welcome your ideas!</p><p>— The PhotoMatrix Team</p>`,
+        text: isApproved
+          ? `Good news! Your theme proposal "${proposalName}" has been approved and added to the theme library.\n\n— The PhotoMatrix Team`
+          : `Thank you for your suggestion. Unfortunately, your theme proposal "${proposalName}" has not been accepted at this time. Feel free to submit another!\n\n— The PhotoMatrix Team`,
+      }),
+    });
+  } catch (err) {
+    console.error("Failed to send proposal status email:", err);
+  }
+}
 
 const router = Router();
 
@@ -165,6 +202,15 @@ router.post("/themes/proposals/:id/approve", requireAdmin, async (req, res) => {
     .set({ status: "approved" })
     .where(eq(themeProposalsTable.id, id));
 
+  // Notify the proposer by email (non-blocking)
+  if (proposal.proposedByPhotographerId) {
+    const [photographer] = await db
+      .select({ clerkUserId: photographersTable.clerkUserId })
+      .from(photographersTable)
+      .where(eq(photographersTable.id, proposal.proposedByPhotographerId));
+    sendProposalStatusEmail(photographer?.clerkUserId, proposal.name, "approved");
+  }
+
   res.status(201).json({ ...theme, photoCount: 0, createdAt: theme.createdAt.toISOString() });
 });
 
@@ -174,7 +220,11 @@ router.delete("/themes/proposals/:id", requireAdmin, async (req, res) => {
   if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const [proposal] = await db
-    .select({ id: themeProposalsTable.id })
+    .select({
+      id: themeProposalsTable.id,
+      name: themeProposalsTable.name,
+      proposedByPhotographerId: themeProposalsTable.proposedByPhotographerId,
+    })
     .from(themeProposalsTable)
     .where(eq(themeProposalsTable.id, id));
 
@@ -185,6 +235,40 @@ router.delete("/themes/proposals/:id", requireAdmin, async (req, res) => {
     .set({ status: "rejected" })
     .where(eq(themeProposalsTable.id, id));
 
+  // Notify the proposer by email (non-blocking)
+  if (proposal.proposedByPhotographerId) {
+    const [photographer] = await db
+      .select({ clerkUserId: photographersTable.clerkUserId })
+      .from(photographersTable)
+      .where(eq(photographersTable.id, proposal.proposedByPhotographerId));
+    sendProposalStatusEmail(photographer?.clerkUserId, proposal.name, "rejected");
+  }
+
+  res.status(204).send();
+});
+
+// DELETE /api/themes/my-proposals/:id — photographer withdraws their own pending proposal
+router.delete("/themes/my-proposals/:id", requireAuth, async (req: any, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
+  if (!photographerId) { res.status(403).json({ error: "No photographer profile" }); return; }
+
+  const [proposal] = await db
+    .select()
+    .from(themeProposalsTable)
+    .where(eq(themeProposalsTable.id, id));
+
+  if (!proposal) { res.status(404).json({ error: "Proposal not found" }); return; }
+  if (proposal.proposedByPhotographerId !== photographerId) {
+    res.status(403).json({ error: "Not your proposal" }); return;
+  }
+  if (proposal.status !== "pending") {
+    res.status(400).json({ error: "Only pending proposals can be withdrawn" }); return;
+  }
+
+  await db.delete(themeProposalsTable).where(eq(themeProposalsTable.id, id));
   res.status(204).send();
 });
 

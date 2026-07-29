@@ -441,7 +441,10 @@
     "noProposals": "Nog geen themavoorstellen ingediend.",
     "proposalStatusPending": "In behandeling",
     "proposalStatusApproved": "Goedgekeurd",
-    "proposalStatusRejected": "Afgewezen"
+    "proposalStatusRejected": "Afgewezen",
+    "withdrawProposal": "Intrekken",
+    "proposalWithdrawn": "Voorstel ingetrokken",
+    "withdrawError": "Kon voorstel niet intrekken"
   },
   "search": {
     "startTitle": "Begin met zoeken",
