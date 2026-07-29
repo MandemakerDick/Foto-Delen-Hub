@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle, GripVertical, ArrowUpDown } from "lucide-react";
+import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle, GripVertical, ArrowUpDown, Clock } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -705,6 +705,67 @@ function EditThemesPanel({
   );
 }
 
+type ThemeProposal = {
+  id: number;
+  name: string;
+  description: string | null;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+};
+
+function MyProposalsSection({ photographerId }: { photographerId: number }) {
+  const { t } = useTranslation();
+  const [proposals, setProposals] = useState<ThemeProposal[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/themes/my-proposals", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setProposals(data))
+      .catch(() => setProposals([]));
+  }, [photographerId]);
+
+  // Don't render the section at all if there are no proposals
+  if (!proposals || proposals.length === 0) return null;
+
+  return (
+    <div className="mb-8 pb-6 border-b border-border/40">
+      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">
+        {t("myPhotos.myProposals")}
+      </p>
+      <div className="flex flex-col gap-2">
+        {proposals.map((p) => (
+          <div key={p.id} className="flex items-center justify-between gap-3 py-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-medium truncate">{p.name}</span>
+              <span className="text-xs text-muted-foreground font-mono shrink-0">
+                {format(new Date(p.createdAt), "MMM d, yyyy")}
+              </span>
+            </div>
+            {p.status === "pending" && (
+              <Badge variant="secondary" className="gap-1 shrink-0 text-amber-600 bg-amber-500/10 border-amber-500/20">
+                <Clock className="w-3 h-3" />
+                {t("myPhotos.proposalStatusPending")}
+              </Badge>
+            )}
+            {p.status === "approved" && (
+              <Badge variant="secondary" className="gap-1 shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
+                <Check className="w-3 h-3" />
+                {t("myPhotos.proposalStatusApproved")}
+              </Badge>
+            )}
+            {p.status === "rejected" && (
+              <Badge variant="secondary" className="gap-1 shrink-0 text-destructive bg-destructive/10 border-destructive/20">
+                <X className="w-3 h-3" />
+                {t("myPhotos.proposalStatusRejected")}
+              </Badge>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type PhotoItem = { id: number; title: string; imageUrl: string };
 
 function SortablePhotoCard({ photo }: { photo: PhotoItem }) {
@@ -862,6 +923,9 @@ function MyPhotosDashboard({
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.specialtyThemes")}</p>
         <EditThemesPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
       </div>
+
+      {/* My theme proposals */}
+      <MyProposalsSection photographerId={profile.id} />
 
       {/* Stats bar */}
       <div className="flex gap-8 mb-10 pb-8 border-b border-border/40">

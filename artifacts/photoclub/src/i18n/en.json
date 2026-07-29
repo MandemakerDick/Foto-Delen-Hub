@@ -436,7 +436,12 @@
     "uploadFirst": "Upload your first photo",
     "deleteTitle": "Delete this photograph?",
     "deleteBody": "\"{{title}}\" will be permanently removed from the gallery.",
-    "removed": "Photograph removed"
+    "removed": "Photograph removed",
+    "myProposals": "My Theme Proposals",
+    "noProposals": "No theme proposals submitted yet.",
+    "proposalStatusPending": "Pending",
+    "proposalStatusApproved": "Approved",
+    "proposalStatusRejected": "Rejected"
   },
   "search": {
     "startTitle": "Start searching",

@@ -436,7 +436,12 @@
     "uploadFirst": "Upload je eerste foto",
     "deleteTitle": "Deze foto verwijderen?",
     "deleteBody": "\"{{title}}\" wordt definitief uit de galerij verwijderd.",
-    "removed": "Foto verwijderd"
+    "removed": "Foto verwijderd",
+    "myProposals": "Mijn themavoorstellen",
+    "noProposals": "Nog geen themavoorstellen ingediend.",
+    "proposalStatusPending": "In behandeling",
+    "proposalStatusApproved": "Goedgekeurd",
+    "proposalStatusRejected": "Afgewezen"
   },
   "search": {
     "startTitle": "Begin met zoeken",

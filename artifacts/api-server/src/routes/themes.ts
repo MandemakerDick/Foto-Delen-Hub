@@ -53,6 +53,27 @@ router.get("/themes", async (req, res) => {
   res.json(themes.map(mapTheme));
 });
 
+// GET /api/themes/my-proposals — list the logged-in photographer's own proposals
+router.get("/themes/my-proposals", requireAuth, async (req: any, res) => {
+  const photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
+  if (!photographerId) {
+    res.json([]);
+    return;
+  }
+  const rows = await db
+    .select({
+      id: themeProposalsTable.id,
+      name: themeProposalsTable.name,
+      description: themeProposalsTable.description,
+      status: themeProposalsTable.status,
+      createdAt: themeProposalsTable.createdAt,
+    })
+    .from(themeProposalsTable)
+    .where(eq(themeProposalsTable.proposedByPhotographerId, photographerId))
+    .orderBy(themeProposalsTable.createdAt);
+  res.json(rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
+});
+
 // GET /api/themes/proposals — list all pending proposals (admin only)
 router.get("/themes/proposals", requireAdmin, async (_req, res) => {
   const rows = await db
@@ -147,7 +168,7 @@ router.post("/themes/proposals/:id/approve", requireAdmin, async (req, res) => {
   res.status(201).json({ ...theme, photoCount: 0, createdAt: theme.createdAt.toISOString() });
 });
 
-// DELETE /api/themes/proposals/:id — admin rejects a proposal
+// DELETE /api/themes/proposals/:id — admin rejects a proposal (marks as rejected, keeps the row)
 router.delete("/themes/proposals/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
@@ -159,7 +180,11 @@ router.delete("/themes/proposals/:id", requireAdmin, async (req, res) => {
 
   if (!proposal) { res.status(404).json({ error: "Proposal not found" }); return; }
 
-  await db.delete(themeProposalsTable).where(eq(themeProposalsTable.id, id));
+  await db
+    .update(themeProposalsTable)
+    .set({ status: "rejected" })
+    .where(eq(themeProposalsTable.id, id));
+
   res.status(204).send();
 });
 
