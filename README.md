@@ -79,7 +79,7 @@ PhotoMatrix-monorepo/
 
 ## Database Schema
 
-### `photographers`
+### `photographer`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -89,7 +89,7 @@ PhotoMatrix-monorepo/
 | `clerk_user_id` | text | Links to Clerk account |
 | `created_at` | timestamp | |
 
-### `photographer_clubs` *(junction)*
+### `photographer_club` *(junction)*
 | Column | Type | Notes |
 |---|---|---|
 | `photographer_id` | integer PK | FK → photographers |
@@ -99,7 +99,7 @@ PhotoMatrix-monorepo/
 
 > A photographer can belong to multiple clubs.
 
-### `photographer_themes` *(junction)*
+### `photographer_theme` *(junction)*
 | Column | Type | Notes |
 |---|---|---|
 | `photographer_id` | integer PK | FK → photographers |
@@ -108,7 +108,7 @@ PhotoMatrix-monorepo/
 
 > A photographer can have any number of preferred themes.
 
-### `clubs`
+### `club`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -120,7 +120,7 @@ PhotoMatrix-monorepo/
 | `year_established` | integer | |
 | `created_at` | timestamp | |
 
-### `themes`
+### `theme`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -128,7 +128,7 @@ PhotoMatrix-monorepo/
 | `description` | text | |
 | `created_at` | timestamp | |
 
-### `photos`
+### `photo`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -144,7 +144,7 @@ PhotoMatrix-monorepo/
 
 > Each photo belongs to exactly one photographer (`photographer_id` direct FK — no junction table). The many-to-many relationships (clubs, themes) are on the *photographer*, not the photo.
 
-### `comments`
+### `comment`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -153,7 +153,7 @@ PhotoMatrix-monorepo/
 | `body` | text | |
 | `created_at` | timestamp | |
 
-### `theme_proposals`
+### `theme_proposal`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -163,7 +163,7 @@ PhotoMatrix-monorepo/
 | `status` | text | `pending` / `approved` / `rejected` |
 | `created_at` | timestamp | |
 
-### `admins`
+### `admin`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -174,7 +174,7 @@ PhotoMatrix-monorepo/
 | `is_owner` | boolean | Owner admins cannot be removed |
 | `added_at` | timestamp | |
 
-### `invite_tokens`
+### `invite_token`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -187,7 +187,7 @@ PhotoMatrix-monorepo/
 | `revoked` | boolean | |
 | `created_at` | timestamp | |
 
-### `review_sessions`
+### `review_session`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -202,7 +202,7 @@ PhotoMatrix-monorepo/
 | `created_at` | timestamp | |
 | `closed_at` | timestamp | |
 
-### `session_photos` *(associative entity)*
+### `session_photo` *(associative entity)*
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -214,7 +214,7 @@ PhotoMatrix-monorepo/
 
 > Although it links `review_sessions` and `photos`, `session_photos` is more than a pure junction table: it has its own surrogate PK, carries submission metadata (`photographer_id`, `sort_order`, `submitted_at`), and is itself referenced by `photo_reviews` (`session_photo_id`). It represents the concept of *"this photo as submitted to this specific review session"* — a submission record in its own right.
 
-### `session_reviewers`
+### `session_reviewer`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -222,7 +222,7 @@ PhotoMatrix-monorepo/
 | `photographer_id` | integer | FK → photographers |
 | `added_at` | timestamp | |
 
-### `photo_reviews`
+### `photo_review`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
@@ -238,23 +238,23 @@ PhotoMatrix-monorepo/
 ## Entity Relationship Overview
 
 ```
-admins ◄──── invite_tokens
+admin ◄──── invite_token
 
-clubs ◄──── photographer_clubs ────► photographers ◄──── photographer_themes ────► themes
-  ▲              (junction)               ▲                   (junction)
-  │                                       │                               theme_proposals
-  │                              ┌────────┘                           (──► photographers)
-  │                           photos (──► photographers, ──► clubs, ──► themes)
+club ◄──── photographer_club ────► photographer ◄──── photographer_theme ────► theme
+  ▲              (junction)               ▲                 (junction)              ▲
+  │                                       │                                theme_proposal
+  │                              ┌────────┘                            (──► photographer)
+  │                           photo (──► photographer, ──► club, ──► theme)
   │                              ▲
-  │                           comments (──► photos, ──► photographers)
+  │                           comment (──► photo, ──► photographer)
   │
-  └──── review_sessions (──► clubs, ──► admins)
+  └──── review_session (──► club, ──► admin)
               ▲
-              ├──── session_photos (──► review_sessions, ──► photos, ──► photographers)
+              ├──── session_photo (──► review_session, ──► photo, ──► photographer)
               │         │
-              │         └──── photo_reviews (──► session_photos, ──► photographers)
+              │         └──── photo_review (──► session_photo, ──► photographer)
               │
-              └──── session_reviewers (──► review_sessions, ──► photographers)
+              └──── session_reviewer (──► review_session, ──► photographer)
 ```
 
 Arrow direction: `A ──► B` means A holds a FK to B (A references B).

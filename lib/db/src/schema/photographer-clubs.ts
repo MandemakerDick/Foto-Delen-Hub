@@ -8,7 +8,7 @@ import { pgTable, integer, timestamp, primaryKey } from "drizzle-orm/pg-core";
  * own yearEstablished.
  */
 export const photographerClubsTable = pgTable(
-  "photographer_clubs",
+  "photographer_club",
   {
     photographerId: integer("photographer_id").notNull(),
     clubId: integer("club_id").notNull(),

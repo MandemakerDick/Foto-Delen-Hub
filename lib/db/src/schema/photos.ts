@@ -2,7 +2,7 @@ import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const photosTable = pgTable("photos", {
+export const photosTable = pgTable("photo", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),

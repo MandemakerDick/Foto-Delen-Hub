@@ -2,7 +2,7 @@ import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const adminsTable = pgTable("admins", {
+export const adminsTable = pgTable("admin", {
   id: serial("id").primaryKey(),
   clerkUserId: text("clerk_user_id").unique(),
   displayName: text("display_name").notNull(),

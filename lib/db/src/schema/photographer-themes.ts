@@ -5,7 +5,7 @@ import { pgTable, integer, timestamp, primaryKey } from "drizzle-orm/pg-core";
  * A photographer can prefer multiple themes; a theme can be preferred by many photographers.
  */
 export const photographerThemesTable = pgTable(
-  "photographer_themes",
+  "photographer_theme",
   {
     photographerId: integer("photographer_id").notNull(),
     themeId: integer("theme_id").notNull(),

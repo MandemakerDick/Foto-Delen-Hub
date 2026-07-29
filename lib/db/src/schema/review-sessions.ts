@@ -9,7 +9,7 @@ import { z } from "zod/v4";
  *   reviewing — submissions locked; reviewers are leaving feedback
  *   closed    — session is finished and archived
  */
-export const reviewSessionsTable = pgTable("review_sessions", {
+export const reviewSessionsTable = pgTable("review_session", {
   id: serial("id").primaryKey(),
   clubId: integer("club_id").notNull(),
   title: text("title").notNull(),
@@ -28,7 +28,7 @@ export const reviewSessionsTable = pgTable("review_sessions", {
  * A photographer may submit multiple photos to one session.
  * sortOrder can be set by the admin to control presentation order.
  */
-export const sessionPhotosTable = pgTable("session_photos", {
+export const sessionPhotosTable = pgTable("session_photo", {
   id: serial("id").primaryKey(),
   sessionId: integer("session_id").notNull(),
   photoId: integer("photo_id").notNull(),          // FK → photos.id
@@ -41,7 +41,7 @@ export const sessionPhotosTable = pgTable("session_photos", {
  * Photographers who are designated reviewers for a given session.
  * Only reviewers (and admins) may leave reviews on session photos.
  */
-export const sessionReviewersTable = pgTable("session_reviewers", {
+export const sessionReviewersTable = pgTable("session_reviewer", {
   id: serial("id").primaryKey(),
   sessionId: integer("session_id").notNull(),
   photographerId: integer("photographer_id").notNull(), // FK → photographers.id
@@ -53,7 +53,7 @@ export const sessionReviewersTable = pgTable("session_reviewers", {
  * Rating is 1–5 stars; comment is optional.
  * One reviewer may only review each photo once (enforced in the route).
  */
-export const photoReviewsTable = pgTable("photo_reviews", {
+export const photoReviewsTable = pgTable("photo_review", {
   id: serial("id").primaryKey(),
   sessionPhotoId: integer("session_photo_id").notNull(), // FK → session_photos.id
   reviewerPhotographerId: integer("reviewer_photographer_id").notNull(),

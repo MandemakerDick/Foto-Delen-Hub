@@ -17,16 +17,16 @@ const router = Router();
 /** Correlated subquery: returns clubs as a JSON array for a given photographer row. */
 const clubsSubquery = sql<{ id: number; name: string; memberSince: number | null }[]>`(
   SELECT COALESCE(json_agg(json_build_object('id', c.id, 'name', c.name, 'memberSince', pc.member_since) ORDER BY c.name), '[]'::json)
-  FROM photographer_clubs pc
-  JOIN clubs c ON c.id = pc.club_id
+  FROM photographer_club pc
+  JOIN club c ON c.id = pc.club_id
   WHERE pc.photographer_id = ${photographersTable.id}
 )`;
 
 /** Correlated subquery: returns preferred themes as a JSON array for a given photographer row. */
 const themesSubquery = sql<{ id: number; name: string }[]>`(
   SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name) ORDER BY t.name), '[]'::json)
-  FROM photographer_themes pt
-  JOIN themes t ON t.id = pt.theme_id
+  FROM photographer_theme pt
+  JOIN theme t ON t.id = pt.theme_id
   WHERE pt.photographer_id = ${photographersTable.id}
 )`;
 

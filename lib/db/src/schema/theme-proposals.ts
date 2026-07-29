@@ -1,6 +1,6 @@
 import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 
-export const themeProposalsTable = pgTable("theme_proposals", {
+export const themeProposalsTable = pgTable("theme_proposal", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),

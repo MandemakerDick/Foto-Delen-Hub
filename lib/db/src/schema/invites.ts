@@ -1,7 +1,7 @@
 import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { adminsTable } from "./admins";
 
-export const inviteTokensTable = pgTable("invite_tokens", {
+export const inviteTokensTable = pgTable("invite_token", {
   id: serial("id").primaryKey(),
   token: text("token").notNull().unique(),
   label: text("label").notNull().default(""),
