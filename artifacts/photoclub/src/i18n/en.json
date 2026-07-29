@@ -95,7 +95,11 @@
       "toastApprovedDesc": "\"{{name}}\" has been added as a theme.",
       "toastRejectedTitle": "Proposal Rejected",
       "toastApproveError": "Could not approve proposal.",
-      "toastRejectError": "Could not reject proposal."
+      "toastRejectError": "Could not reject proposal.",
+      "historyHeading": "Proposal History",
+      "historyEmpty": "No processed proposals yet.",
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected"
     },
     "photographer": {
       "createTitle": "Add Photographer",

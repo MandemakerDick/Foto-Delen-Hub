@@ -59,7 +59,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2 } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -864,6 +864,41 @@ export default function Manage() {
                     </Button>
                   </li>
                 ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Proposal history section */}
+          {themeProposals && themeProposals.filter((p) => p.status !== "pending").length > 0 && (
+            <div className="bg-secondary/20 rounded-lg border border-border/50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-border/50">
+                <h3 className="font-serif text-lg font-medium">{t("manage.theme.historyHeading")}</h3>
+              </div>
+              <ul className="divide-y divide-border/50">
+                {themeProposals
+                  .filter((p) => p.status !== "pending")
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((proposal) => (
+                    <li key={proposal.id} className="flex items-center gap-4 px-6 py-3">
+                      {proposal.status === "approved" ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{proposal.name}</p>
+                        {proposal.proposedByPhotographerName && (
+                          <p className="text-xs text-muted-foreground">{t("manage.theme.proposedBy", { name: proposal.proposedByPhotographerName })}</p>
+                        )}
+                      </div>
+                      <span className={`text-xs font-medium shrink-0 ${proposal.status === "approved" ? "text-green-500" : "text-destructive"}`}>
+                        {proposal.status === "approved" ? t("manage.theme.statusApproved") : t("manage.theme.statusRejected")}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {new Date(proposal.createdAt).toLocaleDateString()}
+                      </span>
+                    </li>
+                  ))}
               </ul>
             </div>
           )}

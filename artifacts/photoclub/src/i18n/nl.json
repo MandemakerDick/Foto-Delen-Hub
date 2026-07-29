@@ -92,7 +92,11 @@
       "toastApprovedDesc": "\"{{name}}\" is als thema toegevoegd.",
       "toastRejectedTitle": "Voorstel afgewezen",
       "toastApproveError": "Kon voorstel niet goedkeuren.",
-      "toastRejectError": "Kon voorstel niet afwijzen."
+      "toastRejectError": "Kon voorstel niet afwijzen.",
+      "historyHeading": "Voorstelgeschiedenis",
+      "historyEmpty": "Nog geen verwerkte voorstellen.",
+      "statusApproved": "Goedgekeurd",
+      "statusRejected": "Afgewezen"
     },
     "photographer": {
       "createTitle": "Fotograaf toevoegen",
