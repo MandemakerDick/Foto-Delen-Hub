@@ -1,10 +1,10 @@
-# PhotoMatrix & PhotoReviewHub
+# PhotoMatrix
 
-A monorepo containing two photography web applications and a shared API server, built for Dutch photography clubs.
+A photography club platform where members share their work, organised by clubs and themes.
 
 ---
 
-## Applications
+## Application
 
 ### 📷 PhotoMatrix
 
@@ -17,21 +17,12 @@ A public-facing portfolio platform where photographers can share their work, org
 - Theme-based collections with contributor counts
 - Photo upload with URL import support
 - Likes and comments on photos
-- Theme proposal workflow (photographer proposes → admin approves)
+- Theme proposal workflow (photographer proposes → admin approves or rejects → email notification sent)
+- Photographers can withdraw their own pending proposals
 - Invite-token based registration
 - Dutch / English i18n
 - Admin panel for managing photographers, clubs, themes, and invites
-
-### 🎞️ PhotoReviewHub
-
-A structured peer-review platform for club members. Admins create timed sessions; photographers submit photos; designated reviewers leave star ratings and written feedback.
-
-**Key features:**
-- Review sessions with open → reviewing → closed lifecycle
-- Per-session submission deadlines and photo limits
-- Star ratings (1–5) and written reviews per photo
-- Archive of past sessions
-- Clerk authentication for photographers; session-based login for admins
+- Installable as a PWA (Add to Home Screen on Android and iOS)
 
 ---
 
@@ -46,9 +37,6 @@ A structured peer-review platform for club members. Admins create timed sessions
 ### PhotoMatrix — Themes
 ![Themes overview](docs/screenshots/screenshot-photoclub-themes.jpg)
 
-### PhotoReviewHub — Sessions
-![PhotoReviewHub home](docs/screenshots/screenshot-reviewclub-home.jpg)
-
 ---
 
 ## Architecture
@@ -56,9 +44,8 @@ A structured peer-review platform for club members. Admins create timed sessions
 ```
 PhotoMatrix-monorepo/
 ├── artifacts/
-│   ├── photoclub/        # PhotoMatrix      — React + Vite frontend
-│   ├── review-club/      # PhotoReviewHub   — React + Vite frontend
-│   ├── api-server/       # Shared Express API (REST + OpenAPI)
+│   ├── photoclub/        # PhotoMatrix — React + Vite frontend
+│   ├── api-server/       # Express API (REST)
 │   └── tech-deck/        # Technical slide deck (internal reference)
 └── lib/
     ├── db/               # Drizzle ORM schema + PostgreSQL client
@@ -73,6 +60,7 @@ PhotoMatrix-monorepo/
 - **Database:** PostgreSQL (Replit managed)
 - **Auth:** Clerk (photographers) + session-based (admins)
 - **Storage:** Replit Object Storage (photo uploads and URL imports)
+- **Email:** Resend (proposal approval/rejection notifications)
 - **Package manager:** pnpm workspaces
 
 ---
@@ -92,18 +80,18 @@ PhotoMatrix-monorepo/
 ### `photographer_club` *(junction)*
 | Column | Type | Notes |
 |---|---|---|
-| `photographer_id` | integer PK | FK → photographers |
-| `club_id` | integer PK | FK → clubs |
+| `photographer_id` | integer PK | FK → photographer |
+| `club_id` | integer PK | FK → club |
 | `joined_at` | timestamp | When the DB record was created |
-| `member_since` | integer | Year the photographer joined this club (e.g. 2019) — distinct from `joined_at` and from the club's own `year_established` |
+| `member_since` | integer | Year the photographer joined this club (e.g. 2019) |
 
 > A photographer can belong to multiple clubs.
 
 ### `photographer_theme` *(junction)*
 | Column | Type | Notes |
 |---|---|---|
-| `photographer_id` | integer PK | FK → photographers |
-| `theme_id` | integer PK | FK → themes |
+| `photographer_id` | integer PK | FK → photographer |
+| `theme_id` | integer PK | FK → theme |
 | `added_at` | timestamp | |
 
 > A photographer can have any number of preferred themes.
@@ -135,21 +123,21 @@ PhotoMatrix-monorepo/
 | `title` | text | |
 | `description` | text | |
 | `image_url` | text | |
-| `photographer_id` | integer | FK → photographers |
+| `photographer_id` | integer | FK → photographer |
 | `club_id` | integer | Club the photo was submitted under |
-| `theme_id` | integer | FK → themes |
+| `theme_id` | integer | FK → theme |
 | `like_count` | integer | Default 0 |
 | `sort_order` | integer | Photographer-controlled display order; `null` falls back to `created_at DESC` |
 | `created_at` | timestamp | |
 
-> Each photo belongs to exactly one photographer (`photographer_id` direct FK — no junction table). The many-to-many relationships (clubs, themes) are on the *photographer*, not the photo.
+> Each photo belongs to exactly one photographer (direct FK — no junction table). The many-to-many relationships (clubs, themes) are on the *photographer*, not the photo.
 
 ### `comment`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
-| `photo_id` | integer | FK → photos |
-| `photographer_id` | integer | FK → photographers |
+| `photo_id` | integer | FK → photo |
+| `photographer_id` | integer | FK → photographer |
 | `body` | text | |
 | `created_at` | timestamp | |
 
@@ -157,11 +145,13 @@ PhotoMatrix-monorepo/
 | Column | Type | Notes |
 |---|---|---|
 | `id` | serial PK | |
-| `name` | text | |
+| `name` | text | Proposed theme name |
 | `description` | text | |
-| `proposed_by_photographer_id` | integer | FK → photographers (nullable for admin proposals) |
+| `proposed_by_photographer_id` | integer | FK → photographer (nullable for admin proposals) |
 | `status` | text | `pending` / `approved` / `rejected` |
 | `created_at` | timestamp | |
+
+> When approved, a new `theme` row is created and the proposer receives an email notification. Pending proposals can be withdrawn by the proposer.
 
 ### `admin`
 | Column | Type | Notes |
@@ -180,58 +170,12 @@ PhotoMatrix-monorepo/
 | `id` | serial PK | |
 | `token` | text | Unique registration token |
 | `label` | text | Human-readable description |
-| `created_by_admin_id` | integer | FK → admins |
+| `created_by_admin_id` | integer | FK → admin |
 | `max_uses` | integer | Null = unlimited |
 | `use_count` | integer | |
 | `expires_at` | timestamp | |
 | `revoked` | boolean | |
 | `created_at` | timestamp | |
-
-### `review_session`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | serial PK | |
-| `club_id` | integer | FK → clubs |
-| `title` | text | |
-| `description` | text | |
-| `status` | text | `open` / `reviewing` / `closed` |
-| `created_by_admin_id` | integer | FK → admins |
-| `scheduled_for` | timestamp | |
-| `submission_deadline` | timestamp | |
-| `max_photos_per_member` | integer | |
-| `created_at` | timestamp | |
-| `closed_at` | timestamp | |
-
-### `session_photo` *(associative entity)*
-| Column | Type | Notes |
-|---|---|---|
-| `id` | serial PK | |
-| `session_id` | integer | FK → review_sessions |
-| `photo_id` | integer | FK → photos |
-| `photographer_id` | integer | FK → photographers |
-| `sort_order` | integer | Admin-controlled display order |
-| `submitted_at` | timestamp | |
-
-> Although it links `review_sessions` and `photos`, `session_photos` is more than a pure junction table: it has its own surrogate PK, carries submission metadata (`photographer_id`, `sort_order`, `submitted_at`), and is itself referenced by `photo_reviews` (`session_photo_id`). It represents the concept of *"this photo as submitted to this specific review session"* — a submission record in its own right.
-
-### `session_reviewer`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | serial PK | |
-| `session_id` | integer | FK → review_sessions |
-| `photographer_id` | integer | FK → photographers |
-| `added_at` | timestamp | |
-
-### `photo_review`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | serial PK | |
-| `session_photo_id` | integer | FK → session_photos |
-| `reviewer_photographer_id` | integer | FK → photographers |
-| `rating` | integer | 1–5 stars |
-| `comment` | text | |
-| `created_at` | timestamp | |
-| `updated_at` | timestamp | |
 
 ---
 
@@ -241,21 +185,12 @@ PhotoMatrix-monorepo/
 admin ◄──── invite_token
 
 club ◄──── photographer_club ────► photographer ◄──── photographer_theme ────► theme
-  ▲              (junction)               ▲                 (junction)              ▲
-  │                                       │                                theme_proposal
-  │                              ┌────────┘                            (──► photographer)
-  │                           photo (──► photographer, ──► club, ──► theme)
-  │                              ▲
-  │                           comment (──► photo, ──► photographer)
-  │
-  └──── review_session (──► club, ──► admin)
-              ▲
-              ├──── session_photo (──► review_session, ──► photo, ──► photographer)
-              │         │
-              │         └──── photo_review (──► session_photo, ──► photographer)
-              │
-              └──── session_reviewer (──► review_session, ──► photographer)
+                (junction)               ▲                  (junction)              ▲
+                                         │                               theme_proposal
+                                         │                            (──► photographer)
+                                photo (──► photographer, ──► club, ──► theme)
+                                    ▲
+                                comment (──► photo, ──► photographer)
 ```
 
 Arrow direction: `A ──► B` means A holds a FK to B (A references B).
-Vertical connectors (`│`, `├────`, `└────`) below a `▲`-marked table mean the indented table references the one above it; the inline `(──► X)` annotations confirm all FK targets explicitly.
