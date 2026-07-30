@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -857,6 +858,34 @@ function MyPhotosDashboard({
     );
   };
 
+  const { data: themes = [] } = useListThemes();
+  const [editingPhoto, setEditingPhoto] = useState<{ id: number; title: string; themeId: string } | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const handleEditSave = async () => {
+    if (!editingPhoto) return;
+    setEditSaving(true);
+    try {
+      const body: Record<string, unknown> = { title: editingPhoto.title.trim() };
+      if (editingPhoto.themeId === "none") body.themeId = null;
+      else body.themeId = Number(editingPhoto.themeId);
+      const res = await fetch(`${basePath}/api/photos/${editingPhoto.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: profile.id }) });
+      toast({ title: t("myPhotos.photoSaved") });
+      setEditingPhoto(null);
+    } catch {
+      toast({ title: t("common.error"), description: t("myPhotos.photoSaveError"), variant: "destructive" });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const [isReordering, setIsReordering] = useState(false);
   const [localOrder, setLocalOrder] = useState<PhotoItem[]>([]);
   const reorderMutation = useReorderPhotos();
@@ -1052,6 +1081,14 @@ function MyPhotosDashboard({
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 rounded-sm" />
                 </Link>
 
+                <button
+                  onClick={() => setEditingPhoto({ id: photo.id, title: photo.title, themeId: photo.themeId ? String(photo.themeId) : "none" })}
+                  className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary"
+                  aria-label="Edit photo"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <button
@@ -1103,6 +1140,48 @@ function MyPhotosDashboard({
           </div>
         </AnimatePresence>
       )}
+
+      {/* Edit photo dialog */}
+      <Dialog open={!!editingPhoto} onOpenChange={(open) => { if (!open) setEditingPhoto(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("myPhotos.editPhotoTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 block">{t("common.title")}</label>
+              <Input
+                value={editingPhoto?.title ?? ""}
+                onChange={(e) => setEditingPhoto((prev) => prev ? { ...prev, title: e.target.value } : prev)}
+                className="bg-background"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 block">{t("upload.themeLabel")}</label>
+              <Select
+                value={editingPhoto?.themeId ?? "none"}
+                onValueChange={(val) => setEditingPhoto((prev) => prev ? { ...prev, themeId: val } : prev)}
+              >
+                <SelectTrigger className="bg-background w-full">
+                  <SelectValue placeholder={t("upload.noTheme")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("upload.noTheme")}</SelectItem>
+                  {themes.map((th) => (
+                    <SelectItem key={th.id} value={String(th.id)}>{th.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPhoto(null)}>{t("common.cancel")}</Button>
+            <Button onClick={handleEditSave} disabled={editSaving || !editingPhoto?.title.trim()}>
+              {editSaving ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

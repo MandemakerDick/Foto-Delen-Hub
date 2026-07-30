@@ -11,6 +11,8 @@
     "adminLogin": "Admin"
   },
   "common": {
+    "title": "Title",
+    "saving": "Saving…",
     "search": "Search",
     "find": "Find",
     "viewAll": "View All",
@@ -444,7 +446,10 @@
     "proposalStatusRejected": "Rejected",
     "withdrawProposal": "Withdraw",
     "proposalWithdrawn": "Proposal withdrawn",
-    "withdrawError": "Could not withdraw proposal"
+    "withdrawError": "Could not withdraw proposal",
+    "editPhotoTitle": "Edit photo",
+    "photoSaved": "Photo updated",
+    "photoSaveError": "Could not update photo"
   },
   "search": {
     "startTitle": "Start searching",

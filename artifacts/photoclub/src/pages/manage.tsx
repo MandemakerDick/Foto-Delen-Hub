@@ -145,17 +145,36 @@ export default function Manage() {
     setSelectedImageIndices(next);
   };
 
+  /** Returns true when a string looks like a camera filename or URL slug rather than a real title. */
+  const isFileSlugTitle = (s: string): boolean => {
+    const t = s.trim();
+    if (!t || /^untitled$/i.test(t)) return true;
+    if (/\.(jpe?g|png|webp|gif|tiff?|bmp|heic)$/i.test(t)) return true;
+    if (/^(IMG|DSC[FO]?|PXL|MVI|VID|MOV|DCIM|photo|image|screenshot)[_-]?\d/i.test(t)) return true;
+    if (/^[\d_\-.()]+$/.test(t)) return true;
+    return false;
+  };
+
   const initPhotoEdits = () => {
     if (!scanResult) return;
     const edits = scanResult.images
       .filter((_, i) => selectedImageIndices.has(i))
-      .map(img => ({ title: img.alt?.trim() || "Untitled", themeId: "none" }));
+      .map(img => ({
+        title: isFileSlugTitle(img.alt?.trim() || "") ? "" : (img.alt?.trim() || ""),
+        themeId: "none",
+      }));
     setImportPhotoEdits(edits);
     setImportStep(3);
   };
 
   const handleImportPhotos = () => {
     if (!scanResult || selectedImageIndices.size === 0) return;
+
+    const emptyIdx = importPhotoEdits.findIndex(e => !e.title.trim());
+    if (emptyIdx >= 0) {
+      toast({ title: "Missing title", description: `Photo ${emptyIdx + 1} has no title — please enter one before importing.`, variant: "destructive" });
+      return;
+    }
 
     const selectedImages = scanResult.images
       .filter((_, i) => selectedImageIndices.has(i))
@@ -1293,8 +1312,8 @@ export default function Manage() {
                               if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
                               setImportPhotoEdits(next);
                             }}
-                            className="bg-background flex-1 min-w-0"
-                            placeholder="Title..."
+                            className={`bg-background flex-1 min-w-0 ${!importPhotoEdits[idx]?.title?.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            placeholder="Title…"
                           />
                           <Select
                             value={importPhotoEdits[idx]?.themeId ?? "none"}

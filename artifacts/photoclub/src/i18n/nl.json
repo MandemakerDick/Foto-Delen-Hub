@@ -11,6 +11,8 @@
     "adminLogin": "Beheer"
   },
   "common": {
+    "title": "Titel",
+    "saving": "Opslaan…",
     "search": "Zoeken",
     "find": "Zoek",
     "viewAll": "Bekijk alles",
@@ -444,7 +446,10 @@
     "proposalStatusRejected": "Afgewezen",
     "withdrawProposal": "Intrekken",
     "proposalWithdrawn": "Voorstel ingetrokken",
-    "withdrawError": "Kon voorstel niet intrekken"
+    "withdrawError": "Kon voorstel niet intrekken",
+    "editPhotoTitle": "Foto bewerken",
+    "photoSaved": "Foto bijgewerkt",
+    "photoSaveError": "Kon foto niet bijwerken"
   },
   "search": {
     "startTitle": "Begin met zoeken",
