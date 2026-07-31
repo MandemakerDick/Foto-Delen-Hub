@@ -10,7 +10,7 @@ import {
 } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,7 +33,7 @@ export function PhotoReviewDetail() {
   const { data: reviews, isLoading: reviewsLoading } = useListPhotoReviews(sessionId, spId, { query: { enabled: !!sessionId && !!spId, queryKey: getListPhotoReviewsQueryKey(sessionId, spId) } });
   
   // We use useGetInviteSession just as a proxy check to see if user might be a reviewer, or we rely on backend errors.
-  const { data: inviteSession } = useGetInviteSession();
+  const { data: _inviteSession } = useGetInviteSession();
 
   const createReview = useCreatePhotoReview();
   const updateReview = useUpdatePhotoReview();

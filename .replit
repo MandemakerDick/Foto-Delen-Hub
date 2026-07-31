@@ -20,6 +20,10 @@ author = "agent"
 task = "workflow.run"
 args = "photoclub-lint"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "review-club-lint"
+
 [[workflows.workflow]]
 name = "photoclub-lint"
 author = "agent"
@@ -27,6 +31,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/photoclub run lint"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "review-club-lint"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/review-club run lint"
 
 [workflows.workflow.metadata]
 isValidation = true

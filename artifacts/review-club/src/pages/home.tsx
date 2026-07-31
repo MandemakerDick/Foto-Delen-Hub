@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Image as ImageIcon, Users } from "lucide-react";
+import { Calendar, Image as ImageIcon } from "lucide-react";
 
 export function Home() {
   const { data: sessions, isLoading: sessionsLoading } = useListReviewSessions();
