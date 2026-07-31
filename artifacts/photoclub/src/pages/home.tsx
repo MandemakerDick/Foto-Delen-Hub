@@ -15,7 +15,7 @@ export default function Home() {
   const { data: stats, isLoading: statsLoading } = useGetStats();
   const { data: photographers } = useListPhotographers();
 
-  const featuredPhotographers = photographers?.slice(0, 6) ?? [];
+  const featuredPhotographers = Array.isArray(photographers) ? photographers.slice(0, 6) : [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
