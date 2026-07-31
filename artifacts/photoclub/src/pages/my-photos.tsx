@@ -859,14 +859,14 @@ function MyPhotosDashboard({
   };
 
   const { data: themes = [] } = useListThemes();
-  const [editingPhoto, setEditingPhoto] = useState<{ id: number; title: string; themeId: string } | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState<{ id: number; title: string; description: string; themeId: string } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   const handleEditSave = async () => {
     if (!editingPhoto) return;
     setEditSaving(true);
     try {
-      const body: Record<string, unknown> = { title: editingPhoto.title.trim() };
+      const body: Record<string, unknown> = { title: editingPhoto.title.trim(), description: editingPhoto.description.trim() };
       if (editingPhoto.themeId === "none") body.themeId = null;
       else body.themeId = Number(editingPhoto.themeId);
       const res = await fetch(`${basePath}/api/photos/${editingPhoto.id}`, {
@@ -1082,7 +1082,7 @@ function MyPhotosDashboard({
                 </Link>
 
                 <button
-                  onClick={() => setEditingPhoto({ id: photo.id, title: photo.title, themeId: photo.themeId ? String(photo.themeId) : "none" })}
+                  onClick={() => setEditingPhoto({ id: photo.id, title: photo.title, description: photo.description ?? "", themeId: photo.themeId ? String(photo.themeId) : "none" })}
                   className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary"
                   aria-label="Edit photo"
                 >
@@ -1154,6 +1154,15 @@ function MyPhotosDashboard({
                 value={editingPhoto?.title ?? ""}
                 onChange={(e) => setEditingPhoto((prev) => prev ? { ...prev, title: e.target.value } : prev)}
                 className="bg-background"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 block">{t("upload.labelStatement")}</label>
+              <Textarea
+                value={editingPhoto?.description ?? ""}
+                onChange={(e) => setEditingPhoto((prev) => prev ? { ...prev, description: e.target.value } : prev)}
+                className="bg-background resize-none"
+                rows={3}
               />
             </div>
             <div>
