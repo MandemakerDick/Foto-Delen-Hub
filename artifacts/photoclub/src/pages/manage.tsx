@@ -1290,7 +1290,29 @@ export default function Manage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium block mb-3">Photos — edit title &amp; theme per photo</label>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-medium">Photos — edit title &amp; theme per photo</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Apply theme to all:</span>
+                      <Select
+                        value="none"
+                        onValueChange={val => {
+                          if (val === "none") return;
+                          setImportPhotoEdits(prev => prev.map(e => ({ ...e, themeId: val })));
+                        }}
+                      >
+                        <SelectTrigger className="bg-background h-8 text-xs w-40">
+                          <SelectValue placeholder="Pick a theme…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Pick a theme…</SelectItem>
+                          {themes?.map(t => (
+                            <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                     {scanResult.images
                       .filter((_, i) => selectedImageIndices.has(i))

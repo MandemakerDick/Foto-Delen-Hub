@@ -1166,16 +1166,16 @@ function MyPhotosDashboard({
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 block">{t("upload.themeLabel")}</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-widest mb-1.5 block">{t("upload.labelTheme")}</label>
               <Select
                 value={editingPhoto?.themeId ?? "none"}
                 onValueChange={(val) => setEditingPhoto((prev) => prev ? { ...prev, themeId: val } : prev)}
               >
                 <SelectTrigger className="bg-background w-full">
-                  <SelectValue placeholder={t("upload.noTheme")} />
+                  <SelectValue placeholder={t("upload.selectOptional")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t("upload.noTheme")}</SelectItem>
+                  <SelectItem value="none">{t("upload.selectOptional")}</SelectItem>
                   {themes.map((th) => (
                     <SelectItem key={th.id} value={String(th.id)}>{th.name}</SelectItem>
                   ))}

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Heart, MessageCircle } from "lucide-react";
 import type { Photo } from "@workspace/api-client-react";
 
-export function PhotoCard({ photo, index, context }: { photo: Photo; index?: number; context?: string }) {
+export function PhotoCard({ photo, index, context, showDescription }: { photo: Photo; index?: number; context?: string; showDescription?: boolean }) {
   const { t } = useTranslation();
   const photoHref = context ? `/photos/${photo.id}?ctx=${encodeURIComponent(context)}` : `/photos/${photo.id}`;
   return (
@@ -55,6 +55,9 @@ export function PhotoCard({ photo, index, context }: { photo: Photo; index?: num
             </Link>
           )}
         </div>
+        {showDescription && photo.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mt-0.5">{photo.description}</p>
+        )}
       </div>
     </motion.div>
   );
