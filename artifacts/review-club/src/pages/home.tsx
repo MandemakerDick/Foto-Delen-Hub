@@ -6,14 +6,14 @@ import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Image as ImageIcon } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
-import { useState } from "react";
+import { usePageParam } from "@/hooks/use-page-param";
 
 const PAGE_SIZE = 12;
 
 export function Home() {
   const { data: sessions, isLoading: sessionsLoading } = useListReviewSessions();
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
 
   const getClubName = (clubId: number) => {
     return clubs?.find((c) => c.id === clubId)?.name || "Unknown Club";

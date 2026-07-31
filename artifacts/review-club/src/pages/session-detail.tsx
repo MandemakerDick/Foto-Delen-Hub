@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
+import { usePageParam } from "@/hooks/use-page-param";
 
 const PHOTOS_PAGE_SIZE = 24;
 
@@ -57,7 +58,7 @@ export function SessionDetail() {
 
   const [isAddPhotoOpen, setIsAddPhotoOpen] = useState(false);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>("");
-  const [photosPage, setPhotosPage] = useState(1);
+  const [photosPage, setPhotosPage] = usePageParam();
 
   if (sessionLoading) return <div className="space-y-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
   if (!session) return <div>Session not found</div>;
