@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Camera, Users, LayoutDashboard, User, PlusSquare, Settings, LogIn, ImageIcon, ShieldCheck, LogOut } from "lucide-react";
+import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
 import { Show, useAuth, useUser, SignInButton } from "@clerk/react";

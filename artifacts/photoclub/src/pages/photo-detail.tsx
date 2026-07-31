@@ -5,7 +5,6 @@ import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, 
 import { format } from "date-fns";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Show } from "@clerk/react";
 import {
   useGetPhoto,
   getGetPhotoQueryKey,

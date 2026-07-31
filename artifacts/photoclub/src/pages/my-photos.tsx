@@ -398,7 +398,7 @@ function EditProfilePanel({
 
 function EditClubPanel({
   profile,
-  onSaved,
+  onSaved: _onSaved,
   onProfilePartialUpdate,
 }: {
   profile: PhotographerProfile;
@@ -539,7 +539,7 @@ function EditClubPanel({
 
 function EditThemesPanel({
   profile,
-  onSaved,
+  onSaved: _onSaved,
   onProfilePartialUpdate,
 }: {
   profile: PhotographerProfile;
