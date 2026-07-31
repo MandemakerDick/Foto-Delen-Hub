@@ -1,6 +1,7 @@
 /**
- * Shared Markdown-to-PDFKit renderer used by both guide generation scripts.
- * Call renderGuide(options) to produce a PDF.
+ * Shared Markdown-to-PDFKit renderer for PhotoMatrix guides.
+ * Page numbers are written BEFORE each addPage() call so bufferPages /
+ * switchToPage are never needed (those cause phantom blank pages).
  */
 const PDFDocument = require('/home/runner/workspace/artifacts/api-server/node_modules/pdfkit');
 const fs = require('fs');
@@ -16,14 +17,13 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
   const PW = 595.28, PH = 841.89, M = 56;
   const W  = PW - 2 * M;
 
-  const doc = new PDFDocument({ margin: M, size: 'A4', bufferPages: true });
+  const doc = new PDFDocument({ margin: M, size: 'A4' }); // no bufferPages
   const out = fs.createWriteStream(outputPath);
   doc.pipe(out);
 
   // ── Cover ──────────────────────────────────────────────────────
   doc.rect(0, 0, PW, PH).fill('#111111');
-
-  const coverY = PH * 0.35; // roughly in upper-third
+  const coverY = PH * 0.35;
   doc.fontSize(30).font('Helvetica-Bold').fillColor(ORANGE)
      .text(coverTitle, M, coverY, { align: 'center', width: W });
   doc.moveDown(0.4);
@@ -38,60 +38,81 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
   doc.fontSize(9).font('Helvetica').fillColor('#888888')
      .text('July 2026', { align: 'center', width: W });
 
+  // ── Page-number helpers ────────────────────────────────────────
+  // contentPageNum counts body pages (1-based); cover is never numbered.
+  let contentPageNum = 0;
+
+  const writeFooter = () => {
+    if (contentPageNum < 1) return;
+    doc.fontSize(8).font('Helvetica').fillColor(GREY)
+       .text(String(contentPageNum), M, PH - M - 10, { align: 'right', width: W });
+  };
+
+  // Call this instead of doc.addPage() everywhere in the body renderer.
+  const newPage = () => {
+    writeFooter();          // stamp footer on the page we're leaving
+    doc.addPage();
+    contentPageNum++;
+    doc.fontSize(10).font('Helvetica').fillColor(DARK); // reset style
+  };
+
   // ── Body ───────────────────────────────────────────────────────
   doc.addPage();
-  doc.moveDown(0.5); // breathing room at top of first body page
+  contentPageNum = 1;
+  doc.moveDown(0.5);
 
   const lines = md.trimEnd().split('\n');
   let tableRows = [], inTable = false, skipToc = false;
 
+  const EMOJI_SUB = {
+    '🟡': '[Pending]', '✅': '[Approved]', '❌': '[Rejected]',
+    '⚠️': '[Warning]', '✔️': '[Yes]',
+  };
   const stripMd = t =>
-    t.replace(/\*\*([^*]+)\*\*/g, '$1')
+    t.replace(/🟡|✅|❌|⚠️|✔️/g, m => EMOJI_SUB[m] ?? '')
+     .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+     .replace(/\*\*([^*]+)\*\*/g, '$1')
      .replace(/\*([^*]+)\*/g, '$1')
      .replace(/`([^`]+)`/g, '$1');
 
-  // Measure text height for a cell given width
-  const cellHeight = (text, width, fontSize) => {
-    const charsPerLine = Math.floor(width / (fontSize * 0.52));
-    const lines = Math.ceil(text.length / Math.max(charsPerLine, 1));
-    return Math.max(1, lines) * fontSize * 1.3;
-  };
+  const needsNewPage = (reserve = 80) => doc.y > PH - M - reserve;
 
   const flushTable = () => {
     if (!tableRows.length) return;
     const nCols = tableRows[0].length;
-    // Column widths
     let colW;
-    if (nCols === 3)       colW = [W * 0.22, W * 0.16, W * 0.62];
-    else if (nCols === 2)  colW = [W * 0.30, W * 0.70];
-    else                   colW = tableRows[0].map(() => W / nCols);
+    if (nCols === 3)      colW = [W * 0.22, W * 0.16, W * 0.62];
+    else if (nCols === 2) colW = [W * 0.30, W * 0.70];
+    else                  colW = tableRows[0].map(() => W / nCols);
 
-    const xStart = M;
-    const fontSize = 9;
-    const PAD = 5;
+    const PAD = 5, fontSize = 9;
+    const totalW = colW.reduce((a, b) => a + b, 0);
 
     tableRows.forEach((row, ri) => {
+      // Estimate row height from longest cell content
+      const rh = Math.max(20, ...row.map((cell, ci) => {
+        const chars = stripMd(cell).length;
+        const charsPerLine = Math.max(1, Math.floor((colW[ci] - PAD * 2) / (fontSize * 0.52)));
+        return Math.ceil(chars / charsPerLine) * fontSize * 1.4 + PAD * 2;
+      }));
+
+      if (needsNewPage(rh + 10)) newPage();
+
       const isH = ri === 0;
-      // Dynamic row height based on tallest cell
-      const rh = Math.max(20, ...row.map((cell, ci) =>
-        cellHeight(stripMd(cell), colW[ci] - PAD * 2, fontSize) + PAD * 2
-      ));
-      if (doc.y + rh > PH - M - 10) doc.addPage();
+      const bg  = isH ? ORANGE : (ri % 2 === 0 ? LIGHT : '#ffffff');
+      const fc  = isH ? '#ffffff' : DARK;
+      const y   = doc.y;
+      let cx    = M;
 
-      const bg = isH ? ORANGE : (ri % 2 === 0 ? LIGHT : '#ffffff');
-      const fc = isH ? '#ffffff' : DARK;
-      const y  = doc.y;
-      let cx   = xStart;
-
-      // Draw cell backgrounds and borders
+      // Backgrounds + borders
       row.forEach((_, ci) => {
         doc.rect(cx, y, colW[ci], rh).fill(bg);
         doc.rect(cx, y, colW[ci], rh).stroke(BORDER);
         cx += colW[ci];
       });
 
-      // Draw cell text
-      cx = xStart;
+      // Cell text
+      cx = M;
       doc.fontSize(fontSize).font(isH ? 'Helvetica-Bold' : 'Helvetica').fillColor(fc);
       row.forEach((cell, ci) => {
         doc.text(stripMd(cell), cx + PAD, y + PAD, {
@@ -104,19 +125,18 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
 
       doc.y = y + rh;
     });
+
     doc.moveDown(0.5);
-    doc.x = M; // reset cursor to left margin after table cells moved it
+    doc.x = M;
     tableRows = [];
     doc.fontSize(10).font('Helvetica').fillColor(DARK);
   };
 
   lines.forEach(line => {
-    // Horizontal rule
     if (/^---+$/.test(line.trim())) { doc.moveDown(0.25); return; }
 
-    // Table row
     if (line.startsWith('|')) {
-      if (/^\|[\s\-|:]+\|$/.test(line)) return; // separator row
+      if (/^\|[\s\-|:]+\|$/.test(line)) return;
       tableRows.push(line.split('|').slice(1, -1).map(c => c.trim()));
       inTable = true;
       return;
@@ -125,27 +145,22 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
       inTable = false;
     }
 
-    // H1 — skip (cover handles it)
     if (/^# /.test(line)) return;
 
-    // H2
     if (/^## /.test(line)) {
       const title = line.replace(/^## /, '');
-      // Skip "Table of Contents" heading — entries are already skipped
       if (/table of contents/i.test(title)) { skipToc = true; return; }
       skipToc = false;
-      if (doc.y > PH - M - 100) doc.addPage();
+      if (needsNewPage(100)) newPage();
       doc.moveDown(0.6);
-      doc.fontSize(15).font('Helvetica-Bold').fillColor(ORANGE)
-         .text(title, { width: W });
+      doc.fontSize(15).font('Helvetica-Bold').fillColor(ORANGE).text(title, { width: W });
       doc.moveDown(0.2);
       return;
     }
 
-    // H3
     if (/^### /.test(line)) {
       skipToc = false;
-      if (doc.y > PH - M - 60) doc.addPage();
+      if (needsNewPage(60)) newPage();
       doc.moveDown(0.4);
       doc.fontSize(11).font('Helvetica-Bold').fillColor(DARK)
          .text(line.replace(/^### /, ''), { width: W });
@@ -153,13 +168,9 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
       return;
     }
 
-    // TOC link entries — skip
-    if (/^\d+\. \[/.test(line)) return;
-
-    // Skip any plain lines while inside TOC section (empty lines between entries)
+    if (/^\d+\. \[/.test(line)) return; // TOC link entries
     if (skipToc && !line.trim()) return;
 
-    // Blockquote
     if (/^> /.test(line)) {
       doc.fontSize(9).font('Helvetica-Oblique').fillColor(GREY)
          .text(stripMd(line.replace(/^> /, '')), M + 12, doc.y, { width: W - 12 });
@@ -167,17 +178,16 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
       return;
     }
 
-    // Bullet
     if (/^[*-] /.test(line)) {
-      // Detect inline bold prefix like "**Android (Chrome):**"
       const raw = line.replace(/^[*-] /, '');
       const boldPrefix = raw.match(/^\*\*(.+?)\*\*(.*)$/);
       if (boldPrefix) {
+        const rest = boldPrefix[2].replace(/^\*([^*]+)\*/, '$1').trim();
         doc.fontSize(10).font('Helvetica-Bold').fillColor(DARK)
-           .text('\u2022 ' + boldPrefix[1], { continued: boldPrefix[2].trim() !== '', indent: 10, width: W });
-        if (boldPrefix[2].trim()) {
-          doc.font('Helvetica').text(boldPrefix[2], { width: W - 10 });
-        }
+           .text('\u2022 ' + stripMd(boldPrefix[1]) + (rest ? '' : ''), {
+             continued: !!rest, indent: 10, width: W - 10,
+           });
+        if (rest) doc.font('Helvetica').text(' ' + stripMd(rest), { width: W - 10 });
       } else {
         doc.fontSize(10).font('Helvetica').fillColor(DARK)
            .text('\u2022 ' + stripMd(raw), { indent: 10, width: W - 10 });
@@ -185,47 +195,34 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
       return;
     }
 
-    // Numbered list
     if (/^\d+\. /.test(line)) {
-      const match = line.match(/^(\d+)\. (.*)/);
+      const m = line.match(/^(\d+)\. (.*)/);
       doc.fontSize(10).font('Helvetica').fillColor(DARK)
-         .text(match[1] + '.  ' + stripMd(match[2]), { indent: 8, width: W - 8 });
+         .text(m[1] + '.  ' + stripMd(m[2]), { indent: 8, width: W - 8 });
       return;
     }
 
-    // Empty line
     if (!line.trim()) { doc.moveDown(0.3); return; }
 
-    // Plain paragraph — handle inline bold
     const boldParts = line.match(/^\*\*(.+?)\*\*(.*)$/);
     if (boldParts) {
+      const rest = stripMd(boldParts[2]).trim();
       doc.fontSize(10).font('Helvetica-Bold').fillColor(DARK)
-         .text(stripMd(boldParts[1]), { continued: boldParts[2].trim() !== '', width: W });
-      if (boldParts[2].trim()) {
-        doc.font('Helvetica').text(boldParts[2].trim(), { width: W });
-      }
+         .text(stripMd(boldParts[1]), { continued: !!rest, width: W });
+      if (rest) doc.font('Helvetica').text(' ' + rest, { width: W });
       return;
     }
 
-    doc.fontSize(10).font('Helvetica').fillColor(DARK)
-       .text(stripMd(line), { width: W });
+    doc.fontSize(10).font('Helvetica').fillColor(DARK).text(stripMd(line), { width: W });
   });
 
   flushTable();
-
-  // ── Page numbers (post-pass, safe — no text-state side-effects) ──
-  const range = doc.bufferedPageRange();
-  for (let i = 1; i < range.count; i++) { // skip cover (i=0)
-    doc.switchToPage(range.start + i);
-    doc.fontSize(8).font('Helvetica').fillColor(GREY)
-       .text(String(i), M, PH - M + 10, { align: 'right', width: W });
-  }
+  writeFooter(); // stamp the last body page
 
   doc.end();
   return new Promise(resolve => {
     out.on('finish', () => {
-      const size = fs.statSync(outputPath).size;
-      console.log(`${outputPath}: ${size} bytes`);
+      console.log(`${outputPath}: ${fs.statSync(outputPath).size} bytes`);
       resolve();
     });
   });
