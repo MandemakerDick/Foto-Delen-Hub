@@ -59,9 +59,6 @@ export function PhotoCard({ photo, index, context, showDescription }: { photo: P
             </Link>
           )}
         </div>
-        {showDescription && photo.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mt-0.5">{photo.description}</p>
-        )}
       </div>
     </motion.div>
   );
