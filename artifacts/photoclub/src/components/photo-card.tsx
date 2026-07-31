@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Heart, MessageCircle } from "lucide-react";
 import type { Photo } from "@workspace/api-client-react";
 
-export function PhotoCard({ photo, index, context, showDescription }: { photo: Photo; index?: number; context?: string; showDescription?: boolean }) {
+export function PhotoCard({ photo, index, context }: { photo: Photo; index?: number; context?: string }) {
   const { t } = useTranslation();
   const photoHref = context ? `/photos/${photo.id}?ctx=${encodeURIComponent(context)}` : `/photos/${photo.id}`;
   return (
