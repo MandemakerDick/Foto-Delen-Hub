@@ -5,24 +5,8 @@ import {
   RequestUploadUrlResponse,
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
-import { getAuth } from "@clerk/express";
-
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
-
-/**
- * Resolves the access decision for a private object path.
- *
- * Any authenticated user (Clerk or session admin) may access any object.
- * Unauthenticated requests are denied.
- *
- * Returns "ok" | "unauthenticated".
- */
-function checkObjectAccess(req: Request): "ok" | "unauthenticated" {
-  const { userId } = getAuth(req as any);
-  const sessionAdminId = (req as any).session?.adminId as number | undefined;
-  return userId || sessionAdminId ? "ok" : "unauthenticated";
-}
 
 /**
  * POST /storage/uploads/request-url

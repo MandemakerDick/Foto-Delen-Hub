@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable } from "@workspace/db";
-import { eq, ilike, desc, asc, sql, count, and } from "drizzle-orm";
+import { eq, ilike, desc, sql, count, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,

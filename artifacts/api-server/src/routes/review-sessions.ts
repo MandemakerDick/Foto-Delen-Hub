@@ -37,11 +37,6 @@ import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 
 const router = Router();
 
-function parseId(raw: string | string[]): number {
-  const s = Array.isArray(raw) ? raw[0] : raw;
-  return parseInt(s, 10);
-}
-
 function serializeSession(s: typeof reviewSessionsTable.$inferSelect) {
   return {
     id: s.id,
