@@ -1297,8 +1297,14 @@ export default function Manage() {
                       .map((img, idx) => {
                         const title = importPhotoEdits[idx]?.title ?? "";
                         const hasWarning = !title.trim() || isFileSlugTitle(title);
+                        const hasNoTheme = (importPhotoEdits[idx]?.themeId ?? "none") === "none";
+                        const rowClass = hasWarning
+                          ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-400/60"
+                          : hasNoTheme
+                            ? "bg-sky-50/30 dark:bg-sky-950/10 border-sky-300/40"
+                            : "bg-background/50 border-border/50";
                         return (
-                          <div key={idx} className={`flex items-center gap-3 rounded-md p-2 border ${hasWarning ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-400/60" : "bg-background/50 border-border/50"}`}>
+                          <div key={idx} className={`flex items-center gap-3 rounded-md p-2 border ${rowClass}`}>
                             <img
                               src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
                               alt=""
@@ -1359,6 +1365,21 @@ export default function Manage() {
                         />
                         <span className="text-sm text-amber-800 dark:text-amber-300">I understand — import anyway</span>
                       </label>
+                    </div>
+                  );
+                })()}
+
+                {(() => {
+                  const noThemeCount = importPhotoEdits.filter(e => e.themeId === "none").length;
+                  if (noThemeCount === 0) return null;
+                  return (
+                    <div className="rounded-md border border-sky-300/50 bg-sky-50/40 dark:bg-sky-950/10 px-4 py-2.5">
+                      <p className="text-sm text-sky-800 dark:text-sky-300">
+                        {noThemeCount === 1
+                          ? "1 photo has no theme assigned."
+                          : `${noThemeCount} photos have no theme assigned.`}
+                        {" "}You can assign themes above, or categorise them later.
+                      </p>
                     </div>
                   );
                 })()}
