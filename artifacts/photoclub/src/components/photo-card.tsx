@@ -45,6 +45,10 @@ export function PhotoCard({ photo, index, context, showDescription }: { photo: P
           </div>
         </div>
 
+        {photo.description && (
+          <p className="text-sm text-muted-foreground font-serif line-clamp-2 leading-snug">{photo.description}</p>
+        )}
+
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <Link href={`/photographers/${photo.photographerId}`} className="hover:text-primary transition-colors">
             {photo.photographerName || t("common.unknown")}
