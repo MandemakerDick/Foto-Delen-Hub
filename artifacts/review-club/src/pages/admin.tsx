@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -139,7 +140,21 @@ export function AdminPanel() {
     }
   };
 
-  if (adminLoading) return <div>Loading…</div>;
+  if (adminLoading) return (
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between border-b border-border/50 pb-6">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-5 w-72" />
+        </div>
+        <Skeleton className="h-10 w-36" />
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-6 w-32" />
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+      </div>
+    </div>
+  );
   if (!adminStatus?.isAdmin) return <div className="text-center py-12 text-muted-foreground">Access denied. Admin only.</div>;
 
   return (
@@ -323,7 +338,9 @@ export function AdminPanel() {
       <div className="space-y-4">
         <h2 className="text-xl font-serif font-medium tracking-tight">All Sessions</h2>
         {sessionsLoading ? (
-          <div className="text-muted-foreground">Loading sessions…</div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+          </div>
         ) : !sessions?.length ? (
           <p className="text-muted-foreground text-sm">No sessions yet. Create your first one above.</p>
         ) : (

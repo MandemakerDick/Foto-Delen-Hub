@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Show, useClerk, useUser } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
 
@@ -14,6 +15,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [bootstrapping, setBootstrapping] = useState(false);
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { toast } = useToast();
 
   const handleBootstrap = async () => {
     setBootstrapping(true);
@@ -26,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || "Failed to claim admin.");
+        toast({ title: err.error || "Failed to claim admin.", variant: "destructive" });
       } else {
         queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
       }
@@ -52,7 +54,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || "Recovery failed.");
+        toast({ title: err.error || "Recovery failed.", variant: "destructive" });
       } else {
         setShowRecovery(false);
         setRecoveryToken("");

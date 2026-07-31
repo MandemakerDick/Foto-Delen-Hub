@@ -2,11 +2,13 @@ import {
   useGetReviewSession, 
   useListSessionPhotos, 
   useListPhotoReviews,
+  useListSessionReviewers,
+  useGetAdminStatus,
   useCreatePhotoReview,
   useUpdatePhotoReview,
   getListPhotoReviewsQueryKey,
   getListSessionPhotosQueryKey,
-  useGetInviteSession
+  getListSessionReviewersQueryKey,
 } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,9 +33,8 @@ export function PhotoReviewDetail() {
   const { data: session } = useGetReviewSession(sessionId, { query: { enabled: !!sessionId, queryKey: ['reviewSession', sessionId] } });
   const { data: photos } = useListSessionPhotos(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionPhotosQueryKey(sessionId) } });
   const { data: reviews, isLoading: reviewsLoading } = useListPhotoReviews(sessionId, spId, { query: { enabled: !!sessionId && !!spId, queryKey: getListPhotoReviewsQueryKey(sessionId, spId) } });
-  
-  // We use useGetInviteSession just as a proxy check to see if user might be a reviewer, or we rely on backend errors.
-  const { data: _inviteSession } = useGetInviteSession();
+  const { data: reviewers } = useListSessionReviewers(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionReviewersQueryKey(sessionId) } });
+  const { data: adminStatus } = useGetAdminStatus();
 
   const createReview = useCreatePhotoReview();
   const updateReview = useUpdatePhotoReview();
@@ -44,10 +45,9 @@ export function PhotoReviewDetail() {
   const [comment, setComment] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // If user already reviewed, we could detect it if we know their photographerId, but without auth context exposing it cleanly, 
-  // we'll just allow them to submit and let backend handle 409 if duplicate, or if they own a review they can edit it.
-  // For simplicity, we just provide the form if session is reviewing.
-
+  const myPhotographerId = adminStatus?.photographerId;
+  const isAdmin = adminStatus?.isAdmin ?? false;
+  const isReviewer = !!myPhotographerId && (reviewers?.some(r => r.photographerId === myPhotographerId) ?? false);
   const isReviewing = session?.status === "reviewing";
 
   const handleSubmit = async () => {
@@ -125,7 +125,7 @@ export function PhotoReviewDetail() {
             </div>
           </div>
 
-          {isReviewing && (
+          {isReviewing && (isReviewer || isAdmin) && (
             <div className="bg-card/50 border border-primary/20 rounded-lg p-5 space-y-4">
               <h3 className="font-serif font-semibold text-primary">{editingId ? "Edit Review" : "Leave a Review"}</h3>
               <div className="space-y-2">

@@ -5,14 +5,22 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Image as ImageIcon } from "lucide-react";
+import { PaginationBar } from "@/components/pagination-bar";
+import { useState } from "react";
+
+const PAGE_SIZE = 12;
 
 export function Archive() {
   const { data: sessions, isLoading: sessionsLoading } = useListReviewSessions({ status: "closed" });
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
+  const [page, setPage] = useState(1);
 
   const getClubName = (clubId: number) => {
     return clubs?.find((c) => c.id === clubId)?.name || "Unknown Club";
   };
+
+  const totalPages = Math.ceil((sessions?.length ?? 0) / PAGE_SIZE);
+  const pagedSessions = sessions?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
 
   return (
     <div className="space-y-8">
@@ -34,8 +42,9 @@ export function Archive() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sessions.map((session) => (
+          {pagedSessions.map((session) => (
             <Link key={session.id} href={`/sessions/${session.id}`}>
               <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer group bg-card/50">
                 <CardHeader>
@@ -68,6 +77,8 @@ export function Archive() {
             </Link>
           ))}
         </div>
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
     </div>
   );

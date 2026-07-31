@@ -25,6 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus } from "lucide-react";
+import { PaginationBar } from "@/components/pagination-bar";
+
+const PHOTOS_PAGE_SIZE = 24;
 
 export function SessionDetail() {
   const { id } = useParams();
@@ -54,6 +57,7 @@ export function SessionDetail() {
 
   const [isAddPhotoOpen, setIsAddPhotoOpen] = useState(false);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>("");
+  const [photosPage, setPhotosPage] = useState(1);
 
   if (sessionLoading) return <div className="space-y-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
   if (!session) return <div>Session not found</div>;
@@ -231,8 +235,9 @@ export function SessionDetail() {
             <p className="text-muted-foreground">Photos submitted to this session will appear here.</p>
           </div>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {photos?.map((photo) => (
+            {photos?.slice((photosPage - 1) * PHOTOS_PAGE_SIZE, photosPage * PHOTOS_PAGE_SIZE).map((photo) => (
               <Link key={photo.id} href={`/sessions/${sessionId}/photos/${photo.id}`}>
                 <Card className="overflow-hidden border-border/50 bg-card/50 hover:bg-card transition-colors cursor-pointer group flex flex-col h-full">
                   <div className="aspect-[4/3] w-full overflow-hidden bg-muted relative">
@@ -255,7 +260,7 @@ export function SessionDetail() {
                     
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/50">
                       <div className="flex items-center gap-2">
-                        <StarRating rating={photo.averageRating || 0} max={1} size="sm" className="text-primary" />
+                        <StarRating rating={photo.averageRating || 0} max={5} size="sm" className="text-primary" />
                         <span className="text-sm font-medium">{photo.averageRating ? photo.averageRating.toFixed(1) : 'No ratings'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -268,6 +273,12 @@ export function SessionDetail() {
               </Link>
             ))}
           </div>
+          <PaginationBar
+            page={photosPage}
+            totalPages={Math.ceil((photos?.length ?? 0) / PHOTOS_PAGE_SIZE)}
+            onPageChange={setPhotosPage}
+          />
+          </>
         )}
       </section>
     </div>
