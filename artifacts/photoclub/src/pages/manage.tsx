@@ -112,6 +112,7 @@ export default function Manage() {
   const [importClubId, setImportClubId] = useState<string>("none");
   const [importNewClubName, setImportNewClubName] = useState("");
   const [importPhotoEdits, setImportPhotoEdits] = useState<Array<{ title: string; themeId: string }>>([]);
+  const [importWarningAcknowledged, setImportWarningAcknowledged] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; failed: number } | null>(null);
 
   const scanUrlMutation = useScanUrlForPhotos();
@@ -164,17 +165,12 @@ export default function Manage() {
         themeId: "none",
       }));
     setImportPhotoEdits(edits);
+    setImportWarningAcknowledged(false);
     setImportStep(3);
   };
 
   const handleImportPhotos = () => {
     if (!scanResult || selectedImageIndices.size === 0) return;
-
-    const emptyIdx = importPhotoEdits.findIndex(e => !e.title.trim());
-    if (emptyIdx >= 0) {
-      toast({ title: "Missing title", description: `Photo ${emptyIdx + 1} has no title — please enter one before importing.`, variant: "destructive" });
-      return;
-    }
 
     const selectedImages = scanResult.images
       .filter((_, i) => selectedImageIndices.has(i))
@@ -1298,52 +1294,86 @@ export default function Manage() {
                   <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                     {scanResult.images
                       .filter((_, i) => selectedImageIndices.has(i))
-                      .map((img, idx) => (
-                        <div key={idx} className="flex items-center gap-3 bg-background/50 border border-border/50 rounded-md p-2">
-                          <img
-                            src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
-                            alt=""
-                            className="w-12 h-12 rounded object-cover shrink-0"
-                          />
-                          <Input
-                            value={importPhotoEdits[idx]?.title ?? ""}
-                            onChange={e => {
-                              const next = [...importPhotoEdits];
-                              if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
-                              setImportPhotoEdits(next);
-                            }}
-                            className={`bg-background flex-1 min-w-0 ${!importPhotoEdits[idx]?.title?.trim() ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                            placeholder="Title…"
-                          />
-                          <Select
-                            value={importPhotoEdits[idx]?.themeId ?? "none"}
-                            onValueChange={val => {
-                              const next = [...importPhotoEdits];
-                              if (next[idx]) next[idx] = { ...next[idx], themeId: val };
-                              setImportPhotoEdits(next);
-                            }}
-                          >
-                            <SelectTrigger className="bg-background w-40 shrink-0">
-                              <SelectValue placeholder="No theme" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No theme</SelectItem>
-                              {themes?.map(t => (
-                                <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
+                      .map((img, idx) => {
+                        const title = importPhotoEdits[idx]?.title ?? "";
+                        const hasWarning = !title.trim() || isFileSlugTitle(title);
+                        return (
+                          <div key={idx} className={`flex items-center gap-3 rounded-md p-2 border ${hasWarning ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-400/60" : "bg-background/50 border-border/50"}`}>
+                            <img
+                              src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
+                              alt=""
+                              className="w-12 h-12 rounded object-cover shrink-0"
+                            />
+                            <Input
+                              value={title}
+                              onChange={e => {
+                                const next = [...importPhotoEdits];
+                                if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
+                                setImportPhotoEdits(next);
+                                setImportWarningAcknowledged(false);
+                              }}
+                              className={`flex-1 min-w-0 ${hasWarning ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 focus-visible:ring-amber-400" : "bg-background"}`}
+                              placeholder="Title…"
+                            />
+                            <Select
+                              value={importPhotoEdits[idx]?.themeId ?? "none"}
+                              onValueChange={val => {
+                                const next = [...importPhotoEdits];
+                                if (next[idx]) next[idx] = { ...next[idx], themeId: val };
+                                setImportPhotoEdits(next);
+                              }}
+                            >
+                              <SelectTrigger className="bg-background w-40 shrink-0">
+                                <SelectValue placeholder="No theme" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No theme</SelectItem>
+                                {themes?.map(t => (
+                                  <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
+
+                {(() => {
+                  const warnCount = importPhotoEdits.filter(e => !e.title.trim() || isFileSlugTitle(e.title)).length;
+                  if (warnCount === 0) return null;
+                  return (
+                    <div className="rounded-md border border-amber-400/60 bg-amber-50/60 dark:bg-amber-950/20 px-4 py-3 space-y-2">
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                        {warnCount === 1
+                          ? "1 photo has a blank or filename-style title."
+                          : `${warnCount} photos have blank or filename-style titles.`}
+                        {" "}Titles like these won't be useful to viewers — consider editing them above.
+                      </p>
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <Checkbox
+                          checked={importWarningAcknowledged}
+                          onCheckedChange={v => setImportWarningAcknowledged(!!v)}
+                          id="import-warn-ack"
+                          className="border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                        />
+                        <span className="text-sm text-amber-800 dark:text-amber-300">I understand — import anyway</span>
+                      </label>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex gap-3 pt-2">
                   <Button variant="outline" onClick={() => setImportStep(2)}>Back</Button>
                   <Button
                     className="flex-1"
                     onClick={handleImportPhotos}
-                    disabled={selectedImageIndices.size === 0 || importPhotosMutation.isPending || (importPhotographerId === "new" && !importNewPhotographerName.trim())}
+                    disabled={
+                      selectedImageIndices.size === 0 ||
+                      importPhotosMutation.isPending ||
+                      (importPhotographerId === "new" && !importNewPhotographerName.trim()) ||
+                      (importPhotoEdits.some(e => !e.title.trim() || isFileSlugTitle(e.title)) && !importWarningAcknowledged)
+                    }
                   >
                     {importPhotosMutation.isPending ? (
                       <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing {selectedImageIndices.size} photos...</>
