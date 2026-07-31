@@ -72,8 +72,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border/50 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="font-serif text-xl font-bold tracking-tight text-foreground hover:text-primary transition-colors">
-              PhotoReviewHub
+            <Link href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary transition-colors">
+              <img src="/pwa-icon-192.png" alt="PhotoReviewHub logo" className="w-7 h-7 rounded-md object-cover" />
+              <span className="font-serif text-xl font-bold tracking-tight">PhotoReviewHub</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-primary" : "text-muted-foreground"}`}>
