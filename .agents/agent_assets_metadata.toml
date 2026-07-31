@@ -11,10 +11,10 @@ title = "PhotoShare Hub.pptx"
 id = "-8mEKsnG-B5Jgs0GHH8jq"
 uri = "file://docs/user-guide.pdf"
 type = "pdf"
-title = "PhotoMatrix User Guide"
+title = "User Guide (fixed)"
 
 [[outputs]]
 id = "NM2M5YMCQLCW1RWVYdvV7"
 uri = "file://docs/admin-guide-import.pdf"
 type = "pdf"
-title = "Admin Guide — Importing Photos from a URL"
+title = "Admin Guide — Import (fixed)"

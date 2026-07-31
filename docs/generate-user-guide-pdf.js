@@ -1,9 +1,9 @@
 const PDFDocument = require('/home/runner/workspace/artifacts/api-server/node_modules/pdfkit');
 const fs = require('fs');
 
-const md = fs.readFileSync('docs/admin-guide-import.md', 'utf8');
+const md = fs.readFileSync('docs/user-guide.md', 'utf8');
 const doc = new PDFDocument({ margin: 56, size: 'A4', bufferPages: true });
-const out = fs.createWriteStream('docs/admin-guide-import.pdf');
+const out = fs.createWriteStream('docs/user-guide.pdf');
 doc.pipe(out);
 
 const ORANGE = '#e07b39';
@@ -11,17 +11,14 @@ const DARK   = '#1a1a1a';
 const GREY   = '#666666';
 const LIGHT  = '#f5f5f5';
 const BORDER = '#cccccc';
-const W = doc.page.width - 112;  // 56 margin each side
+const W = doc.page.width - 112;
 
 // ── Cover page ──────────────────────────────────────────────
 doc.rect(0, 0, doc.page.width, doc.page.height).fill('#111111');
 doc.fontSize(28).font('Helvetica-Bold').fillColor(ORANGE)
    .text('PhotoMatrix', 56, 160, { align: 'center', width: W });
 doc.fontSize(16).font('Helvetica').fillColor('#ffffff')
-   .text('Admin Guide', { align: 'center', width: W });
-doc.moveDown(0.4);
-doc.fontSize(13).font('Helvetica-Bold').fillColor(ORANGE)
-   .text('Importing Photos from a URL', { align: 'center', width: W });
+   .text('User Guide', { align: 'center', width: W });
 doc.moveDown(0.5);
 doc.fontSize(9).font('Helvetica').fillColor('#888888')
    .text('July 2026', { align: 'center', width: W });
@@ -29,6 +26,7 @@ doc.fontSize(9).font('Helvetica').fillColor('#888888')
 // ── Body pages ───────────────────────────────────────────────
 doc.addPage();
 
+// Trim trailing newlines to prevent a blank last page
 const lines = md.trimEnd().split('\n');
 let tableRows = [], inTable = false;
 
@@ -41,35 +39,39 @@ const needsNewPage = (reserve = 80) => doc.y > doc.page.height - reserve;
 
 const flushTable = () => {
   if (!tableRows.length) return;
-  const c0 = W * 0.33, c1 = W * 0.67, x = 56, rowH = 20;
+  // Determine column count from header row
+  const colCount = tableRows[0].length;
+  const colW = colCount === 3
+    ? [W * 0.22, W * 0.15, W * 0.63]
+    : [W * 0.33, W * 0.67];
+  const x = 56, rowH = 20;
   tableRows.forEach((row, ri) => {
     if (needsNewPage(rowH + 10)) doc.addPage();
     const isH = ri === 0;
     const bg  = isH ? ORANGE : (ri % 2 === 0 ? LIGHT : '#ffffff');
     const fc  = isH ? '#ffffff' : DARK;
     const y   = doc.y;
-    // Fill background
-    doc.rect(x, y, c0 + c1, rowH).fill(bg);
-    // Border
-    doc.rect(x, y, c0 + c1, rowH).stroke(BORDER);
-    // Cell text
+    const totalW = colW.reduce((a, b) => a + b, 0);
+    doc.rect(x, y, totalW, rowH).fill(bg);
+    doc.rect(x, y, totalW, rowH).stroke(BORDER);
     doc.fontSize(9).font(isH ? 'Helvetica-Bold' : 'Helvetica').fillColor(fc);
-    doc.text(stripMd(row[0] || ''), x + 5, y + 5, { width: c0 - 10, lineBreak: false });
-    doc.text(stripMd(row[1] || ''), x + c0 + 5, y + 5, { width: c1 - 10, lineBreak: false });
+    let cx = x;
+    row.forEach((cell, ci) => {
+      doc.text(stripMd(cell || ''), cx + 5, y + 5, { width: colW[ci] - 10, lineBreak: false });
+      cx += colW[ci];
+    });
     doc.y = y + rowH;
   });
   doc.moveDown(0.5);
   tableRows = [];
-  // Reset to body text style
   doc.fontSize(10).font('Helvetica').fillColor(DARK);
 };
 
 lines.forEach(line => {
   if (/^---+$/.test(line.trim())) { doc.moveDown(0.3); return; }
 
-  // Table row
   if (line.startsWith('|')) {
-    if (/^\|[\s\-|:]+\|$/.test(line)) return; // separator
+    if (/^\|[\s\-|:]+\|$/.test(line)) return;
     tableRows.push(line.split('|').slice(1, -1).map(c => c.trim()));
     inTable = true;
     return;
@@ -78,10 +80,8 @@ lines.forEach(line => {
     inTable = false;
   }
 
-  // H1 — skip (cover page handles it)
-  if (/^# /.test(line)) return;
+  if (/^# /.test(line)) return; // cover handles it
 
-  // H2
   if (/^## /.test(line)) {
     if (needsNewPage(100)) doc.addPage();
     doc.moveDown(0.8);
@@ -91,7 +91,6 @@ lines.forEach(line => {
     return;
   }
 
-  // H3
   if (/^### /.test(line)) {
     if (needsNewPage(60)) doc.addPage();
     doc.moveDown(0.5);
@@ -101,10 +100,8 @@ lines.forEach(line => {
     return;
   }
 
-  // TOC entries
-  if (/^\d+\. \[/.test(line)) return;
+  if (/^\d+\. \[/.test(line)) return; // TOC entries
 
-  // Blockquote
   if (/^> /.test(line)) {
     doc.fontSize(9).font('Helvetica-Oblique').fillColor(GREY)
        .text(stripMd(line.replace(/^> /, '')), 68, doc.y, { width: W - 12 });
@@ -112,14 +109,12 @@ lines.forEach(line => {
     return;
   }
 
-  // Bullet
   if (/^[*-] /.test(line)) {
     doc.fontSize(10).font('Helvetica').fillColor(DARK)
        .text('\u2022 ' + stripMd(line.replace(/^[*-] /, '')), { indent: 10, width: W });
     return;
   }
 
-  // Numbered list
   if (/^\d+\. /.test(line)) {
     const num = line.match(/^(\d+)\. /)[1];
     doc.fontSize(10).font('Helvetica').fillColor(DARK)
@@ -127,20 +122,17 @@ lines.forEach(line => {
     return;
   }
 
-  // Empty line
   if (!line.trim()) { doc.moveDown(0.35); return; }
 
-  // Plain paragraph
   doc.fontSize(10).font('Helvetica').fillColor(DARK)
      .text(stripMd(line), { width: W });
 });
 
 flushTable();
 
-// ── Page numbers (added after all pages are buffered) ─────────
+// ── Page numbers (post-pass, no graphics-state side-effects) ──
 const totalPages = doc.bufferedPageRange().count;
-for (let i = 0; i < totalPages; i++) {
-  if (i === 0) continue; // no number on cover
+for (let i = 1; i < totalPages; i++) { // skip cover (page 0)
   doc.switchToPage(i);
   doc.fontSize(8).font('Helvetica').fillColor(GREY)
      .text(String(i), 56, doc.page.height - 38, { align: 'right', width: W });
@@ -148,6 +140,6 @@ for (let i = 0; i < totalPages; i++) {
 
 doc.end();
 out.on('finish', () => {
-  const size = fs.statSync('docs/admin-guide-import.pdf').size;
-  console.log('PDF written: ' + size + ' bytes');
+  const size = fs.statSync('docs/user-guide.pdf').size;
+  console.log('user-guide.pdf written: ' + size + ' bytes');
 });
