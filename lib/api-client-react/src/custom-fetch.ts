@@ -285,8 +285,8 @@ async function parseErrorBody(response: Response, method: string): Promise<unkno
 function inferResponseType(response: Response): "json" | "text" | "blob" {
   const mediaType = getMediaType(response.headers);
 
-  if (isJsonMediaType(mediaType)) return "json";
-  if (isTextMediaType(mediaType) || mediaType == null) return "text";
+  if (isJsonMediaType(mediaType) || mediaType == null) return "json";
+  if (isTextMediaType(mediaType)) return "text";
   return "blob";
 }
 
