@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Show, useClerk, useUser } from "@clerk/react";
+import { Show, useClerk, useUser, SignInButton } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { KeyRound, ScanEye } from "lucide-react";
+import { KeyRound, ScanEye, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -92,12 +93,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-4">
             <Show when="signed-out">
-              <Link
-                href="/sign-in"
-                className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-              >
-                Sign In
-              </Link>
+              <SignInButton mode="modal">
+                <Button variant="outline" size="sm" className="gap-2 border-border/50">
+                  <LogIn className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </Button>
+              </SignInButton>
             </Show>
             <Show when="signed-in">
               <div className="flex items-center gap-3">

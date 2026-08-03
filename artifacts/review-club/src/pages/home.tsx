@@ -27,7 +27,7 @@ export function Home() {
   return (
     <div className="flex flex-col -mt-8">
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-8 pb-14 md:pt-12 md:pb-20 bg-secondary border-b border-border/50 -mx-4 px-4 mb-8">
+      <section className="relative overflow-hidden pt-8 pb-14 md:pt-12 md:pb-20 bg-background border-b border-border/50 -mx-4 px-4 mb-8">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/50 via-background to-background" />
         <div className="container relative z-10 mx-auto max-w-3xl text-center flex flex-col items-center gap-6">
           <div className="flex items-center justify-center w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-primary/10 border border-primary/20">
