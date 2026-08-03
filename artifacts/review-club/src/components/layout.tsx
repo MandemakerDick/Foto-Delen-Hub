@@ -4,7 +4,7 @@ import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-cli
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { KeyRound } from "lucide-react";
+import { KeyRound, ScanEye } from "lucide-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -72,9 +72,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border/50 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary transition-colors">
-              <img src="/pwa-icon-192.png" alt="PhotoReviewHub logo" className="w-7 h-7 rounded-md object-cover" />
-              <span className="font-serif text-xl font-bold tracking-tight">PhotoReviewHub</span>
+            <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+              <ScanEye className="w-6 h-6" />
+              <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotoReviewHub</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-primary" : "text-muted-foreground"}`}>
