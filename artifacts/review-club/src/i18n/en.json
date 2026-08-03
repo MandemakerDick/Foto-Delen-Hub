@@ -30,7 +30,9 @@
     "unknownClub": "Unknown Club",
     "avgRating": "{{rating}} avg ({{count}})",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "photoCount_one": "{{count}} photo",
+    "photoCount_other": "{{count}} photos"
   },
   "session": {
     "notFound": "Session not found",

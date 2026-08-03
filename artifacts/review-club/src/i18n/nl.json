@@ -30,7 +30,9 @@
     "unknownClub": "Onbekende club",
     "avgRating": "{{rating}} gem. ({{count}})",
     "previous": "Vorige",
-    "next": "Volgende"
+    "next": "Volgende",
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} foto's"
   },
   "session": {
     "notFound": "Sessie niet gevonden",

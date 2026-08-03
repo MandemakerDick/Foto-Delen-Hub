@@ -20,6 +20,7 @@ import { StarRating } from "@/components/star-rating";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useDateLocale } from "@/hooks/use-date-locale";
 import { ArrowLeft, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -31,6 +32,7 @@ export function PhotoReviewDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const dateLocale = useDateLocale();
 
   const { data: session } = useGetReviewSession(sessionId, { query: { enabled: !!sessionId, queryKey: ['reviewSession', sessionId] } });
   const { data: photos } = useListSessionPhotos(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionPhotosQueryKey(sessionId) } });
@@ -167,7 +169,7 @@ export function PhotoReviewDetail() {
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">{review.reviewerName}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(review.createdAt), "MMM d, yyyy")}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(review.createdAt), "PP", { locale: dateLocale })}</p>
                       </div>
                     </div>
                     <StarRating rating={review.rating} readonly size="sm" />

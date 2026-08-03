@@ -8,6 +8,7 @@ import { Calendar, Image as ImageIcon } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { useTranslation } from "react-i18next";
+import { useDateLocale } from "@/hooks/use-date-locale";
 
 const PAGE_SIZE = 12;
 
@@ -16,6 +17,7 @@ export function Archive() {
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
   const [page, setPage] = usePageParam();
   const { t } = useTranslation();
+  const dateLocale = useDateLocale();
 
   const getClubName = (clubId: number) => {
     return clubs?.find((c) => c.id === clubId)?.name || t("common.unknownClub");
@@ -56,7 +58,7 @@ export function Archive() {
                     </Badge>
                     {session.closedAt && (
                       <span className="text-xs text-muted-foreground">
-                        {t("archive.closedOn", { date: format(new Date(session.closedAt), "MMM d, yyyy") })}
+                        {t("archive.closedOn", { date: format(new Date(session.closedAt), "PP", { locale: dateLocale }) })}
                       </span>
                     )}
                   </div>

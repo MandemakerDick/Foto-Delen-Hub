@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useDateLocale } from "@/hooks/use-date-locale";
 import { StarRating } from "@/components/star-rating";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export function SessionDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const dateLocale = useDateLocale();
 
   const { data: session, isLoading: sessionLoading } = useGetReviewSession(sessionId, { query: { enabled: !!sessionId, queryKey: ['reviewSession', sessionId] } });
   const { data: photos, isLoading: photosLoading } = useListSessionPhotos(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionPhotosQueryKey(sessionId) } });
@@ -122,7 +124,7 @@ export function SessionDetail() {
               </Badge>
               {session.scheduledFor && (
                 <span className="text-sm text-muted-foreground font-medium">
-                  {format(new Date(session.scheduledFor), "MMM d, yyyy")}
+                  {format(new Date(session.scheduledFor), "PP", { locale: dateLocale })}
                 </span>
               )}
             </div>

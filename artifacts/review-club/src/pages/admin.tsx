@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { format } from "date-fns";
+import { useDateLocale } from "@/hooks/use-date-locale";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2 } from "lucide-react";
@@ -45,6 +46,7 @@ export function AdminPanel() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const dateLocale = useDateLocale();
 
   const createSession = useCreateReviewSession();
   const updateSession = useUpdateReviewSession();
@@ -320,7 +322,7 @@ export function AdminPanel() {
 
                 {deadlineMode === "days" && computedDeadline() && (
                   <p className="text-xs text-muted-foreground">
-                    {t("admin.deadlineDisplay", { deadline: format(new Date(computedDeadline()!), "MMM d, yyyy HH:mm") })}
+                    {t("admin.deadlineDisplay", { deadline: format(new Date(computedDeadline()!), "Pp", { locale: dateLocale }) })}
                   </p>
                 )}
               </div>
@@ -365,10 +367,10 @@ export function AdminPanel() {
                     <div className="text-sm text-muted-foreground flex flex-wrap gap-4">
                       <span>{clubs?.find((c) => c.id === session.clubId)?.name ?? t("admin.unknownClub")}</span>
                       {session.scheduledFor && (
-                        <span>{t("admin.reviewDatePrefix")} {format(new Date(session.scheduledFor), "MMM d, yyyy")}</span>
+                        <span>{t("admin.reviewDatePrefix")} {format(new Date(session.scheduledFor), "PP", { locale: dateLocale })}</span>
                       )}
                       {session.submissionDeadline && (
-                        <span>{t("admin.deadlinePrefix")} {format(new Date(session.submissionDeadline), "MMM d, yyyy")}</span>
+                        <span>{t("admin.deadlinePrefix")} {format(new Date(session.submissionDeadline), "PP", { locale: dateLocale })}</span>
                       )}
                       {session.maxPhotosPerMember && (
                         <span>{t("admin.maxPhotosPerMember", { count: session.maxPhotosPerMember })}</span>

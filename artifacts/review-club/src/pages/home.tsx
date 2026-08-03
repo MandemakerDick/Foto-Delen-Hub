@@ -9,6 +9,7 @@ import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { ScanEye } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useDateLocale } from "@/hooks/use-date-locale";
 
 const PAGE_SIZE = 12;
 
@@ -17,6 +18,7 @@ export function Home() {
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
   const [page, setPage] = usePageParam();
   const { t } = useTranslation();
+  const dateLocale = useDateLocale();
 
   const getClubName = (clubId: number) => {
     return clubs?.find((c) => c.id === clubId)?.name || t("common.unknownClub");
@@ -91,12 +93,12 @@ export function Home() {
                     {session.scheduledFor && (
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
-                        <span>{format(new Date(session.scheduledFor), "MMM d, yyyy")}</span>
+                        <span>{format(new Date(session.scheduledFor), "PP", { locale: dateLocale })}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
                       <ImageIcon className="w-4 h-4" />
-                      <span>{session.photoCount || 0}</span>
+                      <span>{t("common.photoCount", { count: session.photoCount || 0 })}</span>
                     </div>
                   </div>
                 </CardContent>
