@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "sessions": "Sessies",
+    "archive": "Archief",
+    "admin": "Beheer",
+    "signIn": "Inloggen",
+    "signOut": "Uitloggen"
+  },
+  "home": {
+    "heroSubtitle": "Gezamenlijke beoordeling voor jouw fotoclub.",
+    "activeSessionsTitle": "Actieve sessies",
+    "activeSessionsSubtitle": "Bekijk lopende beoordelingssessies en dien je werk in.",
+    "noSessionsTitle": "Geen actieve sessies",
+    "noSessionsBody": "Kom later terug of bekijk het archief voor eerdere beoordelingen."
+  },
+  "archive": {
+    "title": "Archief",
+    "subtitle": "Eerdere beoordelingssessies en historische feedback.",
+    "emptyTitle": "Geen gearchiveerde sessies",
+    "emptyBody": "Gesloten beoordelingssessies verschijnen hier."
+  },
+  "session": {
+    "noPhotosTitle": "Nog geen foto's ingediend",
+    "noPhotosBody": "Foto's ingediend voor deze sessie verschijnen hier.",
+    "submitPhoto": "Foto indienen",
+    "submitPhotoTitle": "Foto indienen voor sessie",
+    "submit": "Indienen",
+    "reviewPanel": "Beoordelingspanel",
+    "noReviewers": "Geen beoordelaars toegewezen.",
+    "assignReviewer": "Beoordelaar toewijzen",
+    "addReviewer": "Beoordelaar toevoegen",
+    "reviewerAdded": "Beoordelaar toegevoegd",
+    "reviewerRemoved": "Beoordelaar verwijderd",
+    "photoSubmitted": "Foto ingediend"
+  },
+  "review": {
+    "leaveReview": "Beoordeling achterlaten",
+    "editReview": "Beoordeling bewerken",
+    "ratingLabel": "Beoordeling (verplicht)",
+    "feedbackLabel": "Constructieve feedback",
+    "feedbackPlaceholder": "Analyseer compositie, belichting, onderwerp...",
+    "submitBtn": "Beoordeling indienen",
+    "updateBtn": "Beoordeling bijwerken"
+  },
+  "admin": {
+    "title": "Beheerpaneel",
+    "subtitle": "Beheer beoordelingssessies en platforminstellingen.",
+    "newSession": "Nieuwe sessie",
+    "createSession": "Beoordelingssessie aanmaken",
+    "allSessions": "Alle sessies",
+    "noSessions": "Nog geen sessies. Maak hierboven je eerste aan.",
+    "startReviewing": "Beoordeling starten",
+    "closeSession": "Sessie sluiten",
+    "reopen": "Heropenen",
+    "manage": "Beheren",
+    "deleteConfirmTitle": "Sessie verwijderen?",
+    "deleteConfirmBody": "Dit verwijdert de sessie en alle ingediende foto's, beoordelingen en opmerkingen definitief. Dit kan niet ongedaan worden gemaakt.",
+    "deleteSession": "Sessie verwijderen",
+    "accessDenied": "Toegang geweigerd. Alleen beheerders.",
+    "noAdmins": "Nog geen beheerders.",
+    "claimAdmin": "Beheerdersrol claimen",
+    "claiming": "Bezig…",
+    "signInToClaim": "Inloggen om beheerdersrol te claimen",
+    "notAdmin": "Je bent ingelogd maar bent geen beheerder.",
+    "recoveryMode": "Herstelmodus",
+    "namePlaceholder": "Jouw naam",
+    "recoveryTokenPlaceholder": "Hersteltoken",
+    "claimAdminBtn": "Beheerdersrol claimen",
+    "recovering": "Herstellen…"
+  },
+  "footer": {
+    "tagline": "Focus op het frame."
+  },
+  "languageSwitcher": {
+    "label": "Taal",
+    "en": "English",
+    "nl": "Nederlands"
+  }
+}

@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { KeyRound, ScanEye, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -91,7 +92,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               )}
             </nav>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <Show when="signed-out">
               <SignInButton mode="modal">
                 <Button variant="outline" size="sm" className="gap-2 border-border/50">

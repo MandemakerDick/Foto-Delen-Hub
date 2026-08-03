@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "sessions": "Sessions",
+    "archive": "Archive",
+    "admin": "Admin",
+    "signIn": "Sign In",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "heroSubtitle": "Collaborative critique sessions for your photography club.",
+    "activeSessionsTitle": "Active Sessions",
+    "activeSessionsSubtitle": "Browse ongoing review sessions and submit your work.",
+    "noSessionsTitle": "No active sessions",
+    "noSessionsBody": "Check back later or view the archive for past reviews."
+  },
+  "archive": {
+    "title": "Archive",
+    "subtitle": "Past review sessions and historical feedback.",
+    "emptyTitle": "No archived sessions",
+    "emptyBody": "Closed review sessions will appear here."
+  },
+  "session": {
+    "noPhotosTitle": "No photos submitted yet",
+    "noPhotosBody": "Photos submitted to this session will appear here.",
+    "submitPhoto": "Submit Photo",
+    "submitPhotoTitle": "Submit Photo to Session",
+    "submit": "Submit",
+    "reviewPanel": "Review Panel",
+    "noReviewers": "No reviewers assigned.",
+    "assignReviewer": "Assign Reviewer",
+    "addReviewer": "Add Reviewer",
+    "reviewerAdded": "Reviewer Added",
+    "reviewerRemoved": "Reviewer Removed",
+    "photoSubmitted": "Photo Submitted"
+  },
+  "review": {
+    "leaveReview": "Leave a Review",
+    "editReview": "Edit Review",
+    "ratingLabel": "Rating (Required)",
+    "feedbackLabel": "Constructive Feedback",
+    "feedbackPlaceholder": "Analyze composition, lighting, subject...",
+    "submitBtn": "Submit Review",
+    "updateBtn": "Update Review"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Manage review sessions and platform settings.",
+    "newSession": "New Session",
+    "createSession": "Create Review Session",
+    "allSessions": "All Sessions",
+    "noSessions": "No sessions yet. Create your first one above.",
+    "startReviewing": "Start Reviewing",
+    "closeSession": "Close Session",
+    "reopen": "Re-open",
+    "manage": "Manage",
+    "deleteConfirmTitle": "Delete session?",
+    "deleteConfirmBody": "This permanently deletes the session and all submitted photos, star ratings, and comments. This cannot be undone.",
+    "deleteSession": "Delete session",
+    "accessDenied": "Access denied. Admin only.",
+    "noAdmins": "No admins yet.",
+    "claimAdmin": "Claim Admin",
+    "claiming": "Claiming…",
+    "signInToClaim": "Sign in to claim admin",
+    "notAdmin": "You are signed in but not an admin.",
+    "recoveryMode": "Recovery mode",
+    "namePlaceholder": "Your name",
+    "recoveryTokenPlaceholder": "Recovery token",
+    "claimAdminBtn": "Claim Admin",
+    "recovering": "Recovering…"
+  },
+  "footer": {
+    "tagline": "Focus on the frame."
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "nl": "Nederlands"
+  }
+}
