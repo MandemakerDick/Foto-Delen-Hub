@@ -8,6 +8,7 @@ import { Calendar, Image as ImageIcon } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { ScanEye } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 12;
 
@@ -15,9 +16,10 @@ export function Home() {
   const { data: sessions, isLoading: sessionsLoading } = useListReviewSessions();
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
   const [page, setPage] = usePageParam();
+  const { t } = useTranslation();
 
   const getClubName = (clubId: number) => {
-    return clubs?.find((c) => c.id === clubId)?.name || "Unknown Club";
+    return clubs?.find((c) => c.id === clubId)?.name || t("common.unknownClub");
   };
 
   const activeSessions = sessions?.filter(s => s.status === "open" || s.status === "reviewing") || [];
@@ -37,15 +39,15 @@ export function Home() {
             Photo<span className="text-primary italic">ReviewHub</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-xl">
-            Collaborative critique sessions for your photography club.
+            {t("home.heroSubtitle")}
           </p>
         </div>
       </section>
 
       <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-serif font-bold tracking-tight mb-2">Active Sessions</h2>
-        <p className="text-muted-foreground text-lg">Browse ongoing review sessions and submit your work.</p>
+        <h2 className="text-3xl font-serif font-bold tracking-tight mb-2">{t("home.activeSessionsTitle")}</h2>
+        <p className="text-muted-foreground text-lg">{t("home.activeSessionsSubtitle")}</p>
       </div>
 
       {(sessionsLoading || clubsLoading) ? (
@@ -56,8 +58,8 @@ export function Home() {
         <Card className="border-dashed">
           <CardContent className="py-12 flex flex-col items-center justify-center text-center">
             <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">No active sessions</h3>
-            <p className="text-muted-foreground">Check back later or view the archive for past reviews.</p>
+            <h3 className="text-xl font-medium mb-2">{t("home.noSessionsTitle")}</h3>
+            <p className="text-muted-foreground">{t("home.noSessionsBody")}</p>
           </CardContent>
         </Card>
       ) : (

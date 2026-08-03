@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Image as ImageIcon } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 12;
 
@@ -14,9 +15,10 @@ export function Archive() {
   const { data: sessions, isLoading: sessionsLoading } = useListReviewSessions({ status: "closed" });
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
   const [page, setPage] = usePageParam();
+  const { t } = useTranslation();
 
   const getClubName = (clubId: number) => {
-    return clubs?.find((c) => c.id === clubId)?.name || "Unknown Club";
+    return clubs?.find((c) => c.id === clubId)?.name || t("common.unknownClub");
   };
 
   const totalPages = Math.ceil((sessions?.length ?? 0) / PAGE_SIZE);
@@ -25,8 +27,8 @@ export function Archive() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-serif font-bold tracking-tight mb-2">Archive</h1>
-        <p className="text-muted-foreground text-lg">Past review sessions and historical feedback.</p>
+        <h1 className="text-3xl font-serif font-bold tracking-tight mb-2">{t("archive.title")}</h1>
+        <p className="text-muted-foreground text-lg">{t("archive.subtitle")}</p>
       </div>
 
       {(sessionsLoading || clubsLoading) ? (
@@ -37,8 +39,8 @@ export function Archive() {
         <Card className="border-dashed">
           <CardContent className="py-12 flex flex-col items-center justify-center text-center">
             <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">No archived sessions</h3>
-            <p className="text-muted-foreground">Closed review sessions will appear here.</p>
+            <h3 className="text-xl font-medium mb-2">{t("archive.emptyTitle")}</h3>
+            <p className="text-muted-foreground">{t("archive.emptyBody")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -50,11 +52,11 @@ export function Archive() {
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant="outline" className="uppercase text-xs tracking-wider opacity-70">
-                      closed
+                      {t("archive.closedBadge")}
                     </Badge>
                     {session.closedAt && (
                       <span className="text-xs text-muted-foreground">
-                        Closed {format(new Date(session.closedAt), "MMM d, yyyy")}
+                        {t("archive.closedOn", { date: format(new Date(session.closedAt), "MMM d, yyyy") })}
                       </span>
                     )}
                   </div>
@@ -69,7 +71,7 @@ export function Archive() {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mt-auto">
                     <div className="flex items-center gap-1.5">
                       <ImageIcon className="w-4 h-4" />
-                      <span>{session.photoCount || 0} photos</span>
+                      <span>{t("archive.photoCount", { count: session.photoCount || 0 })}</span>
                     </div>
                   </div>
                 </CardContent>

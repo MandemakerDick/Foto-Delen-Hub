@@ -8,6 +8,7 @@ import {
   getListReviewSessionsQueryKey,
   useListClubs,
 } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export function AdminPanel() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const createSession = useCreateReviewSession();
   const updateSession = useUpdateReviewSession();
@@ -92,7 +94,7 @@ export function AdminPanel() {
 
   const handleCreate = async () => {
     if (!form.title || !form.clubId) {
-      toast({ title: "Required fields missing", description: "Title and Club are required.", variant: "destructive" });
+      toast({ title: t("admin.toastRequiredTitle"), description: t("admin.toastRequiredDesc"), variant: "destructive" });
       return;
     }
 
@@ -110,33 +112,33 @@ export function AdminPanel() {
           reviewerIds: selectedReviewerIds.size > 0 ? Array.from(selectedReviewerIds) : undefined,
         },
       });
-      toast({ title: "Session created", description: `"${form.title}" is now open.` });
+      toast({ title: t("admin.toastSessionCreatedTitle"), description: t("admin.toastSessionCreatedDesc", { title: form.title }) });
       setIsCreateOpen(false);
       setForm(EMPTY_FORM);
       setSelectedReviewerIds(new Set());
       queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to create session.", variant: "destructive" });
+      toast({ title: t("admin.toastError"), description: e.message || t("admin.toastCreateFailed"), variant: "destructive" });
     }
   };
 
   const handleStatusChange = async (id: number, newStatus: string) => {
     try {
       await updateSession.mutateAsync({ id, data: { status: newStatus } });
-      toast({ title: "Status updated", description: `Session is now ${newStatus}.` });
+      toast({ title: t("admin.toastStatusUpdatedTitle"), description: t("admin.toastStatusUpdatedDesc", { status: newStatus }) });
       queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to update status.", variant: "destructive" });
+      toast({ title: t("admin.toastError"), description: e.message || t("admin.toastUpdateFailed"), variant: "destructive" });
     }
   };
 
   const handleDelete = async (id: number, title: string) => {
     try {
       await deleteSession.mutateAsync({ id });
-      toast({ title: "Session deleted", description: `"${title}" and all its photos, ratings, and comments have been removed.` });
+      toast({ title: t("admin.toastSessionDeletedTitle"), description: t("admin.toastSessionDeletedDesc", { title }) });
       queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to delete session.", variant: "destructive" });
+      toast({ title: t("admin.toastError"), description: e.message || t("admin.toastDeleteFailed"), variant: "destructive" });
     }
   };
 
@@ -155,7 +157,7 @@ export function AdminPanel() {
       </div>
     </div>
   );
-  if (!adminStatus?.isAdmin) return <div className="text-center py-12 text-muted-foreground">Access denied. Admin only.</div>;
+  if (!adminStatus?.isAdmin) return <div className="text-center py-12 text-muted-foreground">{t("admin.accessDenied")}</div>;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -163,41 +165,41 @@ export function AdminPanel() {
         <div>
           <h1 className="text-3xl font-serif font-bold tracking-tight mb-2 flex items-center gap-3">
             <Settings className="w-8 h-8 text-primary" />
-            Admin Panel
+            {t("admin.title")}
           </h1>
-          <p className="text-muted-foreground text-lg">Manage review sessions and platform settings.</p>
+          <p className="text-muted-foreground text-lg">{t("admin.subtitle")}</p>
         </div>
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button size="lg" className="font-medium tracking-wide">
               <Plus className="w-4 h-4 mr-2" />
-              New Session
+              {t("admin.newSession")}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-serif">Create Review Session</DialogTitle>
+              <DialogTitle className="text-2xl font-serif">{t("admin.createSession")}</DialogTitle>
             </DialogHeader>
 
             <div className="grid gap-5 py-4">
               {/* Title */}
               <div className="grid gap-2">
-                <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
+                <Label htmlFor="title">{t("admin.titleLabel")} <span className="text-destructive">*</span></Label>
                 <Input
                   id="title"
                   value={form.title}
                   onChange={(e) => setField("title")(e.target.value)}
-                  placeholder="e.g. Winter Landscapes Critique"
+                  placeholder={t("admin.titlePlaceholder")}
                 />
               </div>
 
               {/* Club */}
               <div className="grid gap-2">
-                <Label>Club <span className="text-destructive">*</span></Label>
+                <Label>{t("admin.clubLabel")} <span className="text-destructive">*</span></Label>
                 <Select value={form.clubId} onValueChange={handleClubChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a club" />
+                    <SelectValue placeholder={t("admin.clubPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {clubs?.map((c) => (
@@ -211,10 +213,10 @@ export function AdminPanel() {
               {clubIdNum && (
                 <div className="grid gap-2">
                   <Label className="flex items-center gap-2">
-                    <Users className="w-4 h-4" /> Reviewers (from club members)
+                    <Users className="w-4 h-4" /> {t("admin.reviewersLabel")}
                   </Label>
                   {!clubPhotographers || clubPhotographers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No members found in this club.</p>
+                    <p className="text-sm text-muted-foreground">{t("admin.noClubMembers")}</p>
                   ) : (
                     <div className="border border-border rounded-md p-3 grid gap-2 max-h-48 overflow-y-auto">
                       {clubPhotographers.map((p) => (
@@ -229,39 +231,39 @@ export function AdminPanel() {
                     </div>
                   )}
                   {selectedReviewerIds.size > 0 && (
-                    <p className="text-xs text-muted-foreground">{selectedReviewerIds.size} reviewer{selectedReviewerIds.size !== 1 ? "s" : ""} selected</p>
+                    <p className="text-xs text-muted-foreground">{t("admin.reviewersSelected", { count: selectedReviewerIds.size })}</p>
                   )}
                 </div>
               )}
 
               {/* Description */}
               <div className="grid gap-2">
-                <Label htmlFor="desc">Description</Label>
+                <Label htmlFor="desc">{t("admin.descriptionLabel")}</Label>
                 <Textarea
                   id="desc"
                   value={form.description}
                   onChange={(e) => setField("description")(e.target.value)}
-                  placeholder="Goals and rules for this session…"
+                  placeholder={t("admin.descriptionPlaceholder")}
                   rows={3}
                 />
               </div>
 
               {/* Max photos per member */}
               <div className="grid gap-2">
-                <Label htmlFor="maxPhotos">Max photos per member</Label>
+                <Label htmlFor="maxPhotos">{t("admin.maxPhotosLabel")}</Label>
                 <Input
                   id="maxPhotos"
                   type="number"
                   min={1}
                   value={form.maxPhotosPerMember}
                   onChange={(e) => setField("maxPhotosPerMember")(e.target.value)}
-                  placeholder="Leave blank for no limit"
+                  placeholder={t("admin.maxPhotosPlaceholder")}
                 />
               </div>
 
               {/* Review date */}
               <div className="grid gap-2">
-                <Label htmlFor="scheduledFor">Review date</Label>
+                <Label htmlFor="scheduledFor">{t("admin.reviewDateLabel")}</Label>
                 <Input
                   id="scheduledFor"
                   type="datetime-local"
@@ -272,7 +274,7 @@ export function AdminPanel() {
 
               {/* Submission deadline */}
               <div className="grid gap-2">
-                <Label>Submission deadline</Label>
+                <Label>{t("admin.submissionDeadlineLabel")}</Label>
                 <div className="flex gap-2 mb-2">
                   <Button
                     type="button"
@@ -281,7 +283,7 @@ export function AdminPanel() {
                     onClick={() => setDeadlineMode("date")}
                     className="text-xs"
                   >
-                    Specific date
+                    {t("admin.specificDate")}
                   </Button>
                   <Button
                     type="button"
@@ -290,9 +292,9 @@ export function AdminPanel() {
                     onClick={() => setDeadlineMode("days")}
                     className="text-xs"
                     disabled={!form.scheduledFor}
-                    title={!form.scheduledFor ? "Set a review date first" : undefined}
+                    title={!form.scheduledFor ? t("admin.setReviewDateFirst") : undefined}
                   >
-                    Days before review
+                    {t("admin.daysBeforeReview")}
                   </Button>
                 </div>
 
@@ -312,22 +314,22 @@ export function AdminPanel() {
                       placeholder="e.g. 3"
                       className="w-28"
                     />
-                    <span className="text-sm text-muted-foreground">days before review date</span>
+                    <span className="text-sm text-muted-foreground">{t("admin.daysBeforeReviewDate")}</span>
                   </div>
                 )}
 
                 {deadlineMode === "days" && computedDeadline() && (
                   <p className="text-xs text-muted-foreground">
-                    Deadline: {format(new Date(computedDeadline()!), "MMM d, yyyy HH:mm")}
+                    {t("admin.deadlineDisplay", { deadline: format(new Date(computedDeadline()!), "MMM d, yyyy HH:mm") })}
                   </p>
                 )}
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>{t("admin.cancel")}</Button>
               <Button onClick={handleCreate} disabled={createSession.isPending}>
-                {createSession.isPending ? "Creating…" : "Create Session"}
+                {createSession.isPending ? t("admin.creating") : t("admin.createSessionBtn")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -336,13 +338,13 @@ export function AdminPanel() {
 
       {/* Sessions list */}
       <div className="space-y-4">
-        <h2 className="text-xl font-serif font-medium tracking-tight">All Sessions</h2>
+        <h2 className="text-xl font-serif font-medium tracking-tight">{t("admin.allSessions")}</h2>
         {sessionsLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
           </div>
         ) : !sessions?.length ? (
-          <p className="text-muted-foreground text-sm">No sessions yet. Create your first one above.</p>
+          <p className="text-muted-foreground text-sm">{t("admin.noSessions")}</p>
         ) : (
           <div className="space-y-4">
             {sessions.map((session) => (
@@ -361,15 +363,15 @@ export function AdminPanel() {
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground flex flex-wrap gap-4">
-                      <span>{clubs?.find((c) => c.id === session.clubId)?.name ?? "Unknown Club"}</span>
+                      <span>{clubs?.find((c) => c.id === session.clubId)?.name ?? t("admin.unknownClub")}</span>
                       {session.scheduledFor && (
-                        <span>Review: {format(new Date(session.scheduledFor), "MMM d, yyyy")}</span>
+                        <span>{t("admin.reviewDatePrefix")} {format(new Date(session.scheduledFor), "MMM d, yyyy")}</span>
                       )}
                       {session.submissionDeadline && (
-                        <span>Deadline: {format(new Date(session.submissionDeadline), "MMM d, yyyy")}</span>
+                        <span>{t("admin.deadlinePrefix")} {format(new Date(session.submissionDeadline), "MMM d, yyyy")}</span>
                       )}
                       {session.maxPhotosPerMember && (
-                        <span>Max {session.maxPhotosPerMember} photo{session.maxPhotosPerMember !== 1 ? "s" : ""}/member</span>
+                        <span>{t("admin.maxPhotosPerMember", { count: session.maxPhotosPerMember })}</span>
                       )}
                     </div>
                   </div>
@@ -378,22 +380,22 @@ export function AdminPanel() {
                     <div className="flex gap-2 w-full sm:w-auto justify-end flex-wrap">
                       {session.status === "open" && (
                         <Button size="sm" variant="secondary" onClick={() => handleStatusChange(session.id, "reviewing")} className="w-full sm:w-auto">
-                          <Play className="w-4 h-4 mr-2" /> Start Reviewing
+                          <Play className="w-4 h-4 mr-2" /> {t("admin.startReviewing")}
                         </Button>
                       )}
                       {session.status === "reviewing" && (
                         <Button size="sm" variant="outline" onClick={() => handleStatusChange(session.id, "closed")} className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10">
-                          <CheckCircle className="w-4 h-4 mr-2" /> Close Session
+                          <CheckCircle className="w-4 h-4 mr-2" /> {t("admin.closeSession")}
                         </Button>
                       )}
                       {session.status === "closed" && (
                         <Button size="sm" variant="ghost" onClick={() => handleStatusChange(session.id, "open")} className="w-full sm:w-auto">
-                          Re-open
+                          {t("admin.reopen")}
                         </Button>
                       )}
                       <Button size="sm" variant="default" asChild className="w-full sm:w-auto">
                         <Link href={`/sessions/${session.id}`}>
-                          Manage <Search className="w-4 h-4 ml-2" />
+                          {t("admin.manage")} <Search className="w-4 h-4 ml-2" />
                         </Link>
                       </Button>
                       <AlertDialog>
@@ -404,18 +406,18 @@ export function AdminPanel() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete "{session.title}"?</AlertDialogTitle>
+                            <AlertDialogTitle>{t("admin.deleteConfirmTitle", { title: session.title })}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This permanently deletes the session and all submitted photos, star ratings, and comments. This cannot be undone.
+                              {t("admin.deleteConfirmBody")}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>{t("admin.cancel")}</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(session.id, session.title)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Delete session
+                              {t("admin.deleteSession")}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

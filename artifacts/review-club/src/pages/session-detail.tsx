@@ -27,6 +27,7 @@ import { useState } from "react";
 import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
+import { useTranslation } from "react-i18next";
 
 const PHOTOS_PAGE_SIZE = 24;
 
@@ -36,6 +37,7 @@ export function SessionDetail() {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { data: session, isLoading: sessionLoading } = useGetReviewSession(sessionId, { query: { enabled: !!sessionId, queryKey: ['reviewSession', sessionId] } });
   const { data: photos, isLoading: photosLoading } = useListSessionPhotos(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionPhotosQueryKey(sessionId) } });
@@ -61,7 +63,7 @@ export function SessionDetail() {
   const [photosPage, setPhotosPage] = usePageParam();
 
   if (sessionLoading) return <div className="space-y-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
-  if (!session) return <div>Session not found</div>;
+  if (!session) return <div>{t("session.notFound")}</div>;
 
   const handleAddReviewer = async () => {
     if (!selectedReviewerId) return;
@@ -70,12 +72,12 @@ export function SessionDetail() {
         id: sessionId, 
         data: { photographerId: parseInt(selectedReviewerId, 10) } 
       });
-      toast({ title: "Reviewer Added" });
+      toast({ title: t("session.reviewerAdded") });
       setIsAddReviewerOpen(false);
       setSelectedReviewerId("");
       queryClient.invalidateQueries({ queryKey: getListSessionReviewersQueryKey(sessionId) });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t("session.error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -85,10 +87,10 @@ export function SessionDetail() {
         id: sessionId, 
         reviewerId,
       });
-      toast({ title: "Reviewer Removed" });
+      toast({ title: t("session.reviewerRemoved") });
       queryClient.invalidateQueries({ queryKey: getListSessionReviewersQueryKey(sessionId) });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t("session.error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -99,12 +101,12 @@ export function SessionDetail() {
         id: sessionId,
         data: { photoId: parseInt(selectedPhotoId, 10) }
       });
-      toast({ title: "Photo Submitted" });
+      toast({ title: t("session.photoSubmitted") });
       setIsAddPhotoOpen(false);
       setSelectedPhotoId("");
       queryClient.invalidateQueries({ queryKey: getListSessionPhotosQueryKey(sessionId) });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t("session.error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -134,7 +136,7 @@ export function SessionDetail() {
           <div className="min-w-[250px] bg-background/50 p-4 rounded-md border border-border/50">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-serif font-semibold flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" /> Review Panel
+                <Users className="w-4 h-4 text-primary" /> {t("session.reviewPanel")}
               </h3>
               {adminStatus?.isAdmin && (
                 <Dialog open={isAddReviewerOpen} onOpenChange={setIsAddReviewerOpen}>
@@ -145,11 +147,11 @@ export function SessionDetail() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Assign Reviewer</DialogTitle>
+                      <DialogTitle>{t("session.assignReviewer")}</DialogTitle>
                     </DialogHeader>
                     <Select value={selectedReviewerId} onValueChange={setSelectedReviewerId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select photographer..." />
+                        <SelectValue placeholder={t("session.selectPhotographer")} />
                       </SelectTrigger>
                       <SelectContent>
                         {photographers?.map(p => (
@@ -158,7 +160,7 @@ export function SessionDetail() {
                       </SelectContent>
                     </Select>
                     <DialogFooter>
-                      <Button onClick={handleAddReviewer}>Add Reviewer</Button>
+                      <Button onClick={handleAddReviewer}>{t("session.addReviewer")}</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -168,7 +170,7 @@ export function SessionDetail() {
               {reviewersLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : reviewers?.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No reviewers assigned.</p>
+                <p className="text-sm text-muted-foreground italic">{t("session.noReviewers")}</p>
               ) : (
                 reviewers?.map(r => (
                   <div key={r.id} className="flex items-center justify-between group">
@@ -196,20 +198,20 @@ export function SessionDetail() {
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-serif font-bold flex items-center gap-3">
-            <Camera className="w-6 h-6 text-primary" /> Submitted Photos
+            <Camera className="w-6 h-6 text-primary" /> {t("session.submittedPhotos")}
           </h2>
           {session.status === 'open' && (
             <Dialog open={isAddPhotoOpen} onOpenChange={setIsAddPhotoOpen}>
               <DialogTrigger asChild>
-                <Button>Submit Photo</Button>
+                <Button>{t("session.submitPhoto")}</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Submit Photo to Session</DialogTitle>
+                  <DialogTitle>{t("session.submitPhotoTitle")}</DialogTitle>
                 </DialogHeader>
                 <Select value={selectedPhotoId} onValueChange={setSelectedPhotoId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select one of your photos..." />
+                    <SelectValue placeholder={t("session.selectPhoto")} />
                   </SelectTrigger>
                   <SelectContent>
                     {allPhotos?.map(p => (
@@ -218,7 +220,7 @@ export function SessionDetail() {
                   </SelectContent>
                 </Select>
                 <DialogFooter>
-                  <Button onClick={handleSubmitPhoto}>Submit</Button>
+                  <Button onClick={handleSubmitPhoto}>{t("session.submit")}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -232,8 +234,8 @@ export function SessionDetail() {
         ) : photos?.length === 0 ? (
           <div className="text-center py-20 bg-card/30 border border-dashed border-border/50 rounded-lg">
             <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-xl font-serif mb-2">No photos submitted yet</h3>
-            <p className="text-muted-foreground">Photos submitted to this session will appear here.</p>
+            <h3 className="text-xl font-serif mb-2">{t("session.noPhotosTitle")}</h3>
+            <p className="text-muted-foreground">{t("session.noPhotosBody")}</p>
           </div>
         ) : (
           <>
@@ -245,7 +247,7 @@ export function SessionDetail() {
                     {photo.photoImageUrl ? (
                       <img 
                         src={photo.photoImageUrl} 
-                        alt={photo.photoTitle || 'Photo'} 
+                        alt={photo.photoTitle || t("common.photoAlt")} 
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
@@ -256,17 +258,17 @@ export function SessionDetail() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <CardContent className="p-5 flex-1 flex flex-col">
-                    <h3 className="font-serif text-lg font-semibold mb-1 line-clamp-1">{photo.photoTitle || 'Untitled'}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">by {photo.photographerName}</p>
+                    <h3 className="font-serif text-lg font-semibold mb-1 line-clamp-1">{photo.photoTitle || t("session.untitled")}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{t("common.by")} {photo.photographerName}</p>
                     
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/50">
                       <div className="flex items-center gap-2">
                         <StarRating rating={photo.averageRating || 0} max={5} size="sm" className="text-primary" />
-                        <span className="text-sm font-medium">{photo.averageRating ? photo.averageRating.toFixed(1) : 'No ratings'}</span>
+                        <span className="text-sm font-medium">{photo.averageRating ? photo.averageRating.toFixed(1) : t("session.noRatings")}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                         <MessageSquare className="w-4 h-4" />
-                        <span>{photo.reviewCount || 0} reviews</span>
+                        <span>{t("session.reviewCount", { count: photo.reviewCount || 0 })}</span>
                       </div>
                     </div>
                   </CardContent>

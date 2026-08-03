@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ArrowLeft, Send } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function PhotoReviewDetail() {
   const { id, sessionPhotoId } = useParams();
@@ -29,6 +30,7 @@ export function PhotoReviewDetail() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { data: session } = useGetReviewSession(sessionId, { query: { enabled: !!sessionId, queryKey: ['reviewSession', sessionId] } });
   const { data: photos } = useListSessionPhotos(sessionId, { query: { enabled: !!sessionId, queryKey: getListSessionPhotosQueryKey(sessionId) } });
@@ -52,7 +54,7 @@ export function PhotoReviewDetail() {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      toast({ title: "Rating required", variant: "destructive" });
+      toast({ title: t("review.ratingRequired"), variant: "destructive" });
       return;
     }
 
@@ -64,14 +66,14 @@ export function PhotoReviewDetail() {
           reviewId: editingId,
           data: { rating, comment }
         });
-        toast({ title: "Review updated" });
+        toast({ title: t("review.reviewUpdated") });
       } else {
         await createReview.mutateAsync({
           id: sessionId,
           sessionPhotoId: spId,
           data: { rating, comment }
         });
-        toast({ title: "Review submitted" });
+        toast({ title: t("review.reviewSubmitted") });
       }
       setRating(0);
       setComment("");
@@ -79,11 +81,11 @@ export function PhotoReviewDetail() {
       queryClient.invalidateQueries({ queryKey: getListPhotoReviewsQueryKey(sessionId, spId) });
       queryClient.invalidateQueries({ queryKey: getListSessionPhotosQueryKey(sessionId) });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Could not submit review", variant: "destructive" });
+      toast({ title: t("review.error"), description: e.message || t("review.submitFailed"), variant: "destructive" });
     }
   };
 
-  if (!photo && photos) return <div>Photo not found</div>;
+  if (!photo && photos) return <div>{t("review.photoNotFound")}</div>;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -94,8 +96,8 @@ export function PhotoReviewDetail() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-serif font-bold">{photo?.photoTitle || "Untitled"}</h1>
-          <p className="text-muted-foreground text-sm">by {photo?.photographerName}</p>
+          <h1 className="text-2xl font-serif font-bold">{photo?.photoTitle || t("common.untitled")}</h1>
+          <p className="text-muted-foreground text-sm">{t("common.by")} {photo?.photographerName}</p>
         </div>
       </div>
 
@@ -105,7 +107,7 @@ export function PhotoReviewDetail() {
           {photo?.photoImageUrl ? (
             <img 
               src={photo.photoImageUrl} 
-              alt={photo.photoTitle || 'Photo'} 
+              alt={photo.photoTitle || t("common.photoAlt")} 
               className="w-full h-auto object-contain max-h-[75vh] bg-black"
             />
           ) : (
@@ -116,33 +118,33 @@ export function PhotoReviewDetail() {
         {/* Reviews Sidebar */}
         <div className="space-y-8">
           <div className="border-b border-border/50 pb-4">
-            <h2 className="text-xl font-serif font-bold mb-1">Reviews</h2>
+            <h2 className="text-xl font-serif font-bold mb-1">{t("review.reviewsTitle")}</h2>
             <div className="flex items-center gap-3">
               <StarRating rating={photo?.averageRating || 0} readonly size="sm" className="text-primary" />
               <span className="text-muted-foreground text-sm font-medium">
-                {photo?.averageRating ? photo.averageRating.toFixed(1) : '0'} avg ({photo?.reviewCount || 0})
+                {t("common.avgRating", { rating: photo?.averageRating ? photo.averageRating.toFixed(1) : '0', count: photo?.reviewCount || 0 })}
               </span>
             </div>
           </div>
 
           {isReviewing && (isReviewer || isAdmin) && (
             <div className="bg-card/50 border border-primary/20 rounded-lg p-5 space-y-4">
-              <h3 className="font-serif font-semibold text-primary">{editingId ? "Edit Review" : "Leave a Review"}</h3>
+              <h3 className="font-serif font-semibold text-primary">{editingId ? t("review.editReview") : t("review.leaveReview")}</h3>
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Rating (Required)</label>
+                <label className="text-sm text-muted-foreground">{t("review.ratingLabel")}</label>
                 <StarRating rating={rating} max={5} onChange={setRating} readonly={false} size="lg" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Constructive Feedback</label>
+                <label className="text-sm text-muted-foreground">{t("review.feedbackLabel")}</label>
                 <Textarea 
                   value={comment} 
                   onChange={e => setComment(e.target.value)} 
-                  placeholder="Analyze composition, lighting, subject..."
+                  placeholder={t("review.feedbackPlaceholder")}
                   className="resize-none h-32 bg-background/50 focus-visible:ring-primary"
                 />
               </div>
               <Button onClick={handleSubmit} className="w-full font-medium tracking-wide">
-                <Send className="w-4 h-4 mr-2" /> {editingId ? "Update Review" : "Submit Review"}
+                <Send className="w-4 h-4 mr-2" /> {editingId ? t("review.updateBtn") : t("review.submitBtn")}
               </Button>
             </div>
           )}
@@ -153,7 +155,7 @@ export function PhotoReviewDetail() {
                 {[1, 2].map(i => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}
               </div>
             ) : reviews?.length === 0 ? (
-              <p className="text-muted-foreground italic text-center py-8">No reviews yet.</p>
+              <p className="text-muted-foreground italic text-center py-8">{t("review.noReviews")}</p>
             ) : (
               reviews?.map(review => (
                 <div key={review.id} className="bg-card/30 border border-border/50 rounded-lg p-5 space-y-3">

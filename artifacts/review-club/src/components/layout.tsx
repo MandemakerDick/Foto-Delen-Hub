@@ -7,6 +7,7 @@ import { useState } from "react";
 import { KeyRound, ScanEye, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { useTranslation } from "react-i18next";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -18,6 +19,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleBootstrap = async () => {
     setBootstrapping(true);
@@ -80,14 +82,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-primary" : "text-muted-foreground"}`}>
-                Sessions
+                {t("nav.sessions")}
               </Link>
               <Link href="/archive" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/archive" ? "text-primary" : "text-muted-foreground"}`}>
-                Archive
+                {t("nav.archive")}
               </Link>
               {adminStatus?.isAdmin && (
                 <Link href="/admin" className={`text-sm font-medium transition-colors hover:text-primary ${location === "/admin" ? "text-primary" : "text-muted-foreground"}`}>
-                  Admin
+                  {t("nav.admin")}
                 </Link>
               )}
             </nav>
@@ -98,7 +100,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <SignInButton mode="modal">
                 <Button variant="outline" size="sm" className="gap-2 border-border/50">
                   <LogIn className="w-4 h-4" />
-                  <span className="hidden sm:inline">Sign In</span>
+                  <span className="hidden sm:inline">{t("nav.signIn")}</span>
                 </Button>
               </SignInButton>
             </Show>
@@ -115,7 +117,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   onClick={() => signOut({ redirectUrl: basePath || "/" })}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Sign out
+                  {t("nav.signOut")}
                 </button>
               </div>
             </Show>
@@ -127,14 +129,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="bg-primary/10 border-b border-primary/20 py-3 px-4">
           <div className="container mx-auto flex items-center justify-between gap-4">
             <p className="text-sm text-foreground">
-              <span className="font-semibold">No admins yet.</span> Claim the admin role to start creating review sessions.
+              <span className="font-semibold">{t("admin.noAdmins")}</span> {t("admin.bootstrapDesc")}
             </p>
             <Show when="signed-out">
               <Link
                 href="/sign-in"
                 className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
               >
-                Sign in to claim admin
+                {t("admin.signInToClaim")}
               </Link>
             </Show>
             <Show when="signed-in">
@@ -143,7 +145,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 disabled={bootstrapping}
                 className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
-                {bootstrapping ? "Claiming…" : "Claim Admin"}
+                {bootstrapping ? t("admin.claiming") : t("admin.claimAdmin")}
               </button>
             </Show>
           </div>
@@ -156,28 +158,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="bg-muted/40 border-b border-border/50 py-2 px-4">
             <div className="container mx-auto flex items-center justify-between gap-4">
               <p className="text-xs text-muted-foreground">
-                You are signed in but not an admin.
+                {t("admin.notAdmin")}
               </p>
               <button
                 onClick={() => setShowRecovery(!showRecovery)}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <KeyRound className="w-3 h-3" />
-                Recovery mode
+                {t("admin.recoveryMode")}
               </button>
             </div>
             {showRecovery && (
               <div className="container mx-auto mt-3 pb-2 flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                 <input
                   type="text"
-                  placeholder="Your name"
+                  placeholder={t("admin.namePlaceholder")}
                   value={recoveryName}
                   onChange={e => setRecoveryName(e.target.value)}
                   className="text-sm border border-border rounded px-3 py-1.5 bg-background w-36 focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <input
                   type="password"
-                  placeholder="Recovery token"
+                  placeholder={t("admin.recoveryTokenPlaceholder")}
                   value={recoveryToken}
                   onChange={e => setRecoveryToken(e.target.value)}
                   className="text-sm border border-border rounded px-3 py-1.5 bg-background w-56 focus:outline-none focus:ring-1 focus:ring-primary"
@@ -187,7 +189,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   disabled={recovering || !recoveryToken.trim()}
                   className="shrink-0 text-sm font-medium px-4 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
-                  {recovering ? "Recovering…" : "Claim Admin"}
+                  {recovering ? t("admin.recovering") : t("admin.claimAdminBtn")}
                 </button>
               </div>
             )}
@@ -199,7 +201,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <footer className="border-t border-border/50 py-8 mt-12 text-center text-sm text-muted-foreground">
-        <p className="font-serif italic">&copy; {new Date().getFullYear()} PhotoReviewHub. Focus on the frame.</p>
+        <p className="font-serif italic">&copy; {new Date().getFullYear()} PhotoReviewHub. {t("footer.tagline")}</p>
       </footer>
     </div>
   );
