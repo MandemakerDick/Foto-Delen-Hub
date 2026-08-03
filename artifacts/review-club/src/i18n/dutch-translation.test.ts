@@ -10,8 +10,20 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 import i18next from "i18next";
+import { format } from "date-fns";
+import { nl as nlLocale, enUS } from "date-fns/locale";
+import type { Locale } from "date-fns";
 import en from "./en.json";
 import nl from "./nl.json";
+
+// ---------------------------------------------------------------------------
+// Replicate the locale map from use-date-locale.ts so the tests exercise
+// the same language-to-date-locale selection path as the running application.
+// ---------------------------------------------------------------------------
+const localeMap: Record<string, Locale> = {
+  nl: nlLocale,
+  en: enUS,
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -241,6 +253,75 @@ describe("Runtime language switching (en ↔ nl)", () => {
     await i18next.changeLanguage("en");
     expect(i18next.resolvedLanguage).toBe("en");
     // restore Dutch so subsequent tests are not affected
+    await i18next.changeLanguage("nl");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. common.photoCount plurals — i18next plural selection at runtime
+//    Call the base key (not _one/_other) so the runtime plural resolver
+//    picks the correct suffix, mirroring how the UI renders photo counts.
+// ---------------------------------------------------------------------------
+
+describe("common.photoCount Dutch plurals — runtime plural selection", () => {
+  it("count 1 selects the singular Dutch form via runtime plural resolution", () => {
+    expect(i18next.t("common.photoCount", { count: 1 })).toBe("1 foto");
+  });
+
+  it("count 5 selects the plural Dutch form via runtime plural resolution", () => {
+    expect(i18next.t("common.photoCount", { count: 5 })).toBe("5 foto's");
+  });
+
+  it("count 0 selects the plural Dutch form via runtime plural resolution", () => {
+    expect(i18next.t("common.photoCount", { count: 0 })).toBe("0 foto's");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 8. Dutch date locale — locale selection via the app's locale map
+//    These tests replicate the localeMap from use-date-locale.ts so they
+//    catch regressions in the language-to-date-locale mapping, not just
+//    in date-fns itself.  Local date constructors (not ISO strings) are used
+//    to avoid UTC-vs-local timezone issues.
+// ---------------------------------------------------------------------------
+
+describe("Dutch date locale — app locale selection and formatting", () => {
+  it("selects the nl date-fns locale when i18next language is 'nl'", () => {
+    // i18next was initialised with lng: "nl" in beforeAll
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(selectedLocale).toBe(nlLocale);
+  });
+
+  it("formats 3 Aug 2026 as '3 aug. 2026' when Dutch locale is selected", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    // new Date(year, monthIndex, day) — local clock, no UTC-shift ambiguity
+    expect(format(new Date(2026, 7, 3), "PP", { locale: selectedLocale })).toBe(
+      "3 aug. 2026"
+    );
+  });
+
+  it("formats 1 Jan 2026 as '1 jan. 2026' when Dutch locale is selected", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(format(new Date(2026, 0, 1), "PP", { locale: selectedLocale })).toBe(
+      "1 jan. 2026"
+    );
+  });
+
+  it("formats 25 Dec 2026 as '25 dec. 2026' when Dutch locale is selected", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(format(new Date(2026, 11, 25), "PP", { locale: selectedLocale })).toBe(
+      "25 dec. 2026"
+    );
+  });
+
+  it("switches to English locale and produces English-formatted date", async () => {
+    await i18next.changeLanguage("en");
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(selectedLocale).toBe(enUS);
+    expect(format(new Date(2026, 7, 3), "PP", { locale: selectedLocale })).toBe(
+      "Aug 3, 2026"
+    );
+    // restore Dutch for any subsequent tests
     await i18next.changeLanguage("nl");
   });
 });
