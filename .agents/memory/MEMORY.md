@@ -1,4 +1,4 @@
-- [Resend sending domain reminder](resend-domain-reminder.md) — ACTION DUE 2026-07-27: set EMAIL_FROM env var once Resend domain is verified, so removal emails go out from a real address.
+- [Resend sending domain](resend-domain-reminder.md) — Domain connectingthedots.fit verified 2026-08-03; EMAIL_FROM set to "PhotoMatrix <noreply@connectingthedots.fit>" in shared env.
 - [Radix Select empty-value crash](radix-select-empty-value.md) — SelectItem value="" crashes at runtime; use "none" and check accordingly in save logic.
 - [Dark-theme dialog visibility](dark-theme-dialog.md) — with near-black backgrounds, dialog bg-background blends into the overlay; use hardcoded arbitrary values in dialog.tsx.
 - [Drizzle-kit non-TTY](drizzle-kit-noninteractive.md) — drizzle-kit push needs TTY; use executeSql for raw DDL in agent shells.
