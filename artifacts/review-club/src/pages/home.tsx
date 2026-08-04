@@ -96,12 +96,20 @@ export function Home() {
                         <span>{format(new Date(session.scheduledFor), "PP", { locale: dateLocale })}</span>
                       </div>
                     )}
-                    {session.submissionDeadline && (
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" />
-                        <span>{t("session.deadlinePrefix")} {format(new Date(session.submissionDeadline), "PP", { locale: dateLocale })}</span>
-                      </div>
-                    )}
+                    {session.submissionDeadline && (() => {
+                      const deadlinePassed = new Date(session.submissionDeadline) < new Date();
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <div className={`flex items-center gap-1.5 ${deadlinePassed ? "text-muted-foreground/60 line-through" : ""}`}>
+                            <Clock className="w-4 h-4 shrink-0" />
+                            <span>{t("session.deadlinePrefix")} {format(new Date(session.submissionDeadline), "PP", { locale: dateLocale })}</span>
+                          </div>
+                          {deadlinePassed && (
+                            <span className="text-xs text-muted-foreground/70 font-medium">{t("session.deadlinePassed")}</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-1.5">
                       <ImageIcon className="w-4 h-4" />
                       <span>{t("common.photoCount", { count: session.photoCount || 0 })}</span>
