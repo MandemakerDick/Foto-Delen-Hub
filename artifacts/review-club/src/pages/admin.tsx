@@ -7,6 +7,7 @@ import {
   useListPhotographers,
   getListReviewSessionsQueryKey,
   useListClubs,
+  useGetReviewSession,
 } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,7 +26,7 @@ import { format } from "date-fns";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2, KeyRound } from "lucide-react";
+import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2, KeyRound, Pencil } from "lucide-react";
 import { Link } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -397,6 +398,7 @@ export function AdminPanel() {
                           {t("admin.reopen")}
                         </Button>
                       )}
+                      <EditSessionDialog sessionId={session.id} />
                       <Button size="sm" variant="default" asChild className="w-full sm:w-auto">
                         <Link href={`/sessions/${session.id}`}>
                           {t("admin.manage")} <Search className="w-4 h-4 ml-2" />
@@ -438,6 +440,114 @@ export function AdminPanel() {
       {/* Admin credentials — set email+password for password-based login */}
       <AdminCredentials adminId={adminStatus?.adminId ?? null} />
     </div>
+  );
+}
+
+function EditSessionDialog({ sessionId }: { sessionId: number }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateSession = useUpdateReviewSession();
+  const [open, setOpen] = useState(false);
+
+  const { data: session } = useGetReviewSession(sessionId, {
+    query: { enabled: open, queryKey: ["reviewSession", sessionId] },
+  });
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [submissionDeadline, setSubmissionDeadline] = useState("");
+  const [maxPhotos, setMaxPhotos] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Populate form when session data loads
+  const prevSessionRef = useState<number | null>(null);
+  if (session && prevSessionRef[0] !== session.id) {
+    prevSessionRef[1](session.id);
+    setTitle(session.title ?? "");
+    setDescription(session.description ?? "");
+    setScheduledFor(session.scheduledFor ? session.scheduledFor.slice(0, 10) : "");
+    setSubmissionDeadline(session.submissionDeadline ? session.submissionDeadline.slice(0, 10) : "");
+    setMaxPhotos(session.maxPhotosPerMember != null ? String(session.maxPhotosPerMember) : "");
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateSession.mutateAsync({
+        id: sessionId,
+        data: {
+          title: title.trim() || undefined,
+          description: description.trim() || null,
+          scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : null,
+          submissionDeadline: submissionDeadline ? new Date(submissionDeadline).toISOString() : null,
+          maxPhotosPerMember: maxPhotos ? parseInt(maxPhotos, 10) : null,
+        },
+      });
+      toast({ title: t("admin.toastSessionUpdatedTitle") });
+      queryClient.invalidateQueries({ queryKey: getListReviewSessionsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: ["reviewSession", sessionId] });
+      setOpen(false);
+    } catch (err: any) {
+      toast({ title: t("admin.toastError"), description: err.message || t("admin.toastUpdateFailed"), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="w-full sm:w-auto">
+          <Pencil className="w-4 h-4 mr-2" /> {t("admin.editSession")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("admin.editSessionTitle")}</DialogTitle>
+        </DialogHeader>
+        {!session ? (
+          <div className="space-y-3 py-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>{t("admin.titleLabel")}</Label>
+              <Input value={title} onChange={e => setTitle(e.target.value)} required className="bg-background" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("admin.descriptionLabel")}</Label>
+              <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="bg-background" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t("admin.reviewDateLabel")}</Label>
+                <Input type="date" value={scheduledFor} onChange={e => setScheduledFor(e.target.value)} className="bg-background" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("admin.submissionDeadlineLabel")}</Label>
+                <Input type="date" value={submissionDeadline} onChange={e => setSubmissionDeadline(e.target.value)} className="bg-background" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("admin.maxPhotosLabel")}</Label>
+              <Input type="number" min={1} value={maxPhotos} onChange={e => setMaxPhotos(e.target.value)} placeholder={t("admin.maxPhotosPlaceholder")} className="bg-background w-32" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("admin.cancel")}</Button>
+              <Button type="submit" disabled={saving || !title.trim()}>
+                {saving ? t("admin.saving") : t("admin.saveChanges")}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -118,13 +118,18 @@ export function SessionDetail() {
       <section className="bg-card border border-border/50 rounded-lg p-8 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start gap-6">
           <div className="space-y-4 max-w-3xl">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Badge variant={session.status === 'open' ? 'default' : session.status === 'reviewing' ? 'secondary' : 'outline'} className="uppercase tracking-wider">
                 {session.status}
               </Badge>
               {session.scheduledFor && (
                 <span className="text-sm text-muted-foreground font-medium">
                   {format(new Date(session.scheduledFor), "PP", { locale: dateLocale })}
+                </span>
+              )}
+              {session.submissionDeadline && (
+                <span className="text-sm text-muted-foreground font-medium">
+                  {t("session.deadlinePrefix")} {format(new Date(session.submissionDeadline), "PP", { locale: dateLocale })}
                 </span>
               )}
             </div>
