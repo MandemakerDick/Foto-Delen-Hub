@@ -151,3 +151,35 @@ describe("Home — deadline-passed cue", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("Home — deadline strikethrough style", () => {
+  it("applies the line-through class to the deadline row when the deadline is past", () => {
+    mockedUseListReviewSessions.mockReturnValue({
+      data: [makeSession({ submissionDeadline: PAST_DEADLINE })],
+      isLoading: false,
+    } as ReturnType<typeof useListReviewSessions>);
+
+    renderHome();
+
+    // The span rendered as "Deadline: <date>" lives inside the styled div.
+    // en.json session.deadlinePrefix = "Deadline:"
+    const deadlineSpan = screen.getByText(/Deadline:/);
+    const deadlineRow = deadlineSpan.parentElement;
+
+    expect(deadlineRow).toHaveClass("line-through");
+  });
+
+  it("does NOT apply the line-through class when the deadline is in the future", () => {
+    mockedUseListReviewSessions.mockReturnValue({
+      data: [makeSession({ submissionDeadline: FUTURE_DEADLINE })],
+      isLoading: false,
+    } as ReturnType<typeof useListReviewSessions>);
+
+    renderHome();
+
+    const deadlineSpan = screen.getByText(/Deadline:/);
+    const deadlineRow = deadlineSpan.parentElement;
+
+    expect(deadlineRow).not.toHaveClass("line-through");
+  });
+});
