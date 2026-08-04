@@ -130,6 +130,14 @@ describe("Archive page Dutch strings", () => {
     expect(i18next.t("archive.closedBadge")).toBe("gesloten");
   });
 
+  it("closedOn interpolates a Dutch-formatted date correctly", () => {
+    // Replicate the path the UI takes: localeMap → format → t("archive.closedOn")
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    const date = format(new Date(2026, 7, 3), "PP", { locale: selectedLocale });
+    expect(date).toBe("3 aug. 2026");
+    expect(i18next.t("archive.closedOn", { date })).toBe("Gesloten 3 aug. 2026");
+  });
+
   it("photoCount_one uses singular Dutch form", () => {
     expect(i18next.t("archive.photoCount_one", { count: 1 })).toBe("1 foto");
   });
