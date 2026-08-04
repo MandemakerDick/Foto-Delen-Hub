@@ -147,5 +147,32 @@
     "label": "Language",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "adminLogin": {
+    "heading": "Admin sign in",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Your password",
+    "signInBtn": "Sign in",
+    "signingIn": "Signing in…",
+    "invalidCredentials": "Email or password is incorrect.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "clerkLink": "Sign in with your account instead",
+    "adminLoginLink": "Admin login (password)"
+  },
+  "adminCredentials": {
+    "heading": "Admin credentials",
+    "description": "Set an email and password so you can sign in without entering a code every time.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "your@email.com",
+    "passwordLabel": "New password",
+    "passwordPlaceholder": "Choose a password",
+    "saveBtn": "Save credentials",
+    "saving": "Saving…",
+    "successTitle": "Credentials saved",
+    "successDesc": "You can now sign in at /admin/login with your email and password.",
+    "errorTitle": "Error",
+    "errorDesc": "Could not save credentials."
   }
 }

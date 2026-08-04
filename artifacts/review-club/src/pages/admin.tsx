@@ -25,8 +25,10 @@ import { format } from "date-fns";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2 } from "lucide-react";
+import { Settings, Plus, Play, CheckCircle, Search, Users, Trash2, KeyRound } from "lucide-react";
 import { Link } from "wouter";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const EMPTY_FORM = {
   title: "",
@@ -432,6 +434,82 @@ export function AdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Admin credentials — set email+password for password-based login */}
+      <AdminCredentials adminId={adminStatus?.adminId ?? null} />
+    </div>
+  );
+}
+
+function AdminCredentials({ adminId }: { adminId: number | null | undefined }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  if (!adminId) return null;
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (email.trim()) {
+        await fetch(`${basePath}/api/admins/${adminId}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+      }
+      if (password.trim()) {
+        const res = await fetch(`${basePath}/api/admins/${adminId}/set-password`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        if (!res.ok) throw new Error();
+      }
+      toast({ title: t("adminCredentials.successTitle"), description: t("adminCredentials.successDesc") });
+      setEmail("");
+      setPassword("");
+      setOpen(false);
+    } catch {
+      toast({ title: t("adminCredentials.errorTitle"), description: t("adminCredentials.errorDesc"), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-border/50 pt-6">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <KeyRound className="w-4 h-4" />
+        {t("adminCredentials.heading")}
+      </button>
+      {open && (
+        <form onSubmit={handleSave} className="mt-4 max-w-sm space-y-4 bg-card/30 border border-border/50 rounded-lg p-5">
+          <p className="text-sm text-muted-foreground">{t("adminCredentials.description")}</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="cred-email">{t("adminCredentials.emailLabel")}</Label>
+            <Input id="cred-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+              placeholder={t("adminCredentials.emailPlaceholder")} className="bg-background" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cred-password">{t("adminCredentials.passwordLabel")}</Label>
+            <Input id="cred-password" type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder={t("adminCredentials.passwordPlaceholder")} className="bg-background" />
+          </div>
+          <Button type="submit" size="sm" disabled={saving || (!email.trim() && !password.trim())}>
+            {saving ? t("adminCredentials.saving") : t("adminCredentials.saveBtn")}
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

@@ -1658,6 +1658,8 @@ components:
           nullable: true
         photographerId:
           type: ["integer", "null"]
+        adminId:
+          type: ["integer", "null"]
 
     AddAdminRequest:
       type: object

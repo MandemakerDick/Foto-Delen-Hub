@@ -165,18 +165,18 @@ router.get("/admins/me", async (req: any, res) => {
   if (userId) {
     const admin = await resolveClerkAdmin(userId);
     const photographerId = await getPhotographerIdForClerkUser(userId);
-    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: photographerId ?? null });
+    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: photographerId ?? null, adminId: admin?.id ?? null });
     return;
   }
 
   const sessionAdminId = req.session?.adminId as number | undefined;
   if (sessionAdminId) {
     const admin = await getAdminById(sessionAdminId);
-    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: null });
+    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: null, adminId: admin?.id ?? null });
     return;
   }
 
-  res.json({ isAdmin: false, totalAdmins: total, displayName: null, photographerId: null });
+  res.json({ isAdmin: false, totalAdmins: total, displayName: null, photographerId: null, adminId: null });
 });
 
 // GET /api/admins — list all admins (admin only)

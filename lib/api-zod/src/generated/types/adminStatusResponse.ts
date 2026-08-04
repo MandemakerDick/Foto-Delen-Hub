@@ -12,4 +12,6 @@ export interface AdminStatusResponse {
   displayName?: string | null;
   /** @nullable */
   photographerId?: number | null;
+  /** @nullable */
+  adminId?: number | null;
 }

@@ -11,6 +11,7 @@ import { SessionDetail } from "@/pages/session-detail";
 import { PhotoReviewDetail } from "@/pages/photo-review-detail";
 import { Archive } from "@/pages/archive";
 import { AdminPanel } from "@/pages/admin";
+import AdminLogin from "@/pages/admin-login";
 import { Layout } from "@/components/layout";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -86,6 +87,7 @@ function Router() {
         <Route path="/admin" component={AdminPanel} />
         <Route path="/sessions/:id" component={SessionDetail} />
         <Route path="/sessions/:id/photos/:sessionPhotoId" component={PhotoReviewDetail} />
+        <Route path="/admin/login" component={AdminLogin} />
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/sign-up/*?" component={SignUpPage} />
         <Route component={NotFound} />

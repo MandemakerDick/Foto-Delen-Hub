@@ -160,13 +160,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-muted-foreground">
                 {t("admin.notAdmin")}
               </p>
-              <button
-                onClick={() => setShowRecovery(!showRecovery)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <KeyRound className="w-3 h-3" />
-                {t("admin.recoveryMode")}
-              </button>
+              <div className="flex items-center gap-3">
+                <Link href="/admin/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2">
+                  {t("adminLogin.adminLoginLink")}
+                </Link>
+                <button
+                  onClick={() => setShowRecovery(!showRecovery)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  {t("admin.recoveryMode")}
+                </button>
+              </div>
             </div>
             {showRecovery && (
               <div className="container mx-auto mt-3 pb-2 flex flex-col sm:flex-row gap-2 items-start sm:items-center">

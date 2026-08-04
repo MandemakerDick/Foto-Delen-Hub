@@ -147,5 +147,32 @@
     "label": "Taal",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "adminLogin": {
+    "heading": "Beheerder aanmelden",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "jij@email.nl",
+    "passwordLabel": "Wachtwoord",
+    "passwordPlaceholder": "Jouw wachtwoord",
+    "signInBtn": "Aanmelden",
+    "signingIn": "Bezig met aanmelden…",
+    "invalidCredentials": "E-mail of wachtwoord is onjuist.",
+    "errorGeneric": "Er is iets misgegaan. Probeer het opnieuw.",
+    "clerkLink": "Meld je aan met je account",
+    "adminLoginLink": "Beheerder aanmelden (wachtwoord)"
+  },
+  "adminCredentials": {
+    "heading": "Beheerdersgegevens",
+    "description": "Stel een e-mail en wachtwoord in zodat je kunt inloggen zonder elke keer een code in te voeren.",
+    "emailLabel": "E-mailadres",
+    "emailPlaceholder": "jij@email.nl",
+    "passwordLabel": "Nieuw wachtwoord",
+    "passwordPlaceholder": "Kies een wachtwoord",
+    "saveBtn": "Gegevens opslaan",
+    "saving": "Opslaan…",
+    "successTitle": "Gegevens opgeslagen",
+    "successDesc": "Je kunt nu inloggen via /admin/login met je e-mail en wachtwoord.",
+    "errorTitle": "Fout",
+    "errorDesc": "Kon gegevens niet opslaan."
   }
 }
