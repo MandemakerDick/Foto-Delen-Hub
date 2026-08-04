@@ -271,3 +271,84 @@ describe("SessionDetail — submit button visibility", () => {
     ).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Admin path — deadline cue and submit-button visibility
+// ---------------------------------------------------------------------------
+
+function renderSessionDetailAsAdmin() {
+  mockedUseGetAdminStatus.mockReturnValue({
+    data: { isAdmin: true, photographerId: 42 },
+    isLoading: false,
+  } as ReturnType<typeof useGetAdminStatus>);
+
+  mockedUseListSessionPhotos.mockReturnValue({
+    data: [],
+    isLoading: false,
+  } as ReturnType<typeof useListSessionPhotos>);
+
+  mockedUseListSessionReviewers.mockReturnValue({
+    data: [],
+    isLoading: false,
+  } as ReturnType<typeof useListSessionReviewers>);
+
+  mockedUseListPhotographers.mockReturnValue({
+    data: [],
+    isLoading: false,
+  } as ReturnType<typeof useListPhotographers>);
+
+  mockedUseListPhotos.mockReturnValue({
+    data: [],
+    isLoading: false,
+  } as ReturnType<typeof useListPhotos>);
+
+  mockedUseAddSessionReviewer.mockReturnValue({
+    mutateAsync: vi.fn(),
+  } as unknown as ReturnType<typeof useAddSessionReviewer>);
+
+  mockedUseRemoveSessionReviewer.mockReturnValue({
+    mutateAsync: vi.fn(),
+  } as unknown as ReturnType<typeof useRemoveSessionReviewer>);
+
+  mockedUseSubmitSessionPhoto.mockReturnValue({
+    mutateAsync: vi.fn(),
+  } as unknown as ReturnType<typeof useSubmitSessionPhoto>);
+
+  return render(
+    <I18nextProvider i18n={i18n}>
+      <Router>
+        <SessionDetail />
+      </Router>
+    </I18nextProvider>
+  );
+}
+
+describe("SessionDetail — admin path deadline cue", () => {
+  it("shows the deadlinePassed label for admins when the deadline is in the past", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ submissionDeadline: PAST_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetailAsAdmin();
+
+    // en.json session.deadlinePassed = "The submission deadline has passed."
+    expect(
+      screen.getByText("The submission deadline has passed.")
+    ).toBeInTheDocument();
+  });
+
+  it("shows the submit-photo button for admins when the deadline is in the future", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ submissionDeadline: FUTURE_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetailAsAdmin();
+
+    // en.json session.submitPhoto = "Submit Photo"
+    expect(
+      screen.getByRole("button", { name: /submit photo/i })
+    ).toBeInTheDocument();
+  });
+});
