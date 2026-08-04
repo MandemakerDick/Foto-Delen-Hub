@@ -1,14 +1,11 @@
 import { useListReviewSessions, useListClubs } from "@workspace/api-client-react";
-import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Image as ImageIcon } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { useTranslation } from "react-i18next";
-import { useDateLocale } from "@/hooks/use-date-locale";
+import { ArchiveCard } from "@/components/archive-card";
 
 const PAGE_SIZE = 12;
 
@@ -17,7 +14,6 @@ export function Archive() {
   const { data: clubs, isLoading: clubsLoading } = useListClubs();
   const [page, setPage] = usePageParam();
   const { t } = useTranslation();
-  const dateLocale = useDateLocale();
 
   const getClubName = (clubId: number) => {
     return clubs?.find((c) => c.id === clubId)?.name || t("common.unknownClub");
@@ -49,36 +45,11 @@ export function Archive() {
         <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pagedSessions.map((session) => (
-            <Link key={session.id} href={`/sessions/${session.id}`}>
-              <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer group bg-card/50">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="outline" className="uppercase text-xs tracking-wider opacity-70">
-                      {t("archive.closedBadge")}
-                    </Badge>
-                    {session.closedAt && (
-                      <span className="text-xs text-muted-foreground">
-                        {t("archive.closedOn", { date: format(new Date(session.closedAt), "PP", { locale: dateLocale }) })}
-                      </span>
-                    )}
-                  </div>
-                  <CardTitle className="text-xl font-serif group-hover:text-primary transition-colors line-clamp-2">
-                    {session.title}
-                  </CardTitle>
-                  <CardDescription className="text-sm font-medium">
-                    {getClubName(session.clubId)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-auto">
-                    <div className="flex items-center gap-1.5">
-                      <ImageIcon className="w-4 h-4" />
-                      <span>{t("archive.photoCount", { count: session.photoCount || 0 })}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <ArchiveCard
+              key={session.id}
+              session={session}
+              clubName={getClubName(session.clubId)}
+            />
           ))}
         </div>
         <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
