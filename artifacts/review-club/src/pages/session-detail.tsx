@@ -67,6 +67,10 @@ export function SessionDetail() {
   if (sessionLoading) return <div className="space-y-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
   if (!session) return <div>{t("session.notFound")}</div>;
 
+  const deadlinePassed = session.submissionDeadline
+    ? new Date() > new Date(session.submissionDeadline)
+    : false;
+
   const handleAddReviewer = async () => {
     if (!selectedReviewerId) return;
     try {
@@ -207,7 +211,7 @@ export function SessionDetail() {
           <h2 className="text-2xl font-serif font-bold flex items-center gap-3">
             <Camera className="w-6 h-6 text-primary" /> {t("session.submittedPhotos")}
           </h2>
-          {session.status === 'open' && (
+          {session.status === 'open' && !deadlinePassed && (
             <Dialog open={isAddPhotoOpen} onOpenChange={setIsAddPhotoOpen}>
               <DialogTrigger asChild>
                 <Button>{t("session.submitPhoto")}</Button>
@@ -231,6 +235,11 @@ export function SessionDetail() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          )}
+          {session.status === 'open' && deadlinePassed && (
+            <span className="text-sm text-muted-foreground italic">
+              {t("session.deadlinePassed")}
+            </span>
           )}
         </div>
 
