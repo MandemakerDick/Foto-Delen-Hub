@@ -1,0 +1,36 @@
+{pkgs}: {
+  deps = [
+    pkgs.playwright-driver
+    pkgs.systemd
+    pkgs.wayland
+    pkgs.libdrm
+    pkgs.mesa
+    pkgs.at-spi2-core
+    pkgs.at-spi2-atk
+    pkgs.gtk3
+    pkgs.xorg.libXinerama
+    pkgs.xorg.libXScrnSaver
+    pkgs.libxkbcommon
+    pkgs.xorg.libXtst
+    pkgs.xorg.libXi
+    pkgs.xorg.libXcursor
+    pkgs.xorg.libX11
+    pkgs.alsa-lib
+    pkgs.cairo
+    pkgs.pango
+    pkgs.xorg.libXrender
+    pkgs.expat
+    pkgs.xorg.libxcb
+    pkgs.xorg.libXrandr
+    pkgs.xorg.libXfixes
+    pkgs.xorg.libXext
+    pkgs.xorg.libXdamage
+    pkgs.xorg.libXcomposite
+    pkgs.cups
+    pkgs.atk
+    pkgs.dbus
+    pkgs.nspr
+    pkgs.nss
+    pkgs.glib
+  ];
+}
