@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Image as ImageIcon } from "lucide-react";
+import { Calendar, Image as ImageIcon, Clock } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { ScanEye } from "lucide-react";
@@ -89,11 +89,17 @@ export function Home() {
                       {session.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-auto">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-auto">
                     {session.scheduledFor && (
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
                         <span>{format(new Date(session.scheduledFor), "PP", { locale: dateLocale })}</span>
+                      </div>
+                    )}
+                    {session.submissionDeadline && (
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4" />
+                        <span>{t("session.deadlinePrefix")} {format(new Date(session.submissionDeadline), "PP", { locale: dateLocale })}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
