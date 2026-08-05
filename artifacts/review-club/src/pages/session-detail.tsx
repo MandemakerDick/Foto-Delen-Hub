@@ -396,7 +396,7 @@ export function SessionDetail() {
                   </div>
                   <CardContent className="p-5 flex-1 flex flex-col">
                     <h3 className="font-serif text-lg font-semibold mb-1 line-clamp-1">{photo.photoTitle || t("session.untitled")}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{t("common.by")} {photo.photographerName}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{t("common.by")} {photo.photographerName ?? t("common.unknownPhotographer")}</p>
                     
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/50">
                       <div className="flex items-center gap-2">

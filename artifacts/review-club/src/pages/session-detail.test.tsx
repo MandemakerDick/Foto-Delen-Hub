@@ -563,4 +563,30 @@ describe("SessionDetail — direct-upload photo in the photo grid", () => {
     expect(screen.getByText("Photo Alpha")).toBeInTheDocument();
     expect(screen.getByText("Photo Beta")).toBeInTheDocument();
   });
+
+  it("shows the photo title and image without crashing when photographerName is null", () => {
+    renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ photographerName: null }),
+    ]);
+
+    // Photo title and image must still appear
+    expect(screen.getByText("Sunset over the dunes")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Sunset over the dunes" })
+    ).toBeInTheDocument();
+  });
+
+  it("shows a graceful fallback in place of the photographer name when it is null", () => {
+    renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ photographerName: null }),
+    ]);
+
+    // Must not render "by null" literally
+    expect(screen.queryByText(/null/i)).not.toBeInTheDocument();
+    // Must render the fallback label from common.unknownPhotographer
+    // (rendered as "by Unknown Photographer" inside the same <p>)
+    expect(
+      screen.getByText(new RegExp(en.common.unknownPhotographer, "i"))
+    ).toBeInTheDocument();
+  });
 });
