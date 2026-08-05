@@ -240,6 +240,32 @@ describe("SessionDetail — deadline-passed cue", () => {
       screen.queryByText("The submission deadline has passed.")
     ).not.toBeInTheDocument();
   });
+
+  it("does NOT show the deadlinePassed label when status is 'reviewing' and deadline is in the past", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "reviewing", submissionDeadline: PAST_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetail();
+
+    expect(
+      screen.queryByText("The submission deadline has passed.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("does NOT show the deadlinePassed label when status is 'closed' and deadline is in the past", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "closed", submissionDeadline: PAST_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetail();
+
+    expect(
+      screen.queryByText("The submission deadline has passed.")
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("SessionDetail — submit button visibility", () => {
