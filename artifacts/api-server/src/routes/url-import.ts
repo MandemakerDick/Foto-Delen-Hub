@@ -18,6 +18,26 @@ const objectStorageService = new ObjectStorageService();
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Derive a human-readable photo title from the image src URL when no alt/title is available. */
+function titleFromSrc(src: string): string {
+  try {
+    const pathname = new URL(src).pathname;
+    const filename = pathname.split("/").pop() || "";
+    // Strip query params and extension
+    const base = filename.split("?")[0].replace(/\.[^.]+$/, "").trim();
+    if (!base) return "Photo";
+    // Convert kebab-case / snake_case / camelCase to readable words
+    const readable = base
+      .replace(/[-_]+/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim();
+    return readable.length > 1 ? readable : "Photo";
+  } catch {
+    return "Photo";
+  }
+}
+
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
@@ -364,7 +384,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
       }
 
       // 4. Create photo record
-      const title = img.title?.trim() || "Untitled";
+      const title = img.title?.trim() || titleFromSrc(img.src);
       const [photo] = await db
         .insert(photosTable)
         .values({
