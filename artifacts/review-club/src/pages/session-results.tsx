@@ -73,7 +73,7 @@ export function SessionResults() {
             variant={session.status === "open" ? "default" : session.status === "reviewing" ? "secondary" : "outline"}
             className="uppercase tracking-wider"
           >
-            {session.status}
+            {t(`status.${session.status}`)}
           </Badge>
           <span className="text-sm text-muted-foreground">{clubName}</span>
           {session.scheduledFor && (

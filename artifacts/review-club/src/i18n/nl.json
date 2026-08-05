@@ -23,6 +23,11 @@
     "photoCount_one": "{{count}} foto",
     "photoCount_other": "{{count}} foto's"
   },
+  "status": {
+    "open": "Verzamelen",
+    "reviewing": "Beoordelen",
+    "closed": "Gesloten"
+  },
   "common": {
     "by": "door",
     "photoAlt": "Foto",
@@ -132,7 +137,7 @@
     "toastRequiredTitle": "Verplichte velden ontbreken",
     "toastRequiredDesc": "Titel en club zijn verplicht.",
     "toastSessionCreatedTitle": "Sessie aangemaakt",
-    "toastSessionCreatedDesc": "\"{{title}}\" is nu open.",
+    "toastSessionCreatedDesc": "\"{{title}}\" staat nu open voor inzendingen.",
     "toastSessionDeletedDesc": "\"{{title}}\" en alle ingediende foto's, beoordelingen en opmerkingen zijn definitief verwijderd.",
     "toastStatusUpdatedTitle": "Status bijgewerkt",
     "toastStatusUpdatedDesc": "Sessie is nu {{status}}.",

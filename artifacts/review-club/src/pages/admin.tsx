@@ -364,7 +364,7 @@ export function AdminPanel() {
                         variant={session.status === "open" ? "default" : session.status === "reviewing" ? "secondary" : "outline"}
                         className="uppercase text-[10px] tracking-wider"
                       >
-                        {session.status}
+                        {t(`status.${session.status}`)}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground flex flex-wrap gap-4">

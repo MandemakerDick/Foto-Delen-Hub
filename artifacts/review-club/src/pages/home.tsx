@@ -73,7 +73,7 @@ export function Home() {
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <Badge variant={session.status === "open" ? "default" : "secondary"} className="uppercase text-xs tracking-wider">
-                      {session.status}
+                      {t(`status.${session.status}`)}
                     </Badge>
                   </div>
                   <CardTitle className="text-xl font-serif group-hover:text-primary transition-colors line-clamp-2">

@@ -124,7 +124,7 @@ export function SessionDetail() {
           <div className="space-y-4 max-w-3xl">
             <div className="flex items-center gap-3 flex-wrap">
               <Badge variant={session.status === 'open' ? 'default' : session.status === 'reviewing' ? 'secondary' : 'outline'} className="uppercase tracking-wider">
-                {session.status}
+                {t(`status.${session.status}`)}
               </Badge>
               {session.scheduledFor && (
                 <span className="text-sm text-muted-foreground font-medium">

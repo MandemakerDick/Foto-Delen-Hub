@@ -23,6 +23,11 @@
     "photoCount_one": "{{count}} photo",
     "photoCount_other": "{{count}} photos"
   },
+  "status": {
+    "open": "Collecting",
+    "reviewing": "Reviewing",
+    "closed": "Closed"
+  },
   "common": {
     "by": "by",
     "photoAlt": "Photo",
@@ -132,7 +137,7 @@
     "toastRequiredTitle": "Required fields missing",
     "toastRequiredDesc": "Title and Club are required.",
     "toastSessionCreatedTitle": "Session created",
-    "toastSessionCreatedDesc": "\"{{title}}\" is now open.",
+    "toastSessionCreatedDesc": "\"{{title}}\" is now collecting submissions.",
     "toastSessionDeletedDesc": "\"{{title}}\" and all its photos, ratings, and comments have been removed.",
     "toastStatusUpdatedTitle": "Status updated",
     "toastStatusUpdatedDesc": "Session is now {{status}}.",
