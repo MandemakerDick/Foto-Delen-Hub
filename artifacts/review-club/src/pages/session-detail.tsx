@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus } from "lucide-react";
+import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus, Trophy } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { useTranslation } from "react-i18next";
@@ -207,10 +207,18 @@ export function SessionDetail() {
 
       {/* Photos Grid */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-2xl font-serif font-bold flex items-center gap-3">
             <Camera className="w-6 h-6 text-primary" /> {t("session.submittedPhotos")}
           </h2>
+          {(photos?.length ?? 0) > 0 && (
+            <Link href={`/sessions/${sessionId}/results`}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Trophy className="w-4 h-4" />
+                {t("results.viewResults")}
+              </Button>
+            </Link>
+          )}
           {session.status === 'open' && !deadlinePassed && (
             <Dialog open={isAddPhotoOpen} onOpenChange={setIsAddPhotoOpen}>
               <DialogTrigger asChild>

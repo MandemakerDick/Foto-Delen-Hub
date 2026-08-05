@@ -152,6 +152,15 @@
     "toastSessionDeletedTitle": "Sessie verwijderd",
     "toastDeleteFailed": "Sessie verwijderen mislukt."
   },
+  "results": {
+    "title": "Resultaten — {{session}}",
+    "backToSession": "Terug naar sessie",
+    "viewResults": "Resultaten bekijken",
+    "liveNote": "Resultaten kunnen nog veranderen naarmate er meer beoordelingen binnenkomen.",
+    "topPicks": "Beste keuzes",
+    "allRankings": "Alle rangschikkingen",
+    "noPhotos": "Er zijn nog geen foto's ingediend voor deze sessie."
+  },
   "footer": {
     "tagline": "Focus op het frame."
   },

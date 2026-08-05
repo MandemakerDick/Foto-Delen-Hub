@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Home } from "@/pages/home";
 import { SessionDetail } from "@/pages/session-detail";
+import { SessionResults } from "@/pages/session-results";
 import { PhotoReviewDetail } from "@/pages/photo-review-detail";
 import { Archive } from "@/pages/archive";
 import { AdminPanel } from "@/pages/admin";
@@ -85,6 +86,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/archive" component={Archive} />
         <Route path="/admin" component={AdminPanel} />
+        <Route path="/sessions/:id/results" component={SessionResults} />
         <Route path="/sessions/:id" component={SessionDetail} />
         <Route path="/sessions/:id/photos/:sessionPhotoId" component={PhotoReviewDetail} />
         <Route path="/admin/login" component={AdminLogin} />

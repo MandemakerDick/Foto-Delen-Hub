@@ -152,6 +152,15 @@
     "toastSessionDeletedTitle": "Session deleted",
     "toastDeleteFailed": "Failed to delete session."
   },
+  "results": {
+    "title": "Results — {{session}}",
+    "backToSession": "Back to session",
+    "viewResults": "View Results",
+    "liveNote": "Results may change as more reviews come in.",
+    "topPicks": "Top Picks",
+    "allRankings": "All Rankings",
+    "noPhotos": "No photos have been submitted to this session yet."
+  },
   "footer": {
     "tagline": "Focus on the frame."
   },

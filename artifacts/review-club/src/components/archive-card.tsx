@@ -1,8 +1,9 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import type { ReviewSession } from "@workspace/api-client-react";
@@ -18,7 +19,7 @@ export function ArchiveCard({ session, clubName }: ArchiveCardProps) {
 
   return (
     <Link href={`/sessions/${session.id}`}>
-      <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer group bg-card/50">
+      <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer group bg-card/50 flex flex-col">
         <CardHeader>
           <div className="flex justify-between items-start mb-2">
             <Badge variant="outline" className="uppercase text-xs tracking-wider opacity-70">
@@ -40,11 +41,19 @@ export function ArchiveCard({ session, clubName }: ArchiveCardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-auto">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <ImageIcon className="w-4 h-4" />
               <span>{t("archive.photoCount", { count: session.photoCount || 0 })}</span>
             </div>
+            {(session.photoCount ?? 0) > 0 && (
+              <Link href={`/sessions/${session.id}/results`} onClick={(e) => e.stopPropagation()}>
+                <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+                  <Trophy className="w-3 h-3" />
+                  {t("results.viewResults")}
+                </Button>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
