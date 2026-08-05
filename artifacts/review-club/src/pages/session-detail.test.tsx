@@ -351,4 +351,30 @@ describe("SessionDetail — admin path deadline cue", () => {
       screen.getByRole("button", { name: /submit photo/i })
     ).toBeInTheDocument();
   });
+
+  it("hides the submit-photo button for admins when status is 'reviewing' and the deadline is in the past", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "reviewing", submissionDeadline: PAST_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetailAsAdmin();
+
+    expect(
+      screen.queryByRole("button", { name: /submit photo/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the submit-photo button for admins when status is 'closed'", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "closed", submissionDeadline: FUTURE_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetailAsAdmin();
+
+    expect(
+      screen.queryByRole("button", { name: /submit photo/i })
+    ).not.toBeInTheDocument();
+  });
 });
