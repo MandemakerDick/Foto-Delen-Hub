@@ -65,10 +65,14 @@ vi.mock("lucide-react", () => ({
   Camera: () => null,
   Users: () => null,
   Image: () => null,
+  ImageIcon: () => null,
   MessageSquare: () => null,
   Trash2: () => null,
   Plus: () => null,
   X: () => null,
+  Trophy: () => null,
+  UploadCloud: () => null,
+  CheckCircle2: () => null,
 }));
 
 vi.mock("@/components/pagination-bar", () => ({
@@ -111,6 +115,7 @@ import {
   useSubmitSessionPhoto,
   useListPhotographers,
   useListPhotos,
+  type SessionPhoto,
 } from "@workspace/api-client-react";
 
 const mockedUseGetReviewSession = vi.mocked(useGetReviewSession);
@@ -454,5 +459,108 @@ describe("SessionDetail — admin path deadline cue", () => {
     expect(
       screen.queryByText("The submission deadline has passed.")
     ).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Direct-upload photo appearance in the session photo grid
+// ---------------------------------------------------------------------------
+
+/**
+ * A direct-upload photo has no gallery or club. The API creates a bare
+ * `photos` row (clubId = null, themeId = null) and returns it via
+ * GET /review-sessions/:id/photos with photoTitle and photoImageUrl
+ * populated from that bare row.
+ *
+ * These tests guard against regressions where the grid silently hides or
+ * mis-renders gallery-less photos.
+ */
+
+function makeDirectUploadPhoto(overrides: Partial<SessionPhoto> = {}): SessionPhoto {
+  return {
+    id: 99,
+    sessionId: 1,
+    photoId: 200,
+    photographerId: 42,
+    sortOrder: 1,
+    submittedAt: "2026-01-02T00:00:00Z",
+    photoTitle: "Sunset over the dunes",
+    photoImageUrl: "https://example.com/uploads/sunset.jpg",
+    photographerName: "Jane Doe",
+    reviewCount: 0,
+    averageRating: null,
+    ...overrides,
+  };
+}
+
+function renderSessionDetailWithPhotos(photos: SessionPhoto[]) {
+  // Set up all other mocks via the shared helper, then override the photos.
+  setupStaticMocks();
+  mockedUseListSessionPhotos.mockReturnValue({
+    data: photos,
+    isLoading: false,
+  } as ReturnType<typeof useListSessionPhotos>);
+
+  mockedUseGetReviewSession.mockReturnValue({
+    data: makeSession({ status: "reviewing" }),
+    isLoading: false,
+  } as ReturnType<typeof useGetReviewSession>);
+
+  return render(
+    <I18nextProvider i18n={i18n}>
+      <Router>
+        <SessionDetail />
+      </Router>
+    </I18nextProvider>
+  );
+}
+
+describe("SessionDetail — direct-upload photo in the photo grid", () => {
+  it("shows the photo title for a direct-upload photo (no club, no theme)", () => {
+    renderSessionDetailWithPhotos([makeDirectUploadPhoto()]);
+
+    expect(screen.getByText("Sunset over the dunes")).toBeInTheDocument();
+  });
+
+  it("renders an <img> with the correct src for a direct-upload photo", () => {
+    renderSessionDetailWithPhotos([makeDirectUploadPhoto()]);
+
+    const img = screen.getByRole("img", { name: "Sunset over the dunes" });
+    expect(img).toHaveAttribute("src", "https://example.com/uploads/sunset.jpg");
+  });
+
+  it("shows the photographer name for a direct-upload photo", () => {
+    renderSessionDetailWithPhotos([makeDirectUploadPhoto()]);
+
+    // "by Jane Doe" — the component renders t("common.by") + photographerName
+    expect(screen.getByText(/Jane Doe/i)).toBeInTheDocument();
+  });
+
+  it("falls back to the untitled label when the direct-upload photo has no title", () => {
+    renderSessionDetailWithPhotos([makeDirectUploadPhoto({ photoTitle: undefined })]);
+
+    // en.json session.untitled is used when photoTitle is absent
+    expect(screen.getByText(en.session.untitled)).toBeInTheDocument();
+  });
+
+  it("renders the no-image placeholder when photoImageUrl is absent", () => {
+    const { container } = renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ photoImageUrl: undefined }),
+    ]);
+
+    // No <img> element should be present when the URL is missing
+    expect(container.querySelector("img")).toBeNull();
+    // But the title must still appear
+    expect(screen.getByText("Sunset over the dunes")).toBeInTheDocument();
+  });
+
+  it("shows multiple direct-upload photos when the session contains more than one", () => {
+    renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ id: 1, photoId: 101, photoTitle: "Photo Alpha" }),
+      makeDirectUploadPhoto({ id: 2, photoId: 102, photoTitle: "Photo Beta", sortOrder: 2 }),
+    ]);
+
+    expect(screen.getByText("Photo Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Photo Beta")).toBeInTheDocument();
   });
 });
