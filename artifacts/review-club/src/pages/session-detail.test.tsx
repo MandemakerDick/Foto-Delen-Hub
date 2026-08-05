@@ -270,6 +270,32 @@ describe("SessionDetail — submit button visibility", () => {
       screen.getByRole("button", { name: /submit photo/i })
     ).toBeInTheDocument();
   });
+
+  it("hides the submit-photo button for non-admin members when status is 'reviewing'", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "reviewing", submissionDeadline: FUTURE_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetail();
+
+    expect(
+      screen.queryByRole("button", { name: /submit photo/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the submit-photo button for non-admin members when status is 'closed'", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "closed", submissionDeadline: FUTURE_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetail();
+
+    expect(
+      screen.queryByRole("button", { name: /submit photo/i })
+    ).not.toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
