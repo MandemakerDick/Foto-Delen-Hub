@@ -934,10 +934,18 @@ export const SubmitSessionPhotoParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const SubmitSessionPhotoBody = zod.object({
-  "photoId": zod.number(),
-  "sortOrder": zod.number().optional()
-})
+export const SubmitSessionPhotoBody = zod.union([
+  zod.object({
+    "photoId": zod.number(),
+    "sortOrder": zod.number().optional()
+  }),
+  zod.object({
+    "title": zod.string(),
+    "imageUrl": zod.string(),
+    "photographerId": zod.number().optional(),
+    "sortOrder": zod.number().optional()
+  })
+])
 
 
 /**

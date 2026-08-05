@@ -24,8 +24,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
-import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus, Trophy } from "lucide-react";
+import { useRef, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Camera, Users, Image as ImageIcon, MessageSquare, Trash2, Plus, Trophy, UploadCloud, CheckCircle2 } from "lucide-react";
 import { PaginationBar } from "@/components/pagination-bar";
 import { usePageParam } from "@/hooks/use-page-param";
 import { useTranslation } from "react-i18next";
@@ -62,6 +65,12 @@ export function SessionDetail() {
 
   const [isAddPhotoOpen, setIsAddPhotoOpen] = useState(false);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>("");
+  const [submitTab, setSubmitTab] = useState<"gallery" | "upload">("gallery");
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadImageUrl, setUploadImageUrl] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [photosPage, setPhotosPage] = usePageParam();
 
   if (sessionLoading) return <div className="space-y-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
@@ -100,19 +109,72 @@ export function SessionDetail() {
     }
   };
 
-  const handleSubmitPhoto = async () => {
-    if (!selectedPhotoId) return;
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadStatus("uploading");
+    setUploadImageUrl("");
     try {
-      await submitPhoto.mutateAsync({
-        id: sessionId,
-        data: { photoId: parseInt(selectedPhotoId, 10) }
+      const urlRes = await fetch(`${basePath}/api/storage/uploads/request-url`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
       });
-      toast({ title: t("session.photoSubmitted") });
-      setIsAddPhotoOpen(false);
-      setSelectedPhotoId("");
-      queryClient.invalidateQueries({ queryKey: getListSessionPhotosQueryKey(sessionId) });
-    } catch (e: any) {
-      toast({ title: t("session.error"), description: e.message, variant: "destructive" });
+      if (!urlRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await urlRes.json() as { uploadURL: string; objectPath: string };
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type ?? "image/jpeg" },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Upload failed");
+      setUploadImageUrl(`${basePath}/api/storage${objectPath}`);
+      setUploadStatus("done");
+    } catch {
+      setUploadStatus("error");
+      toast({ title: t("session.uploadError"), variant: "destructive" });
+    }
+  };
+
+  const handleSubmitPhoto = async () => {
+    if (submitTab === "gallery") {
+      if (!selectedPhotoId) return;
+      try {
+        await submitPhoto.mutateAsync({
+          id: sessionId,
+          data: { photoId: parseInt(selectedPhotoId, 10) }
+        });
+        toast({ title: t("session.photoSubmitted") });
+        setIsAddPhotoOpen(false);
+        setSelectedPhotoId("");
+        queryClient.invalidateQueries({ queryKey: getListSessionPhotosQueryKey(sessionId) });
+      } catch (e: any) {
+        toast({ title: t("session.error"), description: e.message, variant: "destructive" });
+      }
+    } else {
+      if (!uploadTitle.trim()) {
+        toast({ title: t("session.titleRequired"), variant: "destructive" });
+        return;
+      }
+      if (!uploadImageUrl) {
+        toast({ title: t("session.imageRequired"), variant: "destructive" });
+        return;
+      }
+      try {
+        await submitPhoto.mutateAsync({
+          id: sessionId,
+          data: { title: uploadTitle.trim(), imageUrl: uploadImageUrl }
+        });
+        toast({ title: t("session.photoSubmitted") });
+        setIsAddPhotoOpen(false);
+        setUploadTitle("");
+        setUploadImageUrl("");
+        setUploadStatus("idle");
+        queryClient.invalidateQueries({ queryKey: getListSessionPhotosQueryKey(sessionId) });
+      } catch (e: any) {
+        toast({ title: t("session.error"), description: e.message, variant: "destructive" });
+      }
     }
   };
 
@@ -220,7 +282,10 @@ export function SessionDetail() {
             </Link>
           )}
           {session.status === 'open' && !deadlinePassed && (
-            <Dialog open={isAddPhotoOpen} onOpenChange={setIsAddPhotoOpen}>
+            <Dialog open={isAddPhotoOpen} onOpenChange={(open) => {
+              setIsAddPhotoOpen(open);
+              if (!open) { setSubmitTab("gallery"); setUploadTitle(""); setUploadImageUrl(""); setUploadStatus("idle"); }
+            }}>
               <DialogTrigger asChild>
                 <Button>{t("session.submitPhoto")}</Button>
               </DialogTrigger>
@@ -228,18 +293,66 @@ export function SessionDetail() {
                 <DialogHeader>
                   <DialogTitle>{t("session.submitPhotoTitle")}</DialogTitle>
                 </DialogHeader>
-                <Select value={selectedPhotoId} onValueChange={setSelectedPhotoId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("session.selectPhoto")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allPhotos?.map(p => (
-                      <SelectItem key={p.id} value={p.id.toString()}>{p.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Tabs value={submitTab} onValueChange={(v) => setSubmitTab(v as "gallery" | "upload")}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="gallery" className="flex-1">{t("session.tabGallery")}</TabsTrigger>
+                    <TabsTrigger value="upload" className="flex-1">{t("session.tabUpload")}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="gallery" className="pt-3">
+                    <Select value={selectedPhotoId} onValueChange={setSelectedPhotoId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("session.selectPhoto")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allPhotos?.map(p => (
+                          <SelectItem key={p.id} value={p.id.toString()}>{p.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TabsContent>
+                  <TabsContent value="upload" className="pt-3 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="upload-title">{t("session.photoTitleLabel")}</Label>
+                      <Input
+                        id="upload-title"
+                        value={uploadTitle}
+                        onChange={(e) => setUploadTitle(e.target.value)}
+                        placeholder={t("session.photoTitlePlaceholder")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full gap-2"
+                        disabled={uploadStatus === "uploading"}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {uploadStatus === "uploading" ? (
+                          <>{t("session.uploading")}</>
+                        ) : uploadStatus === "done" ? (
+                          <><CheckCircle2 className="w-4 h-4 text-green-500" /> {t("session.uploadDone")}</>
+                        ) : (
+                          <><UploadCloud className="w-4 h-4" /> {t("session.chooseImage")}</>
+                        )}
+                      </Button>
+                      {uploadImageUrl && (
+                        <img src={uploadImageUrl} alt="" className="w-full aspect-[4/3] object-cover rounded-md border border-border/50" />
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
                 <DialogFooter>
-                  <Button onClick={handleSubmitPhoto}>{t("session.submit")}</Button>
+                  <Button onClick={handleSubmitPhoto} disabled={submitPhoto.isPending || uploadStatus === "uploading"}>
+                    {t("session.submit")}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

@@ -1867,13 +1867,25 @@ components:
           type: integer
 
     SessionPhotoInput:
-      type: object
-      required: [photoId]
-      properties:
-        photoId:
-          type: integer
-        sortOrder:
-          type: integer
+      oneOf:
+        - type: object
+          required: [photoId]
+          properties:
+            photoId:
+              type: integer
+            sortOrder:
+              type: integer
+        - type: object
+          required: [title, imageUrl]
+          properties:
+            title:
+              type: string
+            imageUrl:
+              type: string
+            photographerId:
+              type: integer
+            sortOrder:
+              type: integer
 
     SessionReviewer:
       type: object

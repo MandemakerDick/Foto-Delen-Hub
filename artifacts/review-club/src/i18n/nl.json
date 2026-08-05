@@ -62,7 +62,17 @@
     "reviewCount_one": "{{count}} beoordeling",
     "reviewCount_other": "{{count}} beoordelingen",
     "deadlinePassed": "De inzendtermijn is verstreken.",
-    "error": "Fout"
+    "error": "Fout",
+    "tabGallery": "Uit galerij",
+    "tabUpload": "Nieuwe foto uploaden",
+    "photoTitleLabel": "Fototitel",
+    "photoTitlePlaceholder": "Voer een titel in…",
+    "chooseImage": "Afbeelding kiezen",
+    "uploading": "Uploaden…",
+    "uploadDone": "Afbeelding geüpload",
+    "uploadError": "Uploaden mislukt",
+    "titleRequired": "Voer een titel in",
+    "imageRequired": "Upload eerst een afbeelding"
   },
   "review": {
     "leaveReview": "Beoordeling achterlaten",

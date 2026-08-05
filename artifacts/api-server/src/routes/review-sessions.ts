@@ -300,9 +300,11 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     return;
   }
 
+  const isDirectUpload = !("photoId" in parsed.data);
+
   let photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
   if (!photographerId) {
-    // Allow admins to submit on behalf of the photo's own photographer
+    // Allow admins to submit
     const adminRows = await db
       .select({ id: adminsTable.id })
       .from(adminsTable)
@@ -312,17 +314,40 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
       res.status(403).json({ error: "No photographer profile found" });
       return;
     }
-    // Derive photographer from the photo itself
-    const photoRows = await db
-      .select({ photographerId: photosTable.photographerId })
-      .from(photosTable)
-      .where(eq(photosTable.id, parsed.data.photoId))
-      .limit(1);
-    if (!photoRows[0]?.photographerId) {
-      res.status(400).json({ error: "Photo has no photographer" });
-      return;
+    if (isDirectUpload) {
+      // Admin direct upload: photographerId must be supplied in the body
+      const bodyPhotographerId = (parsed.data as { photographerId?: number }).photographerId;
+      if (!bodyPhotographerId) {
+        res.status(400).json({ error: "photographerId is required when uploading as admin" });
+        return;
+      }
+      photographerId = bodyPhotographerId;
+    } else {
+      // Admin gallery submission: derive photographer from the photo itself
+      const photoRows = await db
+        .select({ photographerId: photosTable.photographerId })
+        .from(photosTable)
+        .where(eq(photosTable.id, (parsed.data as { photoId: number }).photoId))
+        .limit(1);
+      if (!photoRows[0]?.photographerId) {
+        res.status(400).json({ error: "Photo has no photographer" });
+        return;
+      }
+      photographerId = photoRows[0].photographerId;
     }
-    photographerId = photoRows[0].photographerId;
+  }
+
+  // For direct uploads, create a gallery-less photo record first
+  let photoId: number;
+  if (isDirectUpload) {
+    const { title, imageUrl } = parsed.data as { title: string; imageUrl: string };
+    const [newPhoto] = await db
+      .insert(photosTable)
+      .values({ title, imageUrl, photographerId })
+      .returning({ id: photosTable.id });
+    photoId = newPhoto.id;
+  } else {
+    photoId = (parsed.data as { photoId: number }).photoId;
   }
 
   // Enforce max photos per member
@@ -348,7 +373,7 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     .insert(sessionPhotosTable)
     .values({
       sessionId: params.data.id,
-      photoId: parsed.data.photoId,
+      photoId,
       photographerId,
     })
     .returning();
