@@ -429,4 +429,30 @@ describe("SessionDetail — admin path deadline cue", () => {
       screen.queryByRole("button", { name: /submit photo/i })
     ).not.toBeInTheDocument();
   });
+
+  it("does NOT show the deadlinePassed label for admins when status is 'reviewing' and deadline is in the past", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "reviewing", submissionDeadline: PAST_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetailAsAdmin();
+
+    expect(
+      screen.queryByText("The submission deadline has passed.")
+    ).not.toBeInTheDocument();
+  });
+
+  it("does NOT show the deadlinePassed label for admins when status is 'closed' and deadline is in the past", () => {
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession({ status: "closed", submissionDeadline: PAST_DEADLINE }),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    renderSessionDetailAsAdmin();
+
+    expect(
+      screen.queryByText("The submission deadline has passed.")
+    ).not.toBeInTheDocument();
+  });
 });
