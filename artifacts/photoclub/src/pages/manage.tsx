@@ -59,6 +59,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { isFileSlugTitle, isImportButtonDisabled } from "@/lib/import-utils";
 import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 const clubSchema = z.object({
@@ -146,14 +147,6 @@ export default function Manage() {
     setSelectedImageIndices(next);
   };
 
-  /** Returns true when a string looks like a camera filename or URL slug rather than a real title. */
-  const isFileSlugTitle = (s: string): boolean => {
-    const t = s.trim();
-    if (!t || /^untitled$/i.test(t)) return true;
-    if (/\.(jpe?g|png|webp|gif|tiff?|bmp|heic)$/i.test(t)) return true;
-    if (/^(IMG|DSC[FO]?|PXL|MVI|VID|MOV|DCIM|photo|image|screenshot)[_-]?\d/i.test(t)) return true;
-    return false;
-  };
 
 
   const initPhotoEdits = () => {
@@ -1411,14 +1404,16 @@ export default function Manage() {
                   <Button
                     className="flex-1"
                     onClick={handleImportPhotos}
-                    disabled={
-                      selectedImageIndices.size === 0 ||
-                      importPhotosMutation.isPending ||
-                      (importPhotographerId === "new" && !importNewPhotographerName.trim()) ||
-                      importClubId === "none" ||
-                      (importClubId === "new" && !importNewClubName.trim()) ||
-                      (importPhotoEdits.some(e => !e.title.trim() || isFileSlugTitle(e.title)) && !importWarningAcknowledged)
-                    }
+                    disabled={isImportButtonDisabled({
+                      selectedCount: selectedImageIndices.size,
+                      isPending: importPhotosMutation.isPending,
+                      photographerId: importPhotographerId,
+                      newPhotographerName: importNewPhotographerName,
+                      clubId: importClubId,
+                      newClubName: importNewClubName,
+                      photoEdits: importPhotoEdits,
+                      warningAcknowledged: importWarningAcknowledged,
+                    })}
                   >
                     {importPhotosMutation.isPending ? (
                       <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importing {selectedImageIndices.size} photos...</>
