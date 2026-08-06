@@ -9,7 +9,7 @@
  * This guards against markup refactors that silently drop the cue.
  */
 
-import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import i18next from "i18next";
@@ -588,5 +588,49 @@ describe("SessionDetail — direct-upload photo in the photo grid", () => {
     expect(
       screen.getByText(new RegExp(en.common.unknownPhotographer, "i"))
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dutch locale — Unknown Photographer fallback
+// ---------------------------------------------------------------------------
+
+describe("SessionDetail — Dutch 'Unknown Photographer' fallback", () => {
+  beforeAll(async () => {
+    await i18n.changeLanguage("nl");
+  });
+
+  afterAll(async () => {
+    // Restore English so other describe blocks are unaffected
+    await i18n.changeLanguage("en");
+  });
+
+  it("shows the Dutch fallback text when photographerName is null", () => {
+    renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ photographerName: null }),
+    ]);
+
+    // nl.json common.unknownPhotographer = "Onbekende fotograaf"
+    expect(
+      screen.getByText(new RegExp(nl.common.unknownPhotographer, "i"))
+    ).toBeInTheDocument();
+  });
+
+  it("does NOT show the raw translation key when photographerName is null", () => {
+    renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ photographerName: null }),
+    ]);
+
+    expect(
+      screen.queryByText(/common\.unknownPhotographer/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("still shows the photo title in Dutch locale when photographerName is null", () => {
+    renderSessionDetailWithPhotos([
+      makeDirectUploadPhoto({ photographerName: null }),
+    ]);
+
+    expect(screen.getByText("Sunset over the dunes")).toBeInTheDocument();
   });
 });
