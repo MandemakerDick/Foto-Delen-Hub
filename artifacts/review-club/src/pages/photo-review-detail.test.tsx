@@ -512,3 +512,42 @@ describe("PhotoReviewDetail — review list", () => {
     expect(screen.queryByText(/\bnull\b/i)).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Tests — photo not found guard
+// ---------------------------------------------------------------------------
+
+describe("PhotoReviewDetail — photo not found", () => {
+  /**
+   * useParams is mocked to return sessionPhotoId: "99".
+   * Returning a list that contains a *different* id means photos is defined
+   * but the photo is not found, triggering the guard at line 90.
+   */
+  function renderWithMissingPhoto() {
+    setupStaticMocks();
+
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession(),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    // Photo list is loaded (truthy) but contains no entry with id === 99
+    mockedUseListSessionPhotos.mockReturnValue({
+      data: [makeDirectUploadPhoto({ id: 7 })],
+      isLoading: false,
+    } as ReturnType<typeof useListSessionPhotos>);
+
+    return renderPhotoReviewDetail();
+  }
+
+  it("shows the translated 'photo not found' message when the sessionPhotoId is not in the list", () => {
+    renderWithMissingPhoto();
+    // en.review.photoNotFound = "Photo not found"
+    expect(screen.getByText(en.review.photoNotFound)).toBeInTheDocument();
+  });
+
+  it("does not render the raw key 'review.photoNotFound' when the photo is missing", () => {
+    const { container } = renderWithMissingPhoto();
+    expect(container.textContent).not.toContain("review.photoNotFound");
+  });
+});
