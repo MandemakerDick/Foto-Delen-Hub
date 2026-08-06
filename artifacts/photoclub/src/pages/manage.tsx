@@ -155,30 +155,13 @@ export default function Manage() {
     return false;
   };
 
-  /** Derive a readable title from an image URL, mirroring the server-side titleFromSrc helper. */
-  const titleFromSrc = (src: string): string => {
-    try {
-      const pathname = new URL(src).pathname;
-      const filename = pathname.split("/").pop() || "";
-      const base = filename.split("?")[0].replace(/\.[^.]+$/, "").trim();
-      if (!base) return "";
-      const readable = base
-        .replace(/[-_]+/g, " ")
-        .replace(/([a-z])([A-Z])/g, "$1 $2")
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-        .trim();
-      return readable.length > 1 ? readable : "";
-    } catch {
-      return "";
-    }
-  };
 
   const initPhotoEdits = () => {
     if (!scanResult) return;
     const edits = scanResult.images
       .filter((_, i) => selectedImageIndices.has(i))
       .map(img => ({
-        title: isFileSlugTitle(img.alt?.trim() || "") ? titleFromSrc(img.src) : (img.alt?.trim() || ""),
+        title: isFileSlugTitle(img.alt?.trim() || "") ? `Photo import #${idx + 1}` : (img.alt?.trim() || ""),
         themeId: "none",
       }));
     setImportPhotoEdits(edits);
