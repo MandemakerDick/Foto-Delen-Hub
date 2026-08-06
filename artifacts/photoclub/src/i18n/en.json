@@ -46,7 +46,24 @@
       "club": "Club",
       "theme": "Theme",
       "photographer": "Photographer",
+      "photos": "Photos",
       "admins": "Admins"
+    },
+    "photos": {
+      "title": "Bulk Club Assignment",
+      "subtitle": "Select photos and assign them all to a club at once.",
+      "showUnassignedOnly": "Show only photos without a club",
+      "selectAll": "Select All",
+      "clearSelection": "Clear Selection",
+      "selectedCount": "{{count}} selected",
+      "noClub": "No club",
+      "selectClubPlaceholder": "Select a club…",
+      "assignBtn": "Assign Club ({{count}})",
+      "allAssigned": "All photos already have a club assigned.",
+      "empty": "No photos found.",
+      "toastAssignedTitle": "Club Assigned",
+      "toastAssignedDesc": "{{count}} photo(s) updated.",
+      "toastAssignError": "Could not assign club to photos."
     },
     "club": {
       "createTitle": "Create Community",

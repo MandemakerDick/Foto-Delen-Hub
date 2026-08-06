@@ -36,6 +36,7 @@ import {
   getListThemeProposalsQueryKey,
   useScanUrlForPhotos,
   useImportPhotosFromUrl,
+  useListPhotos,
   getListPhotosQueryKey,
 } from "@workspace/api-client-react";
 import type { UrlScanResult } from "@workspace/api-client-react";
@@ -60,7 +61,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { isFileSlugTitle, isImportButtonDisabled } from "@/lib/import-utils";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -99,6 +100,7 @@ export default function Manage() {
   const { data: photographers } = useListPhotographers();
   const { data: adminStatus } = useGetAdminStatus({ query: { retry: false, queryKey: getGetAdminStatusQueryKey() } });
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
+  const { data: allPhotos } = useListPhotos({}, { query: { enabled: !!adminStatus?.isAdmin } });
 
   // ── Import tab state ──────────────────────────────────────
   const [importStep, setImportStep] = useState<1 | 2 | 3 | 4>(1);
@@ -639,6 +641,41 @@ export default function Manage() {
     }
   };
 
+  // ── Photos (bulk club assign) state ──────────────────────
+  const [bulkSelectedPhotoIds, setBulkSelectedPhotoIds] = useState<Set<number>>(new Set());
+  const [bulkClubId, setBulkClubId] = useState<string>("none");
+  const [bulkShowUnassigned, setBulkShowUnassigned] = useState(true);
+  const [bulkAssigning, setBulkAssigning] = useState(false);
+
+  const filteredBulkPhotos = bulkShowUnassigned
+    ? (allPhotos ?? []).filter((p) => p.clubId == null)
+    : (allPhotos ?? []);
+
+  const handleBulkAssignClub = async () => {
+    if (bulkSelectedPhotoIds.size === 0 || bulkClubId === "none") return;
+    setBulkAssigning(true);
+    try {
+      const res = await fetch("/api/photos/bulk-club", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photoIds: Array.from(bulkSelectedPhotoIds),
+          clubId: Number(bulkClubId),
+        }),
+      });
+      if (!res.ok) throw new Error("Bulk assign failed");
+      const count = bulkSelectedPhotoIds.size;
+      toast({ title: t("manage.photos.toastAssignedTitle"), description: t("manage.photos.toastAssignedDesc", { count }) });
+      setBulkSelectedPhotoIds(new Set());
+      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+    } catch {
+      toast({ title: t("common.error"), description: t("manage.photos.toastAssignError"), variant: "destructive" });
+    } finally {
+      setBulkAssigning(false);
+    }
+  };
+
   const isClubPending = (editingClubId !== null ? updateClubMutation.isPending : createClubMutation.isPending) || logoUploading;
   const isThemePending = editingThemeId !== null ? updateThemeMutation.isPending : createThemeMutation.isPending;
   const isPhotographerPending = (editingPhotographerId !== null ? updatePhotographerMutation.isPending : createPhotographerMutation.isPending) || avatarUploading;
@@ -651,7 +688,7 @@ export default function Manage() {
       </div>
 
       <Tabs defaultValue="club" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-8 bg-secondary border border-border/50">
+        <TabsList className="grid w-full grid-cols-6 mb-8 bg-secondary border border-border/50">
           <TabsTrigger value="club" className="data-[state=active]:bg-background">
             <Users className="w-4 h-4 mr-2" />{t("manage.tabs.club")}
           </TabsTrigger>
@@ -663,6 +700,9 @@ export default function Manage() {
           </TabsTrigger>
           <TabsTrigger value="import" className="data-[state=active]:bg-background">
             <Globe className="w-4 h-4 mr-2" />Import
+          </TabsTrigger>
+          <TabsTrigger value="photos" className="data-[state=active]:bg-background">
+            <ImageIcon className="w-4 h-4 mr-2" />{t("manage.tabs.photos")}
           </TabsTrigger>
           <TabsTrigger value="admins" className="data-[state=active]:bg-background">
             <ShieldCheck className="w-4 h-4 mr-2" />{t("manage.tabs.admins")}
@@ -1449,6 +1489,118 @@ export default function Manage() {
                   Import More
                 </Button>
               </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ── Photos (bulk club assign) tab ────────────────── */}
+        <TabsContent value="photos" className="space-y-6">
+          <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
+            <h2 className="font-serif text-2xl font-medium mb-2">{t("manage.photos.title")}</h2>
+            <p className="text-sm text-muted-foreground mb-5">{t("manage.photos.subtitle")}</p>
+
+            {/* Filter toggle */}
+            <label className="flex items-center gap-2 mb-4 cursor-pointer select-none">
+              <Checkbox
+                checked={bulkShowUnassigned}
+                onCheckedChange={(v) => {
+                  setBulkShowUnassigned(!!v);
+                  setBulkSelectedPhotoIds(new Set());
+                }}
+              />
+              <span className="text-sm">{t("manage.photos.showUnassignedOnly")}</span>
+            </label>
+
+            {filteredBulkPhotos.length > 0 ? (
+              <>
+                {/* Select all / clear row */}
+                <div className="flex items-center gap-3 mb-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkSelectedPhotoIds(new Set(filteredBulkPhotos.map((p) => p.id)))}
+                  >
+                    <SquareCheck className="w-3.5 h-3.5 mr-1.5" />
+                    {t("manage.photos.selectAll")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkSelectedPhotoIds(new Set())}
+                    disabled={bulkSelectedPhotoIds.size === 0}
+                  >
+                    <Square className="w-3.5 h-3.5 mr-1.5" />
+                    {t("manage.photos.clearSelection")}
+                  </Button>
+                  <span className="text-sm text-muted-foreground ml-auto">
+                    {t("manage.photos.selectedCount", { count: bulkSelectedPhotoIds.size })}
+                  </span>
+                </div>
+
+                {/* Scrollable photo list */}
+                <div className="max-h-80 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/50">
+                  {filteredBulkPhotos.map((photo) => (
+                    <label
+                      key={photo.id}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                    >
+                      <Checkbox
+                        checked={bulkSelectedPhotoIds.has(photo.id)}
+                        onCheckedChange={(checked) => {
+                          const next = new Set(bulkSelectedPhotoIds);
+                          if (checked) next.add(photo.id);
+                          else next.delete(photo.id);
+                          setBulkSelectedPhotoIds(next);
+                        }}
+                      />
+                      {photo.imageUrl && (
+                        <img
+                          src={photo.imageUrl}
+                          alt={photo.title}
+                          className="w-10 h-10 object-cover rounded shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{photo.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {photo.clubName ?? t("manage.photos.noClub")}
+                          {photo.photographerName ? ` · ${photo.photographerName}` : ""}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Assign panel */}
+                <div className="flex gap-3 pt-4 mt-4 border-t border-border/50">
+                  <Select value={bulkClubId} onValueChange={setBulkClubId}>
+                    <SelectTrigger className="flex-1 bg-background">
+                      <SelectValue placeholder={t("manage.photos.selectClubPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clubs?.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={handleBulkAssignClub}
+                    disabled={bulkSelectedPhotoIds.size === 0 || bulkClubId === "none" || bulkAssigning}
+                  >
+                    {bulkAssigning && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                    {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {bulkShowUnassigned ? t("manage.photos.allAssigned") : t("manage.photos.empty")}
+              </p>
             )}
           </div>
         </TabsContent>

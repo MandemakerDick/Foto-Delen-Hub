@@ -43,7 +43,24 @@
       "club": "Club",
       "theme": "Thema",
       "photographer": "Fotograaf",
+      "photos": "Foto's",
       "admins": "Beheerders"
+    },
+    "photos": {
+      "title": "Club in bulk toewijzen",
+      "subtitle": "Selecteer foto's en wijs ze in één actie aan een club toe.",
+      "showUnassignedOnly": "Toon alleen foto's zonder club",
+      "selectAll": "Alles selecteren",
+      "clearSelection": "Selectie wissen",
+      "selectedCount": "{{count}} geselecteerd",
+      "noClub": "Geen club",
+      "selectClubPlaceholder": "Selecteer een club…",
+      "assignBtn": "Club toewijzen ({{count}})",
+      "allAssigned": "Alle foto's hebben al een club.",
+      "empty": "Geen foto's gevonden.",
+      "toastAssignedTitle": "Club toegewezen",
+      "toastAssignedDesc": "{{count}} foto('s) bijgewerkt.",
+      "toastAssignError": "Kon club niet toewijzen aan foto's."
     },
     "club": {
       "createTitle": "Club aanmaken",

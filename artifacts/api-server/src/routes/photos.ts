@@ -184,6 +184,36 @@ router.get("/photos/:id", async (req, res) => {
   res.json(mapPhoto(rows[0]));
 });
 
+// PATCH /api/photos/bulk-club — bulk-assign a club to multiple photos (admin only)
+router.patch("/photos/bulk-club", async (req, res) => {
+  const isAdmin = !!(req.session as any)?.adminId;
+  if (!isAdmin) { res.status(403).json({ error: "Admin access required" }); return; }
+
+  const { photoIds, clubId } = req.body ?? {};
+
+  if (
+    !Array.isArray(photoIds) ||
+    photoIds.length === 0 ||
+    photoIds.some((id) => typeof id !== "number" || !Number.isInteger(id) || id <= 0)
+  ) {
+    res.status(400).json({ error: "photoIds must be a non-empty array of positive integers" });
+    return;
+  }
+
+  if (clubId !== null && (typeof clubId !== "number" || !Number.isInteger(clubId) || clubId <= 0)) {
+    res.status(400).json({ error: "clubId must be a positive integer or null" });
+    return;
+  }
+
+  await Promise.all(
+    (photoIds as number[]).map((id) =>
+      db.update(photosTable).set({ clubId: clubId as number | null }).where(eq(photosTable.id, id)),
+    ),
+  );
+
+  res.json({ updated: (photoIds as number[]).length });
+});
+
 // PATCH /api/photos/:id — update a photo's metadata (owner or admin)
 router.patch("/photos/:id", async (req, res) => {
   const { userId } = getAuth(req);
