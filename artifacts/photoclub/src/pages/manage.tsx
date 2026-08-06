@@ -126,7 +126,7 @@ export default function Manage() {
         onSuccess: (result) => {
           setScanResult(result);
           setSelectedImageIndices(new Set(result.images.map((_, i) => i)));
-          setImportNewPhotographerName(result.photographerName || "");
+          setImportNewPhotographerName("");
           setImportNewPhotographerBio(result.bio || "");
           setImportStep(2);
         },
@@ -1266,7 +1266,7 @@ export default function Manage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Club (Optional)</label>
+                    <label className="text-sm font-medium">Club</label>
                     <Select value={importClubId} onValueChange={setImportClubId}>
                       <SelectTrigger className="bg-background"><SelectValue placeholder="Select club..." /></SelectTrigger>
                       <SelectContent>
@@ -1415,6 +1415,8 @@ export default function Manage() {
                       selectedImageIndices.size === 0 ||
                       importPhotosMutation.isPending ||
                       (importPhotographerId === "new" && !importNewPhotographerName.trim()) ||
+                      importClubId === "none" ||
+                      (importClubId === "new" && !importNewClubName.trim()) ||
                       (importPhotoEdits.some(e => !e.title.trim() || isFileSlugTitle(e.title)) && !importWarningAcknowledged)
                     }
                   >
