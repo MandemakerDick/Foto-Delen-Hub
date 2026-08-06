@@ -105,6 +105,7 @@ import {
   useCreatePhotoReview,
   useUpdatePhotoReview,
   type SessionPhoto,
+  type PhotoReview,
 } from "@workspace/api-client-react";
 
 const mockedUseGetReviewSession = vi.mocked(useGetReviewSession);
@@ -373,5 +374,141 @@ describe("PhotoReviewDetail — comment form presence", () => {
     expect(
       screen.queryByPlaceholderText(en.review.feedbackPlaceholder)
     ).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helpers — review list
+// ---------------------------------------------------------------------------
+
+function makeReview(overrides: Partial<PhotoReview> = {}): PhotoReview {
+  return {
+    id: 1,
+    sessionPhotoId: 99,
+    reviewerPhotographerId: 10,
+    reviewerName: "Alice Smith",
+    reviewerAvatarUrl: null,
+    rating: 4,
+    comment: "Great composition!",
+    createdAt: "2026-03-15T10:00:00Z",
+    ...overrides,
+  };
+}
+
+/**
+ * Render the page with one or more seeded reviews visible in the sidebar.
+ */
+function renderWithReviews(reviewOverrides: Array<Partial<PhotoReview>> = [{}]) {
+  setupStaticMocks();
+
+  mockedUseGetReviewSession.mockReturnValue({
+    data: makeSession({ status: "reviewing" }),
+    isLoading: false,
+  } as ReturnType<typeof useGetReviewSession>);
+
+  mockedUseListSessionPhotos.mockReturnValue({
+    data: [makeDirectUploadPhoto({ reviewCount: reviewOverrides.length })],
+    isLoading: false,
+  } as ReturnType<typeof useListSessionPhotos>);
+
+  mockedUseListPhotoReviews.mockReturnValue({
+    data: reviewOverrides.map((o, idx) =>
+      makeReview({ id: idx + 1, ...o })
+    ),
+    isLoading: false,
+  } as ReturnType<typeof useListPhotoReviews>);
+
+  return renderPhotoReviewDetail();
+}
+
+// ---------------------------------------------------------------------------
+// Tests — review list rendering
+// ---------------------------------------------------------------------------
+
+describe("PhotoReviewDetail — review list", () => {
+  it("renders the reviewer name for each seeded review", () => {
+    renderWithReviews([{ reviewerName: "Alice Smith" }, { reviewerName: "Bob Jones", id: 2, rating: 3 }]);
+    expect(screen.getByText("Alice Smith")).toBeInTheDocument();
+    expect(screen.getByText("Bob Jones")).toBeInTheDocument();
+  });
+
+  it("renders a formatted date (not a raw ISO string) for each review", () => {
+    renderWithReviews([{ createdAt: "2026-03-15T10:00:00Z" }]);
+    // The component formats with date-fns "PP" (e.g. "Mar 15, 2026").
+    // We verify the raw ISO string is not shown and something date-like is present.
+    const { container } = renderWithReviews([{ createdAt: "2026-03-15T10:00:00Z" }]);
+    const text = container.textContent ?? "";
+    // Raw ISO substring must not appear as a visible text node
+    expect(text).not.toContain("2026-03-15T10:00:00Z");
+    // A human-readable year should be present
+    expect(text).toMatch(/2026/);
+  });
+
+  it("renders one readonly star-rating widget per review", () => {
+    renderWithReviews([{ rating: 5 }, { rating: 2, id: 2 }]);
+    // The component renders one readonly StarRating for the average score header
+    // plus one per review entry — so total should be 1 + reviewCount.
+    const ratings = screen.getAllByTestId("star-rating-readonly");
+    // At least the per-review ones (2) plus the summary one (1) = 3
+    expect(ratings.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("reflects the correct rating value on each review's star widget", () => {
+    renderWithReviews([{ rating: 5 }, { rating: 2, id: 2 }]);
+    const ratings = screen.getAllByTestId("star-rating-readonly");
+    // Collect data-rating values; the per-review ratings (5 and 2) must both be present
+    const ratingValues = Array.from(ratings).map(el => el.getAttribute("data-rating"));
+    expect(ratingValues).toContain("5");
+    expect(ratingValues).toContain("2");
+  });
+
+  it("renders the review comment text", () => {
+    renderWithReviews([{ comment: "Excellent lighting and depth." }]);
+    expect(screen.getByText(/"Excellent lighting and depth\."/i)).toBeInTheDocument();
+  });
+
+  it("does not render raw i18n keys when reviews are present", () => {
+    const { container } = renderWithReviews([{ reviewerName: "Carol White", rating: 3 }]);
+    const text = container.textContent ?? "";
+    const rawKeyPattern = /\b(?:review|common|session)\.[a-zA-Z]+\b/;
+    expect(rawKeyPattern.test(text)).toBe(false);
+  });
+
+  it("does not render the 'no reviews' placeholder when reviews are present", () => {
+    renderWithReviews([{ reviewerName: "Dave Brown" }]);
+    expect(screen.queryByText(en.review.noReviews)).not.toBeInTheDocument();
+  });
+
+  it("shows skeleton placeholders while reviews are loading", () => {
+    setupStaticMocks();
+
+    mockedUseGetReviewSession.mockReturnValue({
+      data: makeSession(),
+      isLoading: false,
+    } as ReturnType<typeof useGetReviewSession>);
+
+    mockedUseListSessionPhotos.mockReturnValue({
+      data: [makeDirectUploadPhoto()],
+      isLoading: false,
+    } as ReturnType<typeof useListSessionPhotos>);
+
+    mockedUseListPhotoReviews.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as ReturnType<typeof useListPhotoReviews>);
+
+    renderPhotoReviewDetail();
+    expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
+  });
+
+  it("handles a review with a null comment gracefully (no crash)", () => {
+    expect(() =>
+      renderWithReviews([{ comment: null }])
+    ).not.toThrow();
+  });
+
+  it("handles a review with a null reviewerName gracefully without showing 'null'", () => {
+    renderWithReviews([{ reviewerName: null }]);
+    expect(screen.queryByText(/\bnull\b/i)).not.toBeInTheDocument();
   });
 });
