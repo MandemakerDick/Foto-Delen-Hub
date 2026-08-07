@@ -431,6 +431,33 @@ test("Clearing the club dropdown sends null in the PATCH body", async ({ page })
   expect(patches[0].body.clubId).toBeNull();
 });
 
+test("Clearing a photo title triggers the amber warning row and keeps Save enabled", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Clear the first photo's title.
+  const firstInput = page.getByPlaceholder(/title/i).first();
+  await firstInput.clear();
+
+  // The row wrapping the first photo should now carry the amber border class.
+  // Each bulk-edit row is a flex div with rounded-md; the first one belongs to photo 101.
+  const firstRow = page.locator("div.flex.items-start.gap-2.rounded-md").nth(0);
+  await expect(firstRow).toHaveClass(/border-amber-400/);
+
+  // The title input itself should also reflect the amber styling.
+  await expect(firstInput).toHaveClass(/border-amber-400/);
+
+  // The Save button must still be enabled — blank title is a warning, not a hard block.
+  // Clearing the title makes the photo dirty, so the button reads "save 1 change".
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await expect(saveBtn).toBeEnabled();
+});
+
 test("Failed PATCH keeps the bulk-edit panel open, shows an error toast, and preserves edited values", async ({ page }) => {
   const patches: PatchRecord[] = [];
   await setupStubs(page, patches);
