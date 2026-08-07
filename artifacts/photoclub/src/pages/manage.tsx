@@ -1363,7 +1363,7 @@ export default function Manage() {
                             <img
                               src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
                               alt=""
-                              className="w-12 h-12 rounded object-cover shrink-0"
+                              className="w-16 h-16 rounded object-cover shrink-0"
                             />
                             <Input
                               value={title}
