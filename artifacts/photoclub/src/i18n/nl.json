@@ -315,7 +315,17 @@
     "portfolio": "Portfolio",
     "allThemes": "Alle thema's",
     "noPortfolio": "Nog geen portfolio",
-    "noPortfolioBody": "Deze fotograaf heeft nog geen foto's geüpload."
+    "noPortfolioBody": "Deze fotograaf heeft nog geen foto's geüpload.",
+    "editPhotos": "Foto's bewerken",
+    "editHint": "Bewerk de titel, het thema en de club per foto. Alleen gewijzigde foto's worden opgeslagen.",
+    "titlePlaceholder": "Titel…",
+    "noTheme": "Geen thema",
+    "noClub": "Geen club",
+    "saving": "Opslaan…",
+    "saveChanges": "{{count}} wijziging(en) opslaan",
+    "noChanges": "Geen wijzigingen",
+    "saveSuccess": "{{count}} foto('s) bijgewerkt.",
+    "saveError": "Kon niet alle wijzigingen opslaan."
   },
   "themeDetail": {
     "back": "Terug naar thema's",
