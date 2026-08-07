@@ -322,3 +322,92 @@ test("No-change save closes edit mode without firing PATCH", async ({ page }) =>
   await assertEditPanelClosed(page);
   expect(patches).toHaveLength(0);
 });
+
+test("Changing the theme select fires PATCH with the correct themeId", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // The bulk-edit rows render two selects per photo (theme, club), alternating.
+  // Index 0 = photo 201 theme select (currently "Nature"/id:1).
+  const themeSelect = page.getByRole("combobox").nth(0);
+  await themeSelect.click();
+
+  // Pick "Urban" (id:2) from the open dropdown.
+  await page.getByRole("option", { name: /urban/i }).click();
+
+  // Save button should reflect 1 dirty photo.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes after save.
+  await assertEditPanelClosed(page);
+
+  // PATCH for photo 201 must carry themeId: 2.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(201);
+  expect(patches[0].body.themeId).toBe(2);
+});
+
+test("Changing the club select fires PATCH with the correct clubId", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Index 1 = photo 201 club select (currently "Test Club"/id:1).
+  const clubSelect = page.getByRole("combobox").nth(1);
+  await clubSelect.click();
+
+  // Pick "Other Club" (id:2) from the open dropdown.
+  await page.getByRole("option", { name: /other club/i }).click();
+
+  // Save.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes.
+  await assertEditPanelClosed(page);
+
+  // PATCH for photo 201 must carry clubId: 2.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(201);
+  expect(patches[0].body.clubId).toBe(2);
+});
+
+test("Resetting a select to none sends null in the PATCH body", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Photo 201 starts with clubId:1 ("Test Club"). Reset it to none.
+  // Index 1 = photo 201 club select.
+  const clubSelect = page.getByRole("combobox").nth(1);
+  await clubSelect.click();
+
+  // Pick the "no club" sentinel option.
+  await page.getByRole("option", { name: /no club/i }).click();
+
+  // Save.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes.
+  await assertEditPanelClosed(page);
+
+  // PATCH must carry clubId: null (not "none").
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(201);
+  expect(patches[0].body.clubId).toBeNull();
+});
