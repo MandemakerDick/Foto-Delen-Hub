@@ -430,3 +430,47 @@ test("Clearing the club dropdown sends null in the PATCH body", async ({ page })
   expect(patches[0].id).toBe(101);
   expect(patches[0].body.clubId).toBeNull();
 });
+
+test("Failed PATCH keeps the bulk-edit panel open, shows an error toast, and preserves edited values", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+
+  // Register a PATCH override AFTER setupStubs so it takes precedence (Playwright
+  // matches routes in reverse-registration order — last registered wins).
+  await page.route("**/api/photos/**", async (route: Route) => {
+    if (route.request().method() === "PATCH") {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Internal Server Error" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Modify the first photo's title.
+  const firstInput = page.getByPlaceholder(/title/i).first();
+  await firstInput.fill("Changed Title");
+
+  // Attempt to save — should fire the PATCH and get a 500.
+  await page.getByRole("button", { name: /save.*1|1.*change/i }).click();
+
+  // Panel must remain open — title inputs are still present.
+  await expect(firstInput).toBeVisible({ timeout: 10_000 });
+
+  // The changed value must still be displayed in the input (no state loss).
+  await expect(firstInput).toHaveValue("Changed Title");
+
+  // An error toast must be visible ("Could not save all changes." per en.json).
+  // Use .first() because the text can appear in both the visible toast element
+  // and a hidden ARIA live-region — at least one must be visible.
+  await expect(
+    page.getByText(/could not save all changes/i).first(),
+  ).toBeVisible({ timeout: 5_000 });
+});
