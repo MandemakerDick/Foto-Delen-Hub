@@ -353,7 +353,7 @@ export default function ClubDetail() {
                     <img
                       src={photo.imageUrl}
                       alt={photo.title}
-                      className="w-12 h-12 rounded object-cover shrink-0"
+                      className="w-16 h-16 rounded object-cover shrink-0"
                     />
                     <Input
                       value={edit.title}
