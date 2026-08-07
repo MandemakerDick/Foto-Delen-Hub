@@ -273,11 +273,11 @@ export default function PhotoDetail() {
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Main Image */}
         <div className="w-full lg:w-2/3 flex flex-col gap-8">
-          <div className="relative flex items-start justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
+          <div className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50 h-[80vh]">
             <img
               src={photo.imageUrl}
               alt={photo.title}
-              className="max-h-[80vh] w-auto object-contain shadow-2xl"
+              className="max-h-full max-w-full w-auto object-contain shadow-2xl"
             />
             {prevPhoto && (
               <Link
