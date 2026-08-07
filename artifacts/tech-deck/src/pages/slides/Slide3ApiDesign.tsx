@@ -252,7 +252,7 @@ export default function Slide3ApiDesign() {
               <div style={{ fontFamily: "'Courier New', monospace", fontSize: "1.1vw" }}>
                 <span style={{ color: "#BAE6FD" }}>/</span>
                 <span style={{ opacity: 0.55 }}> → </span>
-                <span>PhotoClub (Vite SPA)</span>
+                <span>PhotoMatrix (Vite SPA)</span>
               </div>
             </div>
           </div>

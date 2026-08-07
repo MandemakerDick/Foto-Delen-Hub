@@ -155,7 +155,7 @@ export default function Slide5Deployment() {
               >
                 &gt; ARTIFACT 2
               </div>
-              <div style={{ fontSize: "1.3vw", fontWeight: 700 }}>PhotoClub</div>
+              <div style={{ fontSize: "1.3vw", fontWeight: 700 }}>PhotoMatrix</div>
               <div style={{ fontSize: "1vw", opacity: 0.65, marginTop: "0.5vh" }}>
                 Vite SPA · / root path · Clerk auth
               </div>

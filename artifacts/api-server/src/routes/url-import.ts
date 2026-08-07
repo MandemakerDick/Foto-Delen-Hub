@@ -1,6 +1,6 @@
 /**
  * URL Import routes — admin-only endpoints for scanning a photographer
- * portfolio page and bulk-importing the discovered images into PhotoClub.
+ * portfolio page and bulk-importing the discovered images into PhotoMatrix.
  *
  * POST /api/admins/import-from-url/scan   — fetch page, extract images
  * POST /api/admins/import-from-url/import — download + upload + create records

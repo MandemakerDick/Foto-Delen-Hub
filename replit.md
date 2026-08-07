@@ -1,4 +1,4 @@
-# PhotoClub
+# PhotoMatrix
 
 A photo sharing platform where photographers share their work within tight-knit clubs, organized by themes and searchable by club, photographer name, and theme.
 
