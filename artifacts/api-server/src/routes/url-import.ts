@@ -70,7 +70,7 @@ function guessBio($: ReturnType<typeof cheerio.load>): string | null {
   const paragraphs: string[] = [];
   let total = 0;
   $("p").each((_, el) => {
-    if (total >= 1200) return; // collected enough
+    if (total >= 3000) return; // collected enough
     const text = $(el).text().replace(/\s+/g, " ").trim();
     if (text.length < 80) return; // skip short captions / UI labels
     paragraphs.push(text);
@@ -78,7 +78,7 @@ function guessBio($: ReturnType<typeof cheerio.load>): string | null {
   });
 
   if (paragraphs.length === 0) return null;
-  const joined = paragraphs.join(" ").slice(0, 1200).trim();
+  const joined = paragraphs.join(" ").slice(0, 3000).trim();
   return joined || null;
 }
 
