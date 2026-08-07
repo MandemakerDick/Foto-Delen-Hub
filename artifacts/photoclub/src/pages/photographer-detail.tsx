@@ -231,18 +231,11 @@ export default function PhotographerDetail() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div className="flex items-center gap-3">
             <h2 className="font-serif text-3xl font-bold">{t("photographerDetail.portfolio")}</h2>
-            {isAdmin && !photosLoading && (photos?.length ?? 0) > 0 && (
-              editMode ? (
-                <Button variant="ghost" size="sm" onClick={() => { setEditMode(false); setDirtyIds(new Set()); }} className="gap-1.5 self-end mb-1">
-                  <X className="w-4 h-4" />
-                  {t("common.cancel")}
-                </Button>
-              ) : (
-                <Button variant="ghost" size="sm" onClick={enterEditMode} className="gap-1.5 self-end mb-1 text-muted-foreground hover:text-foreground">
-                  <Pencil className="w-4 h-4" />
-                  {t("photographerDetail.editPhotos")}
-                </Button>
-              )
+            {isAdmin && !photosLoading && !editMode && (photos?.length ?? 0) > 0 && (
+              <Button variant="ghost" size="sm" onClick={enterEditMode} className="gap-1.5 self-end mb-1 text-muted-foreground hover:text-foreground">
+                <Pencil className="w-4 h-4" />
+                {t("photographerDetail.editPhotos")}
+              </Button>
             )}
           </div>
 
