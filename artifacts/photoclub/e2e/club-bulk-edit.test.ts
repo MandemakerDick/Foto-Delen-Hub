@@ -323,3 +323,110 @@ test("No-change save closes edit mode without firing PATCH", async ({ page }) =>
   await assertEditPanelClosed(page);
   expect(patches).toHaveLength(0);
 });
+
+test("Changing the theme dropdown and saving fires PATCH with the correct themeId", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // In edit mode the comboboxes are ordered: nth(0)=photo-101 theme, nth(1)=photo-101 club,
+  // nth(2)=photo-102 theme, nth(3)=photo-102 club.
+  // Photo 101 starts with themeId=1 (Nature). Change it to Urban (id=2).
+  await page.getByRole("combobox").nth(0).click();
+  await page.getByRole("option", { name: "Urban" }).click();
+
+  // Save button should indicate 1 pending change.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes after save.
+  await assertEditPanelClosed(page);
+
+  // PATCH was fired for photo 101 with the new themeId.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(101);
+  expect(patches[0].body.themeId).toBe(2);
+});
+
+test("Clearing the theme dropdown sends null in the PATCH body", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Photo 101 starts with themeId=1 (Nature). Clear it by selecting "No theme".
+  // nth(0) is the theme combobox for photo 101.
+  await page.getByRole("combobox").nth(0).click();
+  await page.getByRole("option", { name: "No theme" }).click();
+
+  // Save.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  await assertEditPanelClosed(page);
+
+  // PATCH should carry themeId: null.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(101);
+  expect(patches[0].body.themeId).toBeNull();
+});
+
+test("Changing the club dropdown and saving fires PATCH with the correct clubId", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Photo 101 starts with clubId=1 (Test Club). Change it to Other Club (id=2).
+  // nth(1) is the club combobox for photo 101 (after its theme combobox at nth(0)).
+  await page.getByRole("combobox").nth(1).click();
+  await page.getByRole("option", { name: "Other Club" }).click();
+
+  // Save button should indicate 1 pending change.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes after save.
+  await assertEditPanelClosed(page);
+
+  // PATCH was fired for photo 101 with the new clubId.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(101);
+  expect(patches[0].body.clubId).toBe(2);
+});
+
+test("Clearing the club dropdown sends null in the PATCH body", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Photo 101 starts with clubId=1 (Test Club). Clear it by selecting "No club".
+  // nth(1) is the club combobox for photo 101.
+  await page.getByRole("combobox").nth(1).click();
+  await page.getByRole("option", { name: "No club" }).click();
+
+  // Save.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  await assertEditPanelClosed(page);
+
+  // PATCH should carry clubId: null.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(101);
+  expect(patches[0].body.clubId).toBeNull();
+});
