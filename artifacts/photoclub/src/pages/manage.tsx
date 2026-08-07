@@ -1359,41 +1359,43 @@ export default function Manage() {
                             ? "bg-sky-50/30 dark:bg-sky-950/10 border-sky-300/40"
                             : "bg-background/50 border-border/50";
                         return (
-                          <div key={idx} className={`flex items-center gap-2 rounded-md p-2 border ${rowClass}`}>
+                          <div key={idx} className={`flex items-start gap-2 rounded-md p-2 border ${rowClass}`}>
                             <img
                               src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
                               alt=""
                               className="w-20 h-20 rounded object-cover shrink-0"
                             />
-                            <Input
-                              value={title}
-                              onChange={e => {
-                                const next = [...importPhotoEdits];
-                                if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
-                                setImportPhotoEdits(next);
-                                setImportWarningAcknowledged(false);
-                              }}
-                              className={`flex-1 min-w-0 ${hasWarning ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 focus-visible:ring-amber-400" : "bg-background"}`}
-                              placeholder="Title…"
-                            />
-                            <Select
-                              value={importPhotoEdits[idx]?.themeId ?? "none"}
-                              onValueChange={val => {
-                                const next = [...importPhotoEdits];
-                                if (next[idx]) next[idx] = { ...next[idx], themeId: val };
-                                setImportPhotoEdits(next);
-                              }}
-                            >
-                              <SelectTrigger className="bg-background w-40 shrink-0">
-                                <SelectValue placeholder="No theme" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No theme</SelectItem>
-                                {themes?.map(t => (
-                                  <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                              <Input
+                                value={title}
+                                onChange={e => {
+                                  const next = [...importPhotoEdits];
+                                  if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
+                                  setImportPhotoEdits(next);
+                                  setImportWarningAcknowledged(false);
+                                }}
+                                className={`w-full ${hasWarning ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 focus-visible:ring-amber-400" : "bg-background"}`}
+                                placeholder="Title…"
+                              />
+                              <Select
+                                value={importPhotoEdits[idx]?.themeId ?? "none"}
+                                onValueChange={val => {
+                                  const next = [...importPhotoEdits];
+                                  if (next[idx]) next[idx] = { ...next[idx], themeId: val };
+                                  setImportPhotoEdits(next);
+                                }}
+                              >
+                                <SelectTrigger className="bg-background w-full">
+                                  <SelectValue placeholder="No theme" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No theme</SelectItem>
+                                  {themes?.map(t => (
+                                    <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         );
                       })}

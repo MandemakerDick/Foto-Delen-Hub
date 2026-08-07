@@ -349,46 +349,50 @@ export default function ClubDetail() {
                     ? "border-primary/40 bg-primary/5"
                     : "border-border/50 bg-background/50";
                 return (
-                  <div key={photo.id} className={`flex items-center gap-2 rounded-md p-2 border ${rowClass}`}>
+                  <div key={photo.id} className={`flex items-start gap-2 rounded-md p-2 border ${rowClass}`}>
                     <img
                       src={photo.imageUrl}
                       alt={photo.title}
                       className="w-20 h-20 rounded object-cover shrink-0"
                     />
-                    <Input
-                      value={edit.title}
-                      onChange={e => handleFieldChange(photo.id, "title", e.target.value)}
-                      className={`flex-1 min-w-0 ${hasBlankTitle ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 focus-visible:ring-amber-400" : "bg-background"}`}
-                      placeholder={t("clubDetail.titlePlaceholder")}
-                    />
-                    <Select
-                      value={edit.themeId}
-                      onValueChange={v => handleFieldChange(photo.id, "themeId", v)}
-                    >
-                      <SelectTrigger className="bg-background w-36 shrink-0">
-                        <SelectValue placeholder={t("clubDetail.noTheme")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t("clubDetail.noTheme")}</SelectItem>
-                        {(themes ?? []).map(th => (
-                          <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={edit.clubId}
-                      onValueChange={v => handleFieldChange(photo.id, "clubId", v)}
-                    >
-                      <SelectTrigger className="bg-background w-40 shrink-0">
-                        <SelectValue placeholder={t("clubDetail.noClub")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t("clubDetail.noClub")}</SelectItem>
-                        {(clubs ?? []).map(c => (
-                          <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                      <Input
+                        value={edit.title}
+                        onChange={e => handleFieldChange(photo.id, "title", e.target.value)}
+                        className={`w-full ${hasBlankTitle ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 focus-visible:ring-amber-400" : "bg-background"}`}
+                        placeholder={t("clubDetail.titlePlaceholder")}
+                      />
+                      <div className="flex gap-1.5">
+                        <Select
+                          value={edit.themeId}
+                          onValueChange={v => handleFieldChange(photo.id, "themeId", v)}
+                        >
+                          <SelectTrigger className="bg-background flex-1 min-w-0">
+                            <SelectValue placeholder={t("clubDetail.noTheme")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t("clubDetail.noTheme")}</SelectItem>
+                            {(themes ?? []).map(th => (
+                              <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={edit.clubId}
+                          onValueChange={v => handleFieldChange(photo.id, "clubId", v)}
+                        >
+                          <SelectTrigger className="bg-background flex-1 min-w-0">
+                            <SelectValue placeholder={t("clubDetail.noClub")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t("clubDetail.noClub")}</SelectItem>
+                            {(clubs ?? []).map(c => (
+                              <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
