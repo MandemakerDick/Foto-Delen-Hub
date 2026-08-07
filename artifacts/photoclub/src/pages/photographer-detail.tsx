@@ -283,11 +283,11 @@ export default function PhotographerDetail() {
                     ? "border-primary/40 bg-primary/5"
                     : "border-border/50 bg-background/50";
                 return (
-                  <div key={photo.id} className={`flex items-center gap-3 rounded-md p-2 border ${rowClass}`}>
+                  <div key={photo.id} className={`flex items-center gap-2 rounded-md p-2 border ${rowClass}`}>
                     <img
                       src={photo.imageUrl}
                       alt={photo.title}
-                      className="w-16 h-16 rounded object-cover shrink-0"
+                      className="w-20 h-20 rounded object-cover shrink-0"
                     />
                     <Input
                       value={edit.title}

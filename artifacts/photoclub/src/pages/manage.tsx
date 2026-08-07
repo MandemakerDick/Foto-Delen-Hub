@@ -1359,11 +1359,11 @@ export default function Manage() {
                             ? "bg-sky-50/30 dark:bg-sky-950/10 border-sky-300/40"
                             : "bg-background/50 border-border/50";
                         return (
-                          <div key={idx} className={`flex items-center gap-3 rounded-md p-2 border ${rowClass}`}>
+                          <div key={idx} className={`flex items-center gap-2 rounded-md p-2 border ${rowClass}`}>
                             <img
                               src={`/api/admins/import-from-url/proxy?url=${encodeURIComponent(img.src)}`}
                               alt=""
-                              className="w-16 h-16 rounded object-cover shrink-0"
+                              className="w-20 h-20 rounded object-cover shrink-0"
                             />
                             <Input
                               value={title}
