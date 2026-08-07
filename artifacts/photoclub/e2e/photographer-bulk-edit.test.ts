@@ -411,3 +411,69 @@ test("Resetting a select to none sends null in the PATCH body", async ({ page })
   expect(patches[0].id).toBe(201);
   expect(patches[0].body.clubId).toBeNull();
 });
+
+test("Changing title AND theme for the same photo fires exactly one PATCH with both fields", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Change the title of photo 201.
+  await page.getByPlaceholder(/title/i).first().fill("Combined Edit Title");
+
+  // Change the theme of photo 201 from "Nature" to "Urban".
+  // Index 0 = photo 201 theme select.
+  const themeSelect = page.getByRole("combobox").nth(0);
+  await themeSelect.click();
+  await page.getByRole("option", { name: /urban/i }).click();
+
+  // Save button should reflect exactly 1 dirty photo.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes after save.
+  await assertEditPanelClosed(page);
+
+  // Exactly one PATCH must have been fired (not one per field).
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(201);
+  // Both updated fields must be present in the single PATCH body.
+  expect(patches[0].body.title).toBe("Combined Edit Title");
+  expect(patches[0].body.themeId).toBe(2);
+});
+
+test("Changing title AND club for the same photo fires exactly one PATCH with both fields", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Change the title of photo 201.
+  await page.getByPlaceholder(/title/i).first().fill("Title And Club Edit");
+
+  // Change the club of photo 201 from "Test Club" to "Other Club".
+  // Index 1 = photo 201 club select.
+  const clubSelect = page.getByRole("combobox").nth(1);
+  await clubSelect.click();
+  await page.getByRole("option", { name: /other club/i }).click();
+
+  // Save button should reflect exactly 1 dirty photo.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeVisible();
+  await saveBtn.click();
+
+  // Panel closes after save.
+  await assertEditPanelClosed(page);
+
+  // Exactly one PATCH must have been fired (not one per field).
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(201);
+  // Both updated fields must be present in the single PATCH body.
+  expect(patches[0].body.title).toBe("Title And Club Edit");
+  expect(patches[0].body.clubId).toBe(2);
+});
