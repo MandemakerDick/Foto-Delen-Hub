@@ -1,24 +1,40 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, X } from "lucide-react";
+import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, X, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   useGetClub, getGetClubQueryKey,
-  useListPhotos,
+  useListPhotos, getListPhotosQueryKey,
   useListPhotographers, getListPhotographersQueryKey,
+  useUpdatePhoto,
+  useGetAdminStatus, getGetAdminStatusQueryKey,
+  useListThemes,
+  useListClubs,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { PhotoCard } from "@/components/photo-card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+
+type PhotoEdit = { title: string; themeId: string; clubId: string };
 
 export default function ClubDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const clubId = Number(id);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [showMembers, setShowMembers] = useState(false);
   const [selectedPhotographerId, setSelectedPhotographerId] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [photoEdits, setPhotoEdits] = useState<Record<number, PhotoEdit>>({});
+  const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
 
   const { data: club, isLoading: clubLoading } = useGetClub(clubId, {
     query: { enabled: !!clubId, queryKey: getGetClubQueryKey(clubId) },
@@ -35,7 +51,21 @@ export default function ClubDetail() {
       : { clubId },
   );
 
+  const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
+  const { data: themes } = useListThemes();
+  const { data: clubs } = useListClubs();
+
+  const isAdmin = !!adminStatus?.isAdmin;
+
+  const updateMutation = useUpdatePhoto();
+
   const selectedMember = members?.find((m) => m.id === selectedPhotographerId) ?? null;
+
+  // The gallery shown in view mode (all club photos, or filtered by member)
+  const visiblePhotos = useMemo(
+    () => photos ?? [],
+    [photos],
+  );
 
   const handleMemberClick = (photographerId: number) => {
     setSelectedPhotographerId((prev) => (prev === photographerId ? null : photographerId));
@@ -46,6 +76,71 @@ export default function ClubDetail() {
       if (v) setSelectedPhotographerId(null);
       return !v;
     });
+  };
+
+  const enterEditMode = () => {
+    if (!photos) return;
+    const edits: Record<number, PhotoEdit> = {};
+    for (const p of photos) {
+      edits[p.id] = {
+        title: p.title || "",
+        themeId: p.themeId?.toString() ?? "none",
+        clubId: p.clubId?.toString() ?? "none",
+      };
+    }
+    setPhotoEdits(edits);
+    setDirtyIds(new Set());
+    setEditMode(true);
+  };
+
+  const handleFieldChange = (photoId: number, field: keyof PhotoEdit, value: string) => {
+    setPhotoEdits(prev => ({ ...prev, [photoId]: { ...prev[photoId], [field]: value } }));
+    setDirtyIds(prev => {
+      const next = new Set(prev);
+      const orig = photos?.find(p => p.id === photoId);
+      if (!orig) return next;
+      const origEdit: PhotoEdit = {
+        title: orig.title || "",
+        themeId: orig.themeId?.toString() ?? "none",
+        clubId: orig.clubId?.toString() ?? "none",
+      };
+      const updated = { ...photoEdits[photoId], [field]: value };
+      const isDirty =
+        updated.title !== origEdit.title ||
+        updated.themeId !== origEdit.themeId ||
+        updated.clubId !== origEdit.clubId;
+      isDirty ? next.add(photoId) : next.delete(photoId);
+      return next;
+    });
+  };
+
+  const handleSaveAll = async () => {
+    if (dirtyIds.size === 0) { setEditMode(false); return; }
+    setSaving(true);
+    try {
+      await Promise.all(
+        [...dirtyIds].map(pid => {
+          const edit = photoEdits[pid];
+          return updateMutation.mutateAsync({
+            id: pid,
+            data: {
+              title: edit.title.trim() || undefined,
+              themeId: edit.themeId !== "none" ? Number(edit.themeId) : null,
+              clubId: edit.clubId !== "none" ? Number(edit.clubId) : null,
+            },
+          });
+        }),
+      );
+      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetClubQueryKey(clubId) });
+      toast({ title: t("clubDetail.saveSuccess", { count: dirtyIds.size }) });
+      setEditMode(false);
+      setDirtyIds(new Set());
+    } catch {
+      toast({ title: t("common.error"), description: t("clubDetail.saveError"), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (clubLoading) {
@@ -204,12 +299,25 @@ export default function ClubDetail() {
       {/* Gallery */}
       <section className="py-16 container mx-auto px-4">
         <div className="flex items-center justify-between mb-10 flex-wrap gap-4">
-          <h2 className="font-serif text-3xl font-bold">
-            {selectedMember
-              ? t("clubDetail.filteringBy", { name: selectedMember.name })
-              : t("clubDetail.collection")}
-          </h2>
-          {selectedMember && (
+          <div className="flex items-center gap-3">
+            <h2 className="font-serif text-3xl font-bold">
+              {selectedMember
+                ? t("clubDetail.filteringBy", { name: selectedMember.name })
+                : t("clubDetail.collection")}
+            </h2>
+            {isAdmin && !photosLoading && !editMode && (visiblePhotos.length > 0) && !selectedPhotographerId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={enterEditMode}
+                className="gap-1.5 self-end mb-1 text-muted-foreground hover:text-foreground"
+              >
+                <Pencil className="w-4 h-4" />
+                {t("clubDetail.editPhotos")}
+              </Button>
+            )}
+          </div>
+          {selectedMember && !editMode && (
             <div className="flex items-center gap-3">
               <Link href={`/photographers/${selectedMember.id}`} className="text-sm text-primary hover:underline">
                 {selectedMember.name}'s full portfolio →
@@ -222,7 +330,93 @@ export default function ClubDetail() {
           )}
         </div>
 
-        {photosLoading ? (
+        {editMode ? (
+          /* ── Bulk Edit List ── */
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t("clubDetail.editHint")}
+            </p>
+
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {(photos ?? []).map((photo) => {
+                const edit = photoEdits[photo.id];
+                if (!edit) return null;
+                const isDirty = dirtyIds.has(photo.id);
+                const hasBlankTitle = !edit.title.trim();
+                const rowClass = hasBlankTitle
+                  ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/20"
+                  : isDirty
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-border/50 bg-background/50";
+                return (
+                  <div key={photo.id} className={`flex items-center gap-3 rounded-md p-2 border ${rowClass}`}>
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.title}
+                      className="w-12 h-12 rounded object-cover shrink-0"
+                    />
+                    <Input
+                      value={edit.title}
+                      onChange={e => handleFieldChange(photo.id, "title", e.target.value)}
+                      className={`flex-1 min-w-0 ${hasBlankTitle ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 focus-visible:ring-amber-400" : "bg-background"}`}
+                      placeholder={t("clubDetail.titlePlaceholder")}
+                    />
+                    <Select
+                      value={edit.themeId}
+                      onValueChange={v => handleFieldChange(photo.id, "themeId", v)}
+                    >
+                      <SelectTrigger className="bg-background w-36 shrink-0">
+                        <SelectValue placeholder={t("clubDetail.noTheme")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("clubDetail.noTheme")}</SelectItem>
+                        {(themes ?? []).map(th => (
+                          <SelectItem key={th.id} value={th.id.toString()}>{th.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={edit.clubId}
+                      onValueChange={v => handleFieldChange(photo.id, "clubId", v)}
+                    >
+                      <SelectTrigger className="bg-background w-40 shrink-0">
+                        <SelectValue placeholder={t("clubDetail.noClub")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("clubDetail.noClub")}</SelectItem>
+                        {(clubs ?? []).map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => { setEditMode(false); setDirtyIds(new Set()); }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSaveAll}
+                disabled={saving}
+              >
+                {saving ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t("clubDetail.saving")}</>
+                ) : dirtyIds.size > 0 ? (
+                  t("clubDetail.saveChanges", { count: dirtyIds.size })
+                ) : (
+                  t("clubDetail.noChanges")
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : photosLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse flex flex-col gap-3">
@@ -231,9 +425,9 @@ export default function ClubDetail() {
               </div>
             ))}
           </div>
-        ) : photos && photos.length > 0 ? (
+        ) : visiblePhotos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
-            {photos.map((photo, i) => (
+            {visiblePhotos.map((photo, i) => (
               <PhotoCard key={photo.id} photo={photo} index={i} context={`club:${clubId}`} />
             ))}
           </div>

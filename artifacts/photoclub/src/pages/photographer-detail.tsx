@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { User, Users, Calendar, ArrowLeft, Image as ImageIcon, Pencil, X, Loader2 } from "lucide-react";
+import { User, Users, Calendar, ArrowLeft, Image as ImageIcon, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   useGetPhotographer, getGetPhotographerQueryKey,

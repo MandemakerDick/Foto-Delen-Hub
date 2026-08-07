@@ -350,7 +350,17 @@
     "membersHeading": "Members",
     "allPhotos": "All photos",
     "filteringBy": "Photos by {{name}}",
-    "noMembersYet": "No members yet."
+    "noMembersYet": "No members yet.",
+    "editPhotos": "Edit photos",
+    "editHint": "Edit title, theme and club for each photo. Only changed photos are saved.",
+    "titlePlaceholder": "Title…",
+    "noTheme": "No theme",
+    "noClub": "No club",
+    "saving": "Saving…",
+    "saveChanges": "Save {{count}} changes",
+    "noChanges": "No changes",
+    "saveSuccess": "{{count}} photo(s) updated.",
+    "saveError": "Could not save all changes."
   },
   "photoDetail": {
     "back": "Back to Gallery",

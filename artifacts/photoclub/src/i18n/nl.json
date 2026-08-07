@@ -350,7 +350,17 @@
     "membersHeading": "Leden",
     "allPhotos": "Alle foto's",
     "filteringBy": "Foto's van {{name}}",
-    "noMembersYet": "Nog geen leden."
+    "noMembersYet": "Nog geen leden.",
+    "editPhotos": "Foto's bewerken",
+    "editHint": "Bewerk de titel, het thema en de club per foto. Alleen gewijzigde foto's worden opgeslagen.",
+    "titlePlaceholder": "Titel…",
+    "noTheme": "Geen thema",
+    "noClub": "Geen club",
+    "saving": "Opslaan…",
+    "saveChanges": "{{count}} wijziging(en) opslaan",
+    "noChanges": "Geen wijzigingen",
+    "saveSuccess": "{{count}} foto('s) bijgewerkt.",
+    "saveError": "Kon niet alle wijzigingen opslaan."
   },
   "photoDetail": {
     "back": "Terug naar galerij",
