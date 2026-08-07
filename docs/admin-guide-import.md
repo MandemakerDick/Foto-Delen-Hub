@@ -69,11 +69,9 @@ This is where you tell PhotoMatrix who took the photos and optionally group them
 
 > The **Import** button stays disabled until a photographer name is provided when "Add new" is selected.
 
-### Club (Optional)
+### Club
 
-Leave this on **None** if the photos should not be linked to a club. Otherwise:
-- Select an existing club from the list, or
-- Choose **+ Add new club** and type the club name.
+A club is **required** before you can import. Select an existing club from the list, or choose **+ Add new club** and type the club name. The Import button stays disabled until a club is chosen.
 
 ### Per-photo Title and Theme
 
@@ -122,4 +120,4 @@ The import does not deduplicate by image URL. If you re-scan and re-import the s
 
 ---
 
-*Last updated: July 2026*
+*Last updated: August 2026*
