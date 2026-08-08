@@ -77,11 +77,15 @@ type PatchRecord = { id: number; body: Record<string, unknown> };
  * The photos GET stub is stateful: after a PATCH is received the updated data
  * is applied to the in-memory store so subsequent GET /api/photos requests
  * (triggered by queryClient.invalidateQueries after save) return the new titles.
+ *
+ * @param patchStatus - HTTP status to return for PATCH /api/photos/:id (default 200).
+ *   Pass 500 to simulate a server error and verify failure handling.
  */
 async function setupStubs(
   page: Page,
   patchLog: PatchRecord[],
   isAdmin: boolean = true,
+  patchStatus: number = 200,
 ) {
   // Mutable store for photos — updated on each PATCH so invalidation refreshes correctly.
   const photoStore = PHOTOS_ORIGINAL.map((p) => ({ ...p }));
@@ -150,12 +154,20 @@ async function setupStubs(
       return;
     }
 
-    // PATCH /api/photos/:id — update store and record
+    // PATCH /api/photos/:id — update store and record (or simulate failure)
     const patchMatch = url.match(/\/api\/photos\/(\d+)(\?|$)/);
     if (patchMatch && method === "PATCH") {
       const photoId = Number(patchMatch[1]);
       const body = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
       patchLog.push({ id: photoId, body });
+      if (patchStatus !== 200) {
+        await route.fulfill({
+          status: patchStatus,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Internal Server Error" }),
+        });
+        return;
+      }
       // Apply update to in-memory store so GET after invalidation reflects the change.
       const idx = photoStore.findIndex((p) => p.id === photoId);
       if (idx !== -1) {
@@ -476,4 +488,37 @@ test("Changing title AND club for the same photo fires exactly one PATCH with bo
   // Both updated fields must be present in the single PATCH body.
   expect(patches[0].body.title).toBe("Title And Club Edit");
   expect(patches[0].body.clubId).toBe(2);
+});
+
+test("When PATCH returns 500 the panel stays open, shows an error toast, and preserves the edited value", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  // Stub PATCH to fail with 500.
+  await setupStubs(page, patches, /* isAdmin */ true, /* patchStatus */ 500);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Modify the first photo's title.
+  const titleInput = page.getByPlaceholder(/title/i).first();
+  await titleInput.fill("Failed Save Title");
+
+  // Attempt to save.
+  await page.getByRole("button", { name: /save.*1|1.*change/i }).click();
+
+  // Panel must remain open — title inputs should still be visible.
+  await expect(titleInput).toBeVisible({ timeout: 10_000 });
+
+  // An error toast should appear (destructive variant carries role="status" or similar).
+  // The toast description key resolves to a non-empty string; match on common error text patterns.
+  await expect(
+    page.getByRole("status").filter({ hasText: /error|fout|mislukt|failed/i }).first(),
+  ).toBeVisible({ timeout: 10_000 });
+
+  // The edited value must still be present in the input.
+  await expect(titleInput).toHaveValue("Failed Save Title");
+
+  // PATCH was attempted (the request did go out).
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(201);
 });
