@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
+import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, X, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
@@ -191,6 +192,14 @@ export default function ClubDetail() {
 
   return (
     <div className="flex flex-col">
+      <Helmet>
+        <title>{club.name} — PhotoMatrix</title>
+        <meta property="og:title" content={club.name} />
+        <meta property="og:description" content={club.description ?? `${club.name} on PhotoMatrix`} />
+        <meta property="og:image" content={club.logoUrl ?? ""} />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       {/* Club Header */}
       <section className="bg-secondary/50 border-b border-border/50 py-16">
         <div className="container mx-auto px-4">

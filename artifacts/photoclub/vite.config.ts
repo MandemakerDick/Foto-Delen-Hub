@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
+import { ogPlugin } from "./vite-og-plugin";
 
 const rawPort = process.env.PORT;
 
@@ -27,9 +28,22 @@ if (!basePath) {
   );
 }
 
+// Build the API origin from the Replit dev domain when available.
+// In development and Replit deployments REPLIT_DEV_DOMAIN is always set;
+// fall back to an empty string so the ogPlugin skips injection gracefully.
+const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
+const apiBase = replitDevDomain ? `https://${replitDevDomain}` : "";
+const fallbackOgImage = apiBase ? `${apiBase}/opengraph.jpg` : "/opengraph.jpg";
+
+// Internal URL for server-to-server API calls from within the Vite middleware.
+// Bypasses the external proxy so it works even when the dev domain is unreachable
+// from inside the container. Defaults to the standard api-server dev port (8080).
+const apiInternal = process.env.API_INTERNAL_BASE ?? "http://localhost:8080";
+
 export default defineConfig({
   base: basePath,
   plugins: [
+    ...(apiBase ? [ogPlugin({ apiBase, apiInternal, fallbackImageUrl: fallbackOgImage })] : []),
     react(),
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),

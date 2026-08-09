@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "wouter";
+import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { User, Users, Calendar, ArrowLeft, Image as ImageIcon, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
@@ -178,6 +179,14 @@ export default function PhotographerDetail() {
 
   return (
     <div className="flex flex-col">
+      <Helmet>
+        <title>{photographer.name} — PhotoMatrix</title>
+        <meta property="og:title" content={photographer.name} />
+        <meta property="og:description" content={photographer.bio ?? `Portfolio of ${photographer.name} on PhotoMatrix`} />
+        <meta property="og:image" content={photographer.avatarUrl ?? ""} />
+        <meta property="og:type" content="profile" />
+      </Helmet>
+
       {/* Profile Header */}
       <section className="bg-secondary/30 border-b border-border/50 py-16">
         <div className="container mx-auto px-4">
