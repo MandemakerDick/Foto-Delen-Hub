@@ -10,6 +10,7 @@
  */
 
 import { test, expect, type Page } from "@playwright/test";
+import { ogMiddleware } from "../vite-og-plugin";
 
 // ---------------------------------------------------------------------------
 // Fixture data
@@ -320,6 +321,189 @@ test.describe("PhotoDetail OG meta tags", () => {
     const content = await findMetaContent(page, "og:image", PHOTO.imageUrl);
     expect(content, `Expected an og:image containing the fixture imageUrl, not a fallback`).toBeTruthy();
     expect(content).toContain(PHOTO.imageUrl);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: PhotoDetail OG tags — description fallback
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail OG meta tags — description fallback", () => {
+  const PHOTO_NO_DESC = {
+    id: 202,
+    title: "Misty Morning",
+    imageUrl: "https://placehold.co/400x500/png",
+    description: null,
+    photographerId: 42,
+    photographerName: "Jane Doe",
+    clubId: 7,
+    clubName: "City Shooters",
+    themeId: 1,
+    themeName: "Street",
+    createdAt: "2024-03-01T00:00:00.000Z",
+    sortOrder: 1,
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/**", async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("__clerk")) {
+        await route.continue();
+        return;
+      }
+
+      // Single photo detail — must come before the list pattern
+      if (new RegExp(`/api/photos/${PHOTO_NO_DESC.id}(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PHOTO_NO_DESC) });
+        return;
+      }
+      // Comments for the photo
+      if (new RegExp(`/api/photos/${PHOTO_NO_DESC.id}/comments(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      // Photos list
+      if (/\/api\/photos(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([PHOTO_NO_DESC]) });
+        return;
+      }
+      // List endpoints → empty arrays
+      if (/\/api\/clubs(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/themes(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/photographers(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      // Auth / admin — not signed in
+      if (/\/api\/admins\/me(\?|$)/.test(url)) {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Not authenticated" }) });
+        return;
+      }
+      if (/\/api\/photographers\/me(\?|$)/.test(url)) {
+        await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Not found" }) });
+        return;
+      }
+      // Fallback
+      await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Not found (test stub)" }) });
+    });
+
+    await page.goto(`/photos/${PHOTO_NO_DESC.id}`, { waitUntil: "networkidle" });
+    await page.keyboard.press("Escape");
+    // Wait for the page to render with real fixture data before asserting on meta tags.
+    await waitForBodyText(page, PHOTO_NO_DESC.title);
+  });
+
+  test("og:description contains the photographer name fallback when photo has no description", async ({ page }) => {
+    // This browser-side test guards the client-side JSX fallback in photo-detail.tsx:
+    //   photo.description ?? `A photograph by ${photo.photographerName ?? "a PhotoMatrix member"}`
+    // react-helmet-async v3 appends a second og:description after React renders; we scan all tags.
+    const expectedFallback = `A photograph by ${PHOTO_NO_DESC.photographerName}`;
+    await page.waitForFunction(
+      ([prop, text]: [string, string]) =>
+        Array.from(document.querySelectorAll<HTMLMetaElement>(`meta[property="${prop}"]`)).some((el) =>
+          el.content.includes(text),
+        ),
+      ["og:description", expectedFallback] as [string, string],
+      { timeout: 10_000 },
+    );
+    const content = await findMetaContent(page, "og:description", expectedFallback);
+    expect(content, `Expected an og:description containing "${expectedFallback}"`).toBeTruthy();
+    expect(content).toContain(PHOTO_NO_DESC.photographerName);
+    // Must not be the static site-wide tag.
+    expect(content).not.toContain("Capture. Connect. Create.");
+  });
+
+  test("og:description is non-empty even when the photo has no description", async ({ page }) => {
+    // Confirm Helmet injected a photo-specific og:description (≥2 tags in DOM) with fallback text.
+    const expectedFallback = `A photograph by ${PHOTO_NO_DESC.photographerName}`;
+    await page.waitForFunction(
+      ([prop, text]: [string, string]) => {
+        const els = Array.from(document.querySelectorAll<HTMLMetaElement>(`meta[property="${prop}"]`));
+        return els.length >= 2 && els.some((el) => el.content.includes(text));
+      },
+      ["og:description", expectedFallback] as [string, string],
+      { timeout: 10_000 },
+    );
+    const nonEmpty = await anyMetaNonEmpty(page, "og:description");
+    expect(nonEmpty, "Expected og:description to be non-empty even for a description-less photo").toBe(true);
+    const content = await findMetaContent(page, "og:description", expectedFallback);
+    expect(content).toContain("A photograph by");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: PhotoDetail OG HTML served to crawlers — description fallback
+//
+// These tests call ogMiddleware() directly (unit-style) so they verify the
+// server-rendered HTML a social-media crawler actually receives, independent
+// of client-side React hydration.
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail OG HTML served to crawlers — description fallback", () => {
+  const PHOTO_NO_DESC_FIXTURE = {
+    title: "Misty Morning",
+    description: null,
+    imageUrl: "https://placehold.co/400x500/png",
+    photographerName: "Jane Doe",
+  };
+
+  /** Install a temporary fetch mock so ogMiddleware returns PHOTO_NO_DESC_FIXTURE. */
+  function mockFetchForPhoto(photoId: number, fixture: typeof PHOTO_NO_DESC_FIXTURE) {
+    const originalFetch = global.fetch;
+    global.fetch = (async (url: string | URL | Request) => {
+      const href = typeof url === "string" ? url
+        : url instanceof URL ? url.href
+        : (url as Request).url;
+      if (new RegExp(`/api/photos/${photoId}(\\?|$)`).test(href)) {
+        return new Response(JSON.stringify(fixture), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+    }) as typeof fetch;
+    return () => { global.fetch = originalFetch; };
+  }
+
+  test("crawler receives the photographer-name fallback in og:description for a photo with no description", async () => {
+    const restore = mockFetchForPhoto(202, PHOTO_NO_DESC_FIXTURE);
+    let htmlOut = "";
+    let nextCalled = false;
+    const req = { headers: { "user-agent": "Slackbot 1.0 (+https://api.slack.com/robots)" }, url: "/photos/202" };
+    const res = { statusCode: 0, setHeader(_k: string, _v: string) {}, end(body: string) { htmlOut = body; } };
+    try {
+      await ogMiddleware(req as never, res as never, () => { nextCalled = true; }, "http://localhost:5183", "http://localhost:5183", "http://localhost:5183/opengraph.jpg");
+    } finally {
+      restore();
+    }
+    expect(nextCalled, "ogMiddleware should handle the crawler request, not call next()").toBe(false);
+    expect(htmlOut).toContain('property="og:description"');
+    expect(htmlOut).toContain("A photograph by Jane Doe");
+    // Must not fall back to the generic site-wide description.
+    expect(htmlOut).not.toContain("Capture. Connect. Create.");
+  });
+
+  test("og:description in crawler HTML is non-empty for a description-less photo", async () => {
+    const restore = mockFetchForPhoto(202, PHOTO_NO_DESC_FIXTURE);
+    let htmlOut = "";
+    const req = { headers: { "user-agent": "facebookexternalhit/1.1" }, url: "/photos/202" };
+    const res = { statusCode: 0, setHeader(_k: string, _v: string) {}, end(body: string) { htmlOut = body; } };
+    try {
+      await ogMiddleware(req as never, res as never, () => {}, "http://localhost:5183", "http://localhost:5183", "http://localhost:5183/opengraph.jpg");
+    } finally {
+      restore();
+    }
+    // Extract og:description content from the server-rendered HTML.
+    const descMatch = htmlOut.match(/property="og:description"\s+content="([^"]+)"/);
+    expect(descMatch, "Expected og:description to be present in crawler HTML").toBeTruthy();
+    const descContent = descMatch?.[1] ?? "";
+    expect(descContent.length, "Expected og:description to be non-empty in crawler HTML").toBeGreaterThan(0);
+    expect(descContent).toContain("A photograph by");
   });
 });
 

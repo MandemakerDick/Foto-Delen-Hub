@@ -24,6 +24,7 @@ const CRAWLER_RE =
 /** Routes we want to enrich — captures the numeric id as group 1. */
 const PHOTOGRAPHER_RE = /^\/photographers\/(\d+)(?:\/.*)?$/;
 const CLUB_RE = /^\/clubs\/(\d+)(?:\/.*)?$/;
+const PHOTO_RE = /^\/photos\/(\d+)(?:\/.*)?$/;
 
 export function escapeHtml(s: string): string {
   return s
@@ -88,8 +89,9 @@ export async function ogMiddleware(
 
   const photographerMatch = PHOTOGRAPHER_RE.exec(pathname);
   const clubMatch = CLUB_RE.exec(pathname);
+  const photoMatch = PHOTO_RE.exec(pathname);
 
-  if (!photographerMatch && !clubMatch) {
+  if (!photographerMatch && !clubMatch && !photoMatch) {
     return next();
   }
 
@@ -127,6 +129,24 @@ export async function ogMiddleware(
         ogTitle = `${data.name ?? "Club"} — PhotoMatrix`;
         ogDescription = data.description ?? `${data.name ?? "A club"} on PhotoMatrix`;
         ogImage = resolveImageUrl(data.logoUrl, apiBase, fallbackImageUrl);
+      }
+    } else if (photoMatch) {
+      const id = photoMatch[1];
+      const resp = await fetch(`${apiInternal}/api/photos/${id}`);
+      if (resp.ok) {
+        const data = (await resp.json()) as {
+          title?: string;
+          description?: string | null;
+          imageUrl?: string | null;
+          photographerName?: string | null;
+        };
+        ogTitle = `${data.title ?? "Photo"} — PhotoMatrix`;
+        // Mirror the client-side fallback in photo-detail.tsx line 273 exactly:
+        // photo.description ?? `A photograph by ${photo.photographerName ?? "a PhotoMatrix member"}`
+        ogDescription =
+          data.description ??
+          `A photograph by ${data.photographerName ?? "a PhotoMatrix member"}`;
+        ogImage = resolveImageUrl(data.imageUrl, apiBase, fallbackImageUrl);
       }
     }
 
