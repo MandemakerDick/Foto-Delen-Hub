@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil, X } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useGetPhoto,
@@ -65,6 +65,9 @@ export default function PhotoDetail() {
   const photoId = Number(id);
   const search = useSearch();
   const { toast } = useToast();
+
+  // Always start at the top of the page regardless of scroll position in the gallery
+  useEffect(() => { window.scrollTo(0, 0); }, [photoId]);
 
   // Parse navigation context from ?ctx= query param
   const ctx = new URLSearchParams(search).get("ctx") ?? "gallery";
