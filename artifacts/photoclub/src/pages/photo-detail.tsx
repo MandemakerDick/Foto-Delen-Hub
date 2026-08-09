@@ -412,7 +412,7 @@ export default function PhotoDetail() {
         {/* Metadata Sidebar */}
         <div className="w-full lg:w-1/3 flex flex-col">
           <div className="flex justify-between items-start mb-4">
-            <h1 className="font-serif text-4xl font-bold leading-tight">{photo.title}</h1>
+            <h1 className="font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
 
             {(myProfile?.id === photo.photographerId || adminStatus?.isAdmin) && (
               <>
