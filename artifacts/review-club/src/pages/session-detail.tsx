@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +72,13 @@ export function SessionDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [photosPage, setPhotosPage] = usePageParam();
+  const totalPhotosPages = Math.ceil((photos?.length ?? 0) / PHOTOS_PAGE_SIZE);
+  // Clamp out-of-bounds ?page= values to the last valid page
+  useEffect(() => {
+    if (totalPhotosPages > 0 && photosPage > totalPhotosPages) {
+      setPhotosPage(totalPhotosPages);
+    }
+  }, [photosPage, totalPhotosPages, setPhotosPage]);
 
   if (sessionLoading) return <div className="space-y-6"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
   if (!session) return <div>{t("session.notFound")}</div>;
@@ -281,7 +288,7 @@ export function SessionDetail() {
               </Button>
             </Link>
           )}
-          {session.status === 'open' && !deadlinePassed && (
+          {session.status === 'open' && (!deadlinePassed || adminStatus?.isAdmin) && (
             <Dialog open={isAddPhotoOpen} onOpenChange={(open) => {
               setIsAddPhotoOpen(open);
               if (!open) { setSubmitTab("gallery"); setUploadTitle(""); setUploadImageUrl(""); setUploadStatus("idle"); }
@@ -357,9 +364,14 @@ export function SessionDetail() {
               </DialogContent>
             </Dialog>
           )}
-          {session.status === 'open' && deadlinePassed && (
+          {session.status === 'open' && deadlinePassed && !adminStatus?.isAdmin && (
             <span className="text-sm text-muted-foreground italic">
               {t("session.deadlinePassed")}
+            </span>
+          )}
+          {session.status === 'open' && deadlinePassed && adminStatus?.isAdmin && (
+            <span className="text-sm text-amber-600 dark:text-amber-500 italic">
+              {t("session.deadlinePassedAdmin")}
             </span>
           )}
         </div>
@@ -415,7 +427,7 @@ export function SessionDetail() {
           </div>
           <PaginationBar
             page={photosPage}
-            totalPages={Math.ceil((photos?.length ?? 0) / PHOTOS_PAGE_SIZE)}
+            totalPages={totalPhotosPages}
             onPageChange={setPhotosPage}
           />
           </>

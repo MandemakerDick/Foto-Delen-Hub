@@ -381,7 +381,7 @@ function renderSessionDetailAsAdmin() {
 }
 
 describe("SessionDetail — admin path deadline cue", () => {
-  it("shows the deadlinePassed label for admins when the deadline is in the past", () => {
+  it("hides the regular deadline notice and keeps submit button available for admins past the deadline (#68)", () => {
     mockedUseGetReviewSession.mockReturnValue({
       data: makeSession({ submissionDeadline: PAST_DEADLINE }),
       isLoading: false,
@@ -389,9 +389,19 @@ describe("SessionDetail — admin path deadline cue", () => {
 
     renderSessionDetailAsAdmin();
 
-    // en.json session.deadlinePassed = "The submission deadline has passed."
+    // Admins bypass the deadline — regular notice must NOT appear
     expect(
-      screen.getByText("The submission deadline has passed.")
+      screen.queryByText("The submission deadline has passed.")
+    ).not.toBeInTheDocument();
+
+    // Submit button IS still available for admins even past the deadline
+    expect(
+      screen.getByRole("button", { name: /submit photo/i })
+    ).toBeInTheDocument();
+
+    // Admin override notice IS shown
+    expect(
+      screen.getByText("Submission deadline has passed — submitting as admin override.")
     ).toBeInTheDocument();
   });
 

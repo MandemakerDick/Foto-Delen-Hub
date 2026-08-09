@@ -294,8 +294,16 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     return;
   }
 
-  // Enforce submission deadline
-  if (session[0].submissionDeadline && new Date() > session[0].submissionDeadline) {
+  // Check admin status up front — admins may bypass the submission deadline to make corrections
+  const userAdminRows = await db
+    .select({ id: adminsTable.id })
+    .from(adminsTable)
+    .where(eq(adminsTable.clerkUserId, req.clerkUserId))
+    .limit(1);
+  const userIsAdmin = userAdminRows.length > 0;
+
+  // Enforce submission deadline (admins may bypass to correct submissions after the deadline)
+  if (!userIsAdmin && session[0].submissionDeadline && new Date() > session[0].submissionDeadline) {
     res.status(400).json({ error: "The submission deadline for this session has passed" });
     return;
   }
@@ -304,13 +312,8 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
 
   let photographerId = await getPhotographerIdForClerkUser(req.clerkUserId);
   if (!photographerId) {
-    // Allow admins to submit
-    const adminRows = await db
-      .select({ id: adminsTable.id })
-      .from(adminsTable)
-      .where(eq(adminsTable.clerkUserId, req.clerkUserId))
-      .limit(1);
-    if (adminRows.length === 0) {
+    // Allow admins to submit (admin status already verified above)
+    if (!userIsAdmin) {
       res.status(403).json({ error: "No photographer profile found" });
       return;
     }
@@ -340,7 +343,7 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
   // For direct uploads, create a gallery-less photo record first
   let photoId: number;
   if (isDirectUpload) {
-    const { title, imageUrl } = parsed.data as { title: string; imageUrl: string };
+    const { title, imageUrl } = parsed.data as unknown as { title: string; imageUrl: string };
     const [newPhoto] = await db
       .insert(photosTable)
       .values({ title, imageUrl, photographerId })

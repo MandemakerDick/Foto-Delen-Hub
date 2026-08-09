@@ -458,6 +458,58 @@ test("Clearing a photo title triggers the amber warning row and keeps Save enabl
   await expect(saveBtn).toBeEnabled();
 });
 
+test("Filling in a blank title removes the amber warning from the row", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  const firstInput = page.getByPlaceholder(/title/i).first();
+  const firstRow = page.locator("div.flex.items-start.gap-2.rounded-md").nth(0);
+
+  // Clear the title — amber warning should appear.
+  await firstInput.clear();
+  await expect(firstRow).toHaveClass(/border-amber-400/);
+
+  // Fill in a valid title — amber warning should disappear.
+  await firstInput.fill("A real title");
+  await expect(firstRow).not.toHaveClass(/border-amber-400/);
+
+  // Input itself should also lose the amber styling.
+  await expect(firstInput).not.toHaveClass(/border-amber-400/);
+});
+
+test("Saving with a blank title does not send the title field in the PATCH body", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitClubDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Clear the first photo's title (makes it dirty with a blank value).
+  const firstInput = page.getByPlaceholder(/title/i).first();
+  await firstInput.clear();
+
+  // Save — the amber-warned photo is still dirty so the button is enabled.
+  const saveBtn = page.getByRole("button", { name: /save.*1|1.*change/i });
+  await expect(saveBtn).toBeEnabled();
+  await saveBtn.click();
+
+  // Panel closes — the save went through.
+  await assertEditPanelClosed(page);
+
+  // One PATCH was fired for photo 101.
+  expect(patches).toHaveLength(1);
+  expect(patches[0].id).toBe(101);
+
+  // The `title` field must NOT be present in the PATCH body (blank title is
+  // omitted so the server keeps the existing value).
+  expect(patches[0].body).not.toHaveProperty("title");
+});
+
 test("Failed PATCH keeps the bulk-edit panel open, shows an error toast, and preserves edited values", async ({ page }) => {
   const patches: PatchRecord[] = [];
   await setupStubs(page, patches);

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { HelmetProvider } from "react-helmet-async";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, SignIn, SignUp, useClerk } from "@clerk/react";
@@ -224,11 +225,13 @@ function App() {
   }, []);
 
   return (
-    // WouterRouter is initialised with the basePath so all <Route> paths are
-    // relative to the artifact's preview path, not the document root.
-    <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
-    </WouterRouter>
+    <HelmetProvider>
+      {/* WouterRouter is initialised with the basePath so all <Route> paths are
+          relative to the artifact's preview path, not the document root. */}
+      <WouterRouter base={basePath}>
+        <ClerkProviderWithRoutes />
+      </WouterRouter>
+    </HelmetProvider>
   );
 }
 

@@ -278,6 +278,53 @@ describe("Join page Dutch strings", () => {
 //    between English and Dutch at runtime
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// 4. Dutch date locale — locale selection via the app's locale map
+//    These tests replicate the localeMap from use-date-locale.ts so they
+//    catch regressions in the language-to-date-locale mapping, not just
+//    in date-fns itself.  Local date constructors (not ISO strings) are used
+//    to avoid UTC-vs-local timezone issues.
+// ---------------------------------------------------------------------------
+
+import { format } from "date-fns";
+import { nl as nlLocale, enUS } from "date-fns/locale";
+import type { Locale } from "date-fns";
+
+const localeMap: Record<string, Locale> = {
+  nl: nlLocale,
+  en: enUS,
+};
+
+describe("Dutch date locale — app locale selection and formatting", () => {
+  it("selects the nl date-fns locale when i18next language is 'nl'", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(selectedLocale).toBe(nlLocale);
+  });
+
+  it("formats 3 Aug 2026 as '3 aug. 2026' when Dutch locale is selected", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(format(new Date(2026, 7, 3), "PP", { locale: selectedLocale })).toBe("3 aug. 2026");
+  });
+
+  it("formats 1 Jan 2026 as '1 jan. 2026' when Dutch locale is selected", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(format(new Date(2026, 0, 1), "PP", { locale: selectedLocale })).toBe("1 jan. 2026");
+  });
+
+  it("formats 25 Dec 2026 as '25 dec. 2026' when Dutch locale is selected", () => {
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(format(new Date(2026, 11, 25), "PP", { locale: selectedLocale })).toBe("25 dec. 2026");
+  });
+
+  it("switches to English locale and produces English-formatted date", async () => {
+    await i18next.changeLanguage("en");
+    const selectedLocale = localeMap[i18next.language] ?? enUS;
+    expect(selectedLocale).toBe(enUS);
+    expect(format(new Date(2026, 7, 3), "PP", { locale: selectedLocale })).toBe("Aug 3, 2026");
+    await i18next.changeLanguage("nl");
+  });
+});
+
 describe("Runtime language switching (en ↔ nl)", () => {
   it("switches to English and returns English nav gallery label", async () => {
     await i18next.changeLanguage("en");

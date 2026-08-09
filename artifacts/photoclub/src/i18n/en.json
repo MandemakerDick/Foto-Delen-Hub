@@ -219,6 +219,17 @@
       "toastPasswordSetError": "Could not set password.",
       "ownerBadge": "Owner",
       "directLoginBadge": "Direct login"
+    },
+    "import": {
+      "perPhotoLabel": "Photos — edit title & theme per photo",
+      "applyThemeToAll": "Apply theme to all:",
+      "pickTheme": "Pick a theme…",
+      "titlePlaceholder": "Title…",
+      "noTheme": "No theme",
+      "warnSingular": "1 photo has a blank or filename-style title.",
+      "warnPlural": "{{count}} photos have blank or filename-style titles.",
+      "warnSuffix": "Titles like these won't be useful to viewers — consider editing them above.",
+      "warnAcknowledge": "I understand — import anyway"
     }
   },
   "toasts": {
@@ -325,7 +336,8 @@
     "saveChanges": "Save {{count}} changes",
     "noChanges": "No changes",
     "saveSuccess": "{{count}} photo(s) updated.",
-    "saveError": "Could not save all changes."
+    "saveError": "Could not save all changes.",
+    "savePartialError": "{{succeeded}} saved, {{failed}} failed — failed rows are highlighted."
   },
   "themeDetail": {
     "back": "Back to Themes",
@@ -360,7 +372,8 @@
     "saveChanges": "Save {{count}} changes",
     "noChanges": "No changes",
     "saveSuccess": "{{count}} photo(s) updated.",
-    "saveError": "Could not save all changes."
+    "saveError": "Could not save all changes.",
+    "savePartialError": "{{succeeded}} saved, {{failed}} failed — failed rows are highlighted."
   },
   "photoDetail": {
     "back": "Back to Gallery",

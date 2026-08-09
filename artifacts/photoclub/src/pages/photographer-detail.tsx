@@ -43,6 +43,7 @@ export default function PhotographerDetail() {
   const [photoEdits, setPhotoEdits] = useState<Record<number, PhotoEdit>>({});
   const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
 
   const updateMutation = useUpdatePhoto();
 
@@ -75,11 +76,18 @@ export default function PhotographerDetail() {
     }
     setPhotoEdits(edits);
     setDirtyIds(new Set());
+    setFailedIds(new Set());
     setEditMode(true);
   };
 
   const handleFieldChange = (photoId: number, field: keyof PhotoEdit, value: string) => {
     setPhotoEdits(prev => ({ ...prev, [photoId]: { ...prev[photoId], [field]: value } }));
+    setFailedIds(prev => {
+      if (!prev.has(photoId)) return prev;
+      const next = new Set(prev);
+      next.delete(photoId);
+      return next;
+    });
     setDirtyIds(prev => {
       const next = new Set(prev);
       // Mark dirty by comparing against original
@@ -100,30 +108,45 @@ export default function PhotographerDetail() {
   const handleSaveAll = async () => {
     if (dirtyIds.size === 0) { setEditMode(false); return; }
     setSaving(true);
-    try {
-      await Promise.all(
-        [...dirtyIds].map(pid => {
-          const edit = photoEdits[pid];
-          return updateMutation.mutateAsync({
-            id: pid,
-            data: {
-              title: edit.title.trim() || undefined,
-              themeId: edit.themeId !== "none" ? Number(edit.themeId) : null,
-              clubId: edit.clubId !== "none" ? Number(edit.clubId) : null,
-            },
-          });
-        }),
-      );
+    const dirtyArr = [...dirtyIds];
+    const results = await Promise.allSettled(
+      dirtyArr.map(pid => {
+        const edit = photoEdits[pid];
+        return updateMutation.mutateAsync({
+          id: pid,
+          data: {
+            title: edit.title.trim() || undefined,
+            themeId: edit.themeId !== "none" ? Number(edit.themeId) : null,
+            clubId: edit.clubId !== "none" ? Number(edit.clubId) : null,
+          },
+        });
+      }),
+    );
+    const succeeded: number[] = [];
+    const failed: number[] = [];
+    results.forEach((r, i) => {
+      if (r.status === "fulfilled") succeeded.push(dirtyArr[i]);
+      else failed.push(dirtyArr[i]);
+    });
+    if (succeeded.length > 0) {
       queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetPhotographerQueryKey(photographerId) });
+    }
+    if (failed.length === 0) {
       toast({ title: t("photographerDetail.saveSuccess", { count: dirtyIds.size }) });
       setEditMode(false);
       setDirtyIds(new Set());
-    } catch {
-      toast({ title: t("common.error"), description: t("photographerDetail.saveError"), variant: "destructive" });
-    } finally {
-      setSaving(false);
+      setFailedIds(new Set());
+    } else {
+      setDirtyIds(new Set(failed));
+      setFailedIds(new Set(failed));
+      if (succeeded.length > 0) {
+        toast({ title: t("photographerDetail.savePartialError", { succeeded: succeeded.length, failed: failed.length }), variant: "destructive" });
+      } else {
+        toast({ title: t("common.error"), description: t("photographerDetail.saveError"), variant: "destructive" });
+      }
     }
+    setSaving(false);
   };
 
   if (photographerLoading) {
@@ -276,12 +299,15 @@ export default function PhotographerDetail() {
                 const edit = photoEdits[photo.id];
                 if (!edit) return null;
                 const isDirty = dirtyIds.has(photo.id);
+                const hasFailed = failedIds.has(photo.id);
                 const hasBlankTitle = !edit.title.trim();
-                const rowClass = hasBlankTitle
-                  ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/20"
-                  : isDirty
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-border/50 bg-background/50";
+                const rowClass = hasFailed
+                  ? "border-destructive/60 bg-destructive/5"
+                  : hasBlankTitle
+                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/20"
+                    : isDirty
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border/50 bg-background/50";
                 return (
                   <div key={photo.id} className={`flex items-start gap-2 rounded-md p-2 border ${rowClass}`}>
                     <img
@@ -335,7 +361,7 @@ export default function PhotographerDetail() {
             <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
-                onClick={() => { setEditMode(false); setDirtyIds(new Set()); }}
+                onClick={() => { setEditMode(false); setDirtyIds(new Set()); setFailedIds(new Set()); }}
               >
                 {t("common.cancel")}
               </Button>

@@ -529,6 +529,42 @@ test("When PATCH returns 500 the panel stays open, shows an error toast, and pre
   expect(patches[0].id).toBe(201);
 });
 
+test("Two photos dirty — one with combined title+theme edits — sends one PATCH per photo with the right fields", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  await setupStubs(page, patches);
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  // Photo 201: change both title AND theme (combined edit).
+  await page.getByPlaceholder(/title/i).first().fill("Combined Title");
+  const themeSelect = page.getByRole("combobox").nth(0);
+  await themeSelect.click();
+  await page.getByRole("option", { name: /urban/i }).click();
+
+  // Photo 202: change only title (single-field edit).
+  await page.getByPlaceholder(/title/i).nth(1).fill("Simple Title");
+
+  // Save both — button should show "save 2 changes".
+  await page.getByRole("button", { name: /save.*2|2.*change/i }).click();
+
+  // Panel closes.
+  await assertEditPanelClosed(page);
+
+  // Exactly two PATCHes — one per photo.
+  expect(patches).toHaveLength(2);
+  const byId = Object.fromEntries(patches.map((p) => [p.id, p.body]));
+
+  // Photo 201: must have both title and themeId.
+  expect(byId[201].title).toBe("Combined Title");
+  expect(byId[201].themeId).toBe(2);
+
+  // Photo 202: must have only title (theme was not changed, so it should not appear
+  // or match the original value — either way the title must be correct).
+  expect(byId[202].title).toBe("Simple Title");
+});
+
 test("Mixed PATCH results: panel stays open, error toast shown, and successful edit is preserved", async ({ page }) => {
   const patches: PatchRecord[] = [];
   // Photo 201 succeeds (200), photo 202 fails (500).

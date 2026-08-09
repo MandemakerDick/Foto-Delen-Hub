@@ -63,6 +63,7 @@
     "reviewCount_one": "{{count}} review",
     "reviewCount_other": "{{count}} reviews",
     "deadlinePassed": "The submission deadline has passed.",
+    "deadlinePassedAdmin": "Submission deadline has passed — submitting as admin override.",
     "error": "Error",
     "tabGallery": "From gallery",
     "tabUpload": "Upload new photo",

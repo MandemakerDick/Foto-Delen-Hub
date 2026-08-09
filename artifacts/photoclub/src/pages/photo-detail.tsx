@@ -1,4 +1,5 @@
 import { useParams, Link, useSearch } from "wouter";
+import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Heart, Calendar, ArrowLeft, ChevronLeft, ChevronRight, MoreHorizontal, User, Users, Tag, MessageCircle, Send, Trash2, Pencil, X } from "lucide-react";
@@ -265,6 +266,15 @@ export default function PhotoDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {photo && (
+        <Helmet>
+          <title>{photo.title} — PhotoMatrix</title>
+          <meta property="og:title" content={photo.title} />
+          <meta property="og:description" content={photo.description ?? `A photograph by ${photo.photographerName ?? "a PhotoMatrix member"}`} />
+          <meta property="og:image" content={photo.imageUrl} />
+          <meta property="og:type" content="article" />
+        </Helmet>
+      )}
       <Link href="/photos" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t("photoDetail.back")}

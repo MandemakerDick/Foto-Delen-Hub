@@ -216,6 +216,17 @@
       "toastPasswordSetError": "Kon wachtwoord niet instellen.",
       "ownerBadge": "Eigenaar",
       "directLoginBadge": "Directe login"
+    },
+    "import": {
+      "perPhotoLabel": "Foto's — titel en thema per foto bewerken",
+      "applyThemeToAll": "Thema op alles toepassen:",
+      "pickTheme": "Kies een thema…",
+      "titlePlaceholder": "Titel…",
+      "noTheme": "Geen thema",
+      "warnSingular": "1 foto heeft een lege of bestandsnaamachtige titel.",
+      "warnPlural": "{{count}} foto's hebben lege of bestandsnaamachtige titels.",
+      "warnSuffix": "Zulke titels zijn niet nuttig voor bezoekers — overweeg ze hierboven te bewerken.",
+      "warnAcknowledge": "Ik begrijp het — toch importeren"
     }
   },
   "toasts": {
@@ -325,7 +336,8 @@
     "saveChanges": "{{count}} wijziging(en) opslaan",
     "noChanges": "Geen wijzigingen",
     "saveSuccess": "{{count}} foto('s) bijgewerkt.",
-    "saveError": "Kon niet alle wijzigingen opslaan."
+    "saveError": "Kon niet alle wijzigingen opslaan.",
+    "savePartialError": "{{succeeded}} opgeslagen, {{failed}} mislukt — mislukte rijen zijn gemarkeerd."
   },
   "themeDetail": {
     "back": "Terug naar thema's",
@@ -360,7 +372,8 @@
     "saveChanges": "{{count}} wijziging(en) opslaan",
     "noChanges": "Geen wijzigingen",
     "saveSuccess": "{{count}} foto('s) bijgewerkt.",
-    "saveError": "Kon niet alle wijzigingen opslaan."
+    "saveError": "Kon niet alle wijzigingen opslaan.",
+    "savePartialError": "{{succeeded}} opgeslagen, {{failed}} mislukt — mislukte rijen zijn gemarkeerd."
   },
   "photoDetail": {
     "back": "Terug naar galerij",

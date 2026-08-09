@@ -1324,9 +1324,9 @@ export default function Manage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium">Photos — edit title &amp; theme per photo</label>
+                    <label className="text-sm font-medium">{t("manage.import.perPhotoLabel")}</label>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Apply theme to all:</span>
+                      <span className="text-xs text-muted-foreground">{t("manage.import.applyThemeToAll")}</span>
                       <Select
                         value="none"
                         onValueChange={val => {
@@ -1335,10 +1335,10 @@ export default function Manage() {
                         }}
                       >
                         <SelectTrigger className="bg-background h-8 text-xs w-40">
-                          <SelectValue placeholder="Pick a theme…" />
+                          <SelectValue placeholder={t("manage.import.pickTheme")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Pick a theme…</SelectItem>
+                          <SelectItem value="none">{t("manage.import.pickTheme")}</SelectItem>
                           {themes?.map(t => (
                             <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
                           ))}
@@ -1375,7 +1375,7 @@ export default function Manage() {
                                   setImportWarningAcknowledged(false);
                                 }}
                                 className={`w-full ${hasWarning ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 focus-visible:ring-amber-400" : "bg-background"}`}
-                                placeholder="Title…"
+                                placeholder={t("manage.import.titlePlaceholder")}
                               />
                               <Select
                                 value={importPhotoEdits[idx]?.themeId ?? "none"}
@@ -1386,10 +1386,10 @@ export default function Manage() {
                                 }}
                               >
                                 <SelectTrigger className="bg-background w-full">
-                                  <SelectValue placeholder="No theme" />
+                                  <SelectValue placeholder={t("manage.import.noTheme")} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">No theme</SelectItem>
+                                  <SelectItem value="none">{t("manage.import.noTheme")}</SelectItem>
                                   {themes?.map(t => (
                                     <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
                                   ))}
@@ -1409,9 +1409,9 @@ export default function Manage() {
                     <div className="rounded-md border border-amber-400/60 bg-amber-50/60 dark:bg-amber-950/20 px-4 py-3 space-y-2">
                       <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                         {warnCount === 1
-                          ? "1 photo has a blank or filename-style title."
-                          : `${warnCount} photos have blank or filename-style titles.`}
-                        {" "}Titles like these won't be useful to viewers — consider editing them above.
+                          ? t("manage.import.warnSingular")
+                          : t("manage.import.warnPlural", { count: warnCount })}
+                        {" "}{t("manage.import.warnSuffix")}
                       </p>
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <Checkbox
@@ -1420,7 +1420,7 @@ export default function Manage() {
                           id="import-warn-ack"
                           className="border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                         />
-                        <span className="text-sm text-amber-800 dark:text-amber-300">I understand — import anyway</span>
+                        <span className="text-sm text-amber-800 dark:text-amber-300">{t("manage.import.warnAcknowledge")}</span>
                       </label>
                     </div>
                   );

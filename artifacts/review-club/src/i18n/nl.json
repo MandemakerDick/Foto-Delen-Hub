@@ -63,6 +63,7 @@
     "reviewCount_one": "{{count}} beoordeling",
     "reviewCount_other": "{{count}} beoordelingen",
     "deadlinePassed": "De inzendtermijn is verstreken.",
+    "deadlinePassedAdmin": "Inzendtermijn verstreken — je dient in als beheerder (noodcorrectie).",
     "error": "Fout",
     "tabGallery": "Uit galerij",
     "tabUpload": "Nieuwe foto uploaden",
