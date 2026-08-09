@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
@@ -47,6 +47,16 @@ export default function PhotographerDetail() {
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
 
   const updateMutation = useUpdatePhoto();
+
+  // react-helmet-async v3 + React 19: the <title> child is received as an
+  // array of strings by React 19's document-metadata hoisting path, which
+  // yields an empty <title>.  Set document.title imperatively instead.
+  useEffect(() => {
+    if (!photographer) return;
+    const prev = document.title;
+    document.title = `${photographer.name} — PhotoMatrix`;
+    return () => { document.title = prev; };
+  }, [photographer?.name]);
 
   // Derive unique themes present in this photographer's photos (for filter buttons)
   const portfolioThemes = useMemo(() => {
@@ -180,7 +190,6 @@ export default function PhotographerDetail() {
   return (
     <div className="flex flex-col">
       <Helmet>
-        <title>{photographer.name} — PhotoMatrix</title>
         <meta property="og:title" content={photographer.name} />
         <meta property="og:description" content={photographer.bio ?? `Portfolio of ${photographer.name} on PhotoMatrix`} />
         <meta property="og:image" content={photographer.avatarUrl ?? ""} />

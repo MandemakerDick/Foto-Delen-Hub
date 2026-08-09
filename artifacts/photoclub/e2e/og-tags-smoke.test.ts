@@ -152,17 +152,6 @@ function anyMetaNonEmpty(page: Page, property: string): Promise<boolean> {
   );
 }
 
-/** Return true when any <title> element in the document contains the text. */
-function anyTitleContains(page: Page, text: string): Promise<boolean> {
-  return page.evaluate(
-    (t) => {
-      const els = Array.from(document.querySelectorAll("title"));
-      return els.some((el) => (el.textContent ?? "").includes(t));
-    },
-    text,
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Helper: wait until a string appears somewhere in the page body text.
 // react-helmet-async updates <head> after React renders; we gate on the
@@ -190,16 +179,18 @@ test.describe("PhotographerDetail OG meta tags", () => {
   });
 
   /**
-   * react-helmet-async v3 + React 19 does not reliably update document.title
-   * in the headless test environment (React 19 hoists the <title> React element
-   * but its text content ends up empty due to array-of-strings children).
-   * We assert on the visible page heading instead — which is populated from the
-   * same data source as the Helmet title — to confirm the page rendered with
-   * real data.  If the Helmet title is ever fixed this test can be tightened.
+   * document.title is set imperatively via useEffect once the photographer
+   * data loads, bypassing the react-helmet-async v3 + React 19 hoisting bug
+   * that left the tab title as the static "PhotoMatrix" from index.html.
    */
-  test("page heading (h1) contains the photographer name", async ({ page }) => {
-    const h1 = page.locator("h1").first();
-    await expect(h1).toContainText(PHOTOGRAPHER.name, { timeout: 10_000 });
+  test("document.title contains the photographer name", async ({ page }) => {
+    await page.waitForFunction(
+      (name) => document.title.includes(name),
+      PHOTOGRAPHER.name,
+      { timeout: 10_000 },
+    );
+    const title = await page.title();
+    expect(title).toContain(PHOTOGRAPHER.name);
   });
 
   test("og:title meta tag contains the photographer name", async ({ page }) => {
@@ -242,10 +233,18 @@ test.describe("ClubDetail OG meta tags", () => {
     await waitForBodyText(page, CLUB.name);
   });
 
-  /** See note above for PhotographerDetail regarding react-helmet-async v3 + React 19 title behavior. */
-  test("page heading (h1) contains the club name", async ({ page }) => {
-    const h1 = page.locator("h1").first();
-    await expect(h1).toContainText(CLUB.name, { timeout: 10_000 });
+  /**
+   * document.title is set imperatively via useEffect once the club data loads,
+   * bypassing the react-helmet-async v3 + React 19 hoisting bug.
+   */
+  test("document.title contains the club name", async ({ page }) => {
+    await page.waitForFunction(
+      (name) => document.title.includes(name),
+      CLUB.name,
+      { timeout: 10_000 },
+    );
+    const title = await page.title();
+    expect(title).toContain(CLUB.name);
   });
 
   test("og:title meta tag contains the club name", async ({ page }) => {
