@@ -78,14 +78,18 @@ type PatchRecord = { id: number; body: Record<string, unknown> };
  * is applied to the in-memory store so subsequent GET /api/photos requests
  * (triggered by queryClient.invalidateQueries after save) return the new titles.
  *
- * @param patchStatus - HTTP status to return for PATCH /api/photos/:id (default 200).
+ * @param patchStatus - Default HTTP status for PATCH /api/photos/:id (default 200).
  *   Pass 500 to simulate a server error and verify failure handling.
+ * @param patchStatusMap - Per-photo-id overrides for PATCH status.  When a key
+ *   matching the photo id is present it takes precedence over patchStatus.
+ *   Use this to simulate mixed success/failure results.
  */
 async function setupStubs(
   page: Page,
   patchLog: PatchRecord[],
   isAdmin: boolean = true,
   patchStatus: number = 200,
+  patchStatusMap: Record<number, number> = {},
 ) {
   // Mutable store for photos — updated on each PATCH so invalidation refreshes correctly.
   const photoStore = PHOTOS_ORIGINAL.map((p) => ({ ...p }));
@@ -160,9 +164,11 @@ async function setupStubs(
       const photoId = Number(patchMatch[1]);
       const body = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
       patchLog.push({ id: photoId, body });
-      if (patchStatus !== 200) {
+      // Per-photo override takes precedence over the global patchStatus.
+      const effectiveStatus = patchStatusMap[photoId] ?? patchStatus;
+      if (effectiveStatus !== 200) {
         await route.fulfill({
-          status: patchStatus,
+          status: effectiveStatus,
           contentType: "application/json",
           body: JSON.stringify({ error: "Internal Server Error" }),
         });
@@ -521,4 +527,43 @@ test("When PATCH returns 500 the panel stays open, shows an error toast, and pre
   // PATCH was attempted (the request did go out).
   expect(patches).toHaveLength(1);
   expect(patches[0].id).toBe(201);
+});
+
+test("Mixed PATCH results: panel stays open, error toast shown, and successful edit is preserved", async ({ page }) => {
+  const patches: PatchRecord[] = [];
+  // Photo 201 succeeds (200), photo 202 fails (500).
+  await setupStubs(
+    page,
+    patches,
+    /* isAdmin */ true,
+    /* patchStatus (default) */ 200,
+    /* patchStatusMap */ { 202: 500 },
+  );
+  await visitPhotographerDetail(page);
+
+  // Enter edit mode and dirty both photos.
+  await page.getByRole("button", { name: /edit photos/i }).click();
+
+  const inputs = page.getByPlaceholder(/title/i);
+  await inputs.nth(0).fill("Success Title A");
+  await inputs.nth(1).fill("Fail Title B");
+
+  // Save all 2 changes.
+  await page.getByRole("button", { name: /save.*2|2.*change/i }).click();
+
+  // Panel must stay open because at least one PATCH failed.
+  await expect(inputs.first()).toBeVisible({ timeout: 10_000 });
+
+  // An error toast should be visible.
+  await expect(
+    page.getByRole("status").filter({ hasText: /error|fout|mislukt|failed/i }).first(),
+  ).toBeVisible({ timeout: 10_000 });
+
+  // The input for the successfully saved photo (201) must still show the edited value.
+  await expect(inputs.nth(0)).toHaveValue("Success Title A");
+
+  // Both PATCHes were attempted.
+  expect(patches).toHaveLength(2);
+  const patchedIds = patches.map((p) => p.id).sort((a, b) => a - b);
+  expect(patchedIds).toEqual([201, 202]);
 });
