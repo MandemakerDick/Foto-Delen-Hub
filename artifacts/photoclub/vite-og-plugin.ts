@@ -25,7 +25,7 @@ const CRAWLER_RE =
 const PHOTOGRAPHER_RE = /^\/photographers\/(\d+)(?:\/.*)?$/;
 const CLUB_RE = /^\/clubs\/(\d+)(?:\/.*)?$/;
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -33,7 +33,7 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildOgHtml(opts: {
+export function buildOgHtml(opts: {
   title: string;
   description: string;
   imageUrl: string;
@@ -70,7 +70,7 @@ function resolveImageUrl(url: string | null | undefined, apiBase: string, fallba
   return `${apiBase}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
-async function ogMiddleware(
+export async function ogMiddleware(
   req: IncomingMessage,
   res: ServerResponse,
   next: () => void,
