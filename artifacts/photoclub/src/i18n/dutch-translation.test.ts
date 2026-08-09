@@ -273,6 +273,52 @@ describe("Join page Dutch strings", () => {
   });
 });
 
+describe("Admin import page Dutch strings (manage.import.*)", () => {
+  it("perPhotoLabel is in Dutch", () => {
+    expect(i18next.t("manage.import.perPhotoLabel")).toBe(
+      "Foto's — titel en thema per foto bewerken"
+    );
+  });
+
+  it("applyThemeToAll is in Dutch", () => {
+    expect(i18next.t("manage.import.applyThemeToAll")).toBe("Thema op alles toepassen:");
+  });
+
+  it("pickTheme is in Dutch", () => {
+    expect(i18next.t("manage.import.pickTheme")).toBe("Kies een thema…");
+  });
+
+  it("titlePlaceholder is in Dutch", () => {
+    expect(i18next.t("manage.import.titlePlaceholder")).toBe("Titel…");
+  });
+
+  it("noTheme is in Dutch", () => {
+    expect(i18next.t("manage.import.noTheme")).toBe("Geen thema");
+  });
+
+  it("warnSingular is in Dutch", () => {
+    expect(i18next.t("manage.import.warnSingular")).toBe(
+      "1 foto heeft een lege of bestandsnaamachtige titel."
+    );
+  });
+
+  it("warnPlural is in Dutch", () => {
+    expect(i18next.t("manage.import.warnPlural", { count: 3 })).toBe(
+      "3 foto's hebben lege of bestandsnaamachtige titels."
+    );
+  });
+
+  it("warnSuffix is in Dutch", () => {
+    expect(i18next.t("manage.import.warnSuffix")).toBe(
+      "Zulke titels zijn niet nuttig voor bezoekers — overweeg ze hierboven te bewerken."
+    );
+  });
+
+  it("warnAcknowledge is in Dutch", () => {
+    expect(i18next.t("manage.import.warnAcknowledge")).toBe("Ik begrijp het — toch importeren");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // 4. Runtime language switching: verify the i18next instance can switch
 //    between English and Dutch at runtime
