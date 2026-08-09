@@ -222,6 +222,108 @@ test.describe("PhotographerDetail OG meta tags", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tests: PhotoDetail OG tags
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail OG meta tags", () => {
+  const PHOTO = PHOTOS[0] as {
+    id: number;
+    title: string;
+    imageUrl: string;
+    photographerId: number;
+    photographerName: string;
+    clubId: number;
+    clubName: string;
+    themeId: number;
+    themeName: string;
+    createdAt: string;
+    sortOrder: number;
+  };
+
+  test.beforeEach(async ({ page }) => {
+    // Stub all API calls, including photo-detail-specific endpoints.
+    await page.route("**/api/**", async (route) => {
+      const url = route.request().url();
+
+      // Let Clerk auth requests through
+      if (url.includes("__clerk")) {
+        await route.continue();
+        return;
+      }
+
+      // Single photo detail — must come before the list pattern
+      if (new RegExp(`/api/photos/${PHOTO.id}(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PHOTO) });
+        return;
+      }
+      // Comments for the photo
+      if (new RegExp(`/api/photos/${PHOTO.id}/comments(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      // Photos list
+      if (/\/api\/photos(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PHOTOS) });
+        return;
+      }
+      // List endpoints → empty arrays
+      if (/\/api\/clubs(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/themes(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/photographers(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      // Auth / admin — not signed in
+      if (/\/api\/admins\/me(\?|$)/.test(url)) {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Not authenticated" }) });
+        return;
+      }
+      if (/\/api\/photographers\/me(\?|$)/.test(url)) {
+        await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Not found" }) });
+        return;
+      }
+      // Fallback
+      await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Not found (test stub)" }) });
+    });
+
+    await page.goto(`/photos/${PHOTO.id}`, { waitUntil: "networkidle" });
+    await page.keyboard.press("Escape");
+    // Wait for the page to render with real fixture data before asserting on meta tags.
+    await waitForBodyText(page, PHOTO.title);
+  });
+
+  test("og:title meta tag contains the photo title", async ({ page }) => {
+    // react-helmet-async v3 + React 19 APPENDS a second og:title element rather
+    // than replacing the static one from index.html. We must check ALL matches.
+    await page.waitForFunction(
+      (title) => Array.from(document.querySelectorAll<HTMLMetaElement>('meta[property="og:title"]')).some((el) => el.content.includes(title)),
+      PHOTO.title,
+      { timeout: 10_000 },
+    );
+    const content = await findMetaContent(page, "og:title", PHOTO.title);
+    expect(content, `Expected an og:title containing "${PHOTO.title}"`).toBeTruthy();
+    expect(content).toContain(PHOTO.title);
+  });
+
+  test("og:image meta tag contains the photo imageUrl (not a fallback)", async ({ page }) => {
+    // Wait for the Helmet-injected og:image that carries the fixture imageUrl.
+    await page.waitForFunction(
+      (url) => Array.from(document.querySelectorAll<HTMLMetaElement>('meta[property="og:image"]')).some((el) => el.content.includes(url)),
+      PHOTO.imageUrl,
+      { timeout: 10_000 },
+    );
+    const content = await findMetaContent(page, "og:image", PHOTO.imageUrl);
+    expect(content, `Expected an og:image containing the fixture imageUrl, not a fallback`).toBeTruthy();
+    expect(content).toContain(PHOTO.imageUrl);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tests: ClubDetail OG tags
 // ---------------------------------------------------------------------------
 test.describe("ClubDetail OG meta tags", () => {
