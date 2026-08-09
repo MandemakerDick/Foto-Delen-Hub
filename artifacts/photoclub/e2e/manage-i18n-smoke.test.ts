@@ -239,27 +239,48 @@ test("Manage page: Dutch language is active (sanity check)", async ({
 
 /**
  * Iterate over each manage tab by clicking it and asserting no raw keys are
- * visible.  The tabs are rendered using manage.tabs.* keys, so if any tab
- * label itself is a raw key it will be caught here.
+ * visible.  Tabs are located by their stable data-testid attribute so the test
+ * remains correct even if labels are renamed or reordered.  A final assertion
+ * confirms that every expected tab was actually exercised.
  */
 const MANAGE_TABS = [
-  { label: "Club tab",        dutchLabel: "Club" },
-  { label: "Theme tab",       dutchLabel: "Thema" },
-  { label: "Photographer tab", dutchLabel: "Fotograaf" },
-  // Import tab label is intentionally not translated (hardcoded "Import" in manage.tsx).
-  { label: "Import tab",      dutchLabel: "Import" },
-  { label: "Photos tab",      dutchLabel: "Foto's" },
-  { label: "Admins tab",      dutchLabel: "Beheerders" },
+  { label: "Club tab",         testId: "manage-tab-club" },
+  { label: "Theme tab",        testId: "manage-tab-theme" },
+  { label: "Photographer tab", testId: "manage-tab-photographer" },
+  { label: "Import tab",       testId: "manage-tab-import" },
+  { label: "Photos tab",       testId: "manage-tab-photos" },
+  { label: "Admins tab",       testId: "manage-tab-admins" },
 ];
 
-for (const { label, dutchLabel } of MANAGE_TABS) {
+/**
+ * Sanity-check: the number of tab buttons in the DOM must match the number of
+ * entries in MANAGE_TABS.  If a new tab is added to manage.tsx without a
+ * corresponding MANAGE_TABS entry, this test fails loudly instead of silently
+ * skipping the new tab.
+ */
+test("Manage page — tab count matches expected MANAGE_TABS list", async ({
+  page,
+}) => {
+  await visitManageInDutch(page);
+
+  // Count all role="tab" elements inside the manage TabsList.
+  const tabCount = await page.getByRole("tab").count();
+
+  expect(
+    tabCount,
+    `Found ${tabCount} tab(s) in the DOM but MANAGE_TABS lists ${MANAGE_TABS.length}. ` +
+      "Add or remove an entry in MANAGE_TABS to keep the smoke test in sync."
+  ).toBe(MANAGE_TABS.length);
+});
+
+for (const { label, testId } of MANAGE_TABS) {
   test(`Manage page — ${label} shows no raw i18next keys in Dutch`, async ({
     page,
   }) => {
     await visitManageInDutch(page);
 
-    // Click the tab whose text matches the Dutch label.
-    const tab = page.getByRole("tab", { name: dutchLabel });
+    // Locate the tab by its stable data-testid attribute.
+    const tab = page.getByTestId(testId);
     await tab.waitFor({ state: "visible", timeout: 10_000 });
     await tab.click();
 

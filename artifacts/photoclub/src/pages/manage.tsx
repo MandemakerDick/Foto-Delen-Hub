@@ -689,22 +689,22 @@ export default function Manage() {
 
       <Tabs defaultValue="club" className="w-full">
         <TabsList className="grid w-full grid-cols-6 mb-8 bg-secondary border border-border/50">
-          <TabsTrigger value="club" className="data-[state=active]:bg-background">
+          <TabsTrigger value="club" data-testid="manage-tab-club" className="data-[state=active]:bg-background">
             <Users className="w-4 h-4 mr-2" />{t("manage.tabs.club")}
           </TabsTrigger>
-          <TabsTrigger value="theme" className="data-[state=active]:bg-background">
+          <TabsTrigger value="theme" data-testid="manage-tab-theme" className="data-[state=active]:bg-background">
             <LayoutDashboard className="w-4 h-4 mr-2" />{t("manage.tabs.theme")}
           </TabsTrigger>
-          <TabsTrigger value="photographer" className="data-[state=active]:bg-background">
+          <TabsTrigger value="photographer" data-testid="manage-tab-photographer" className="data-[state=active]:bg-background">
             <User className="w-4 h-4 mr-2" />{t("manage.tabs.photographer")}
           </TabsTrigger>
-          <TabsTrigger value="import" className="data-[state=active]:bg-background">
+          <TabsTrigger value="import" data-testid="manage-tab-import" className="data-[state=active]:bg-background">
             <Globe className="w-4 h-4 mr-2" />Import
           </TabsTrigger>
-          <TabsTrigger value="photos" className="data-[state=active]:bg-background">
+          <TabsTrigger value="photos" data-testid="manage-tab-photos" className="data-[state=active]:bg-background">
             <ImageIcon className="w-4 h-4 mr-2" />{t("manage.tabs.photos")}
           </TabsTrigger>
-          <TabsTrigger value="admins" className="data-[state=active]:bg-background">
+          <TabsTrigger value="admins" data-testid="manage-tab-admins" className="data-[state=active]:bg-background">
             <ShieldCheck className="w-4 h-4 mr-2" />{t("manage.tabs.admins")}
           </TabsTrigger>
         </TabsList>
