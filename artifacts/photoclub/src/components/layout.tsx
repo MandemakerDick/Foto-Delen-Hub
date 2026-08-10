@@ -38,7 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30 overflow-x-hidden">
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
@@ -118,7 +118,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <span className="hidden sm:inline">{t("nav.signIn")}</span>
                   </Button>
                 </SignInButton>
-                <Link href="/admin/login">
+                <Link href="/admin/login" className="hidden sm:inline-flex">
                   <Button variant="ghost" size="sm" className="text-xs text-muted-foreground/60 hover:text-muted-foreground px-2">
                     {t("nav.adminLogin")}
                   </Button>
