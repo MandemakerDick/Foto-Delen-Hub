@@ -284,13 +284,16 @@ export default function PhotoDetail() {
       </Link>
 
       <div className="flex flex-col lg:flex-row gap-12">
+        {/* Mobile-only title — shown above the image so it's visible without scrolling */}
+        <h1 className="lg:hidden font-serif text-3xl font-bold leading-tight">{photo.title}</h1>
+
         {/* Main Image */}
         <div className="w-full lg:w-2/3 flex flex-col gap-8">
           <div className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
             <img
               src={photo.imageUrl}
               alt={photo.title}
-              className="max-h-[75vh] max-w-full w-auto object-contain shadow-2xl"
+              className="max-h-[50vh] lg:max-h-[75vh] max-w-full w-auto object-contain shadow-2xl"
             />
             {prevPhoto && (
               <Link
@@ -415,7 +418,7 @@ export default function PhotoDetail() {
         {/* Metadata Sidebar */}
         <div className="w-full lg:w-1/3 flex flex-col lg:sticky lg:top-20 lg:self-start">
           <div className="flex justify-between items-start mb-4">
-            <h1 className="font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
+            <h1 className="hidden lg:block font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
 
             {(myProfile?.id === photo.photographerId || adminStatus?.isAdmin) && (
               <>

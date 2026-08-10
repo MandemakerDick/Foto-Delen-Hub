@@ -71,7 +71,7 @@ export default function Gallery() {
         
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
           <Select value={clubFilter} onValueChange={setClubFilter}>
-            <SelectTrigger className="w-[160px] bg-background border-border/50">
+            <SelectTrigger className="flex-1 min-w-[130px] bg-background border-border/50">
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.clubs")}`} />
             </SelectTrigger>
             <SelectContent>
@@ -83,7 +83,7 @@ export default function Gallery() {
           </Select>
 
           <Select value={themeFilter} onValueChange={setThemeFilter}>
-            <SelectTrigger className="w-[160px] bg-background border-border/50">
+            <SelectTrigger className="flex-1 min-w-[130px] bg-background border-border/50">
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.themes")}`} />
             </SelectTrigger>
             <SelectContent>
@@ -95,7 +95,7 @@ export default function Gallery() {
           </Select>
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
-            <SelectTrigger className="w-[160px] bg-background border-border/50">
+            <SelectTrigger className="flex-1 min-w-[130px] bg-background border-border/50">
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
             </SelectTrigger>
             <SelectContent>
