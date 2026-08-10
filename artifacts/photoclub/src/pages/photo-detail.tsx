@@ -288,8 +288,10 @@ export default function PhotoDetail() {
         <h1 className="lg:hidden font-serif text-3xl font-bold leading-tight">{photo.title}</h1>
 
         {/* Main Image */}
-        <div className="w-full lg:w-2/3 flex flex-col gap-8">
-          <div className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
+        {/* display:contents on mobile collapses the wrapper so children join the outer
+            flex-col directly, enabling CSS order to put metadata between image and comments */}
+        <div className="[display:contents] lg:flex lg:flex-col lg:gap-8 lg:w-2/3">
+          <div className="order-2 lg:order-none relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
             <img
               src={photo.imageUrl}
               alt={photo.title}
@@ -316,7 +318,7 @@ export default function PhotoDetail() {
           </div>
 
           {/* Comments Section */}
-          <div>
+          <div className="order-4 lg:order-none">
             <div className="flex items-center gap-3 mb-6">
               <MessageCircle className="w-5 h-5 text-primary" />
               <h2 className="font-serif text-2xl">
@@ -416,7 +418,7 @@ export default function PhotoDetail() {
         </div>
 
         {/* Metadata Sidebar */}
-        <div className="w-full lg:w-1/3 flex flex-col lg:sticky lg:top-20 lg:self-start">
+        <div className="order-3 lg:order-none lg:w-1/3 flex flex-col lg:sticky lg:top-20 lg:self-start">
           <div className="flex justify-between items-start mb-4">
             <h1 className="hidden lg:block font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
 
