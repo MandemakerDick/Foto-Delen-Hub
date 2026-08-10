@@ -116,6 +116,7 @@ export default function PhotoDetail() {
   const [commentBody, setCommentBody] = useState("");
   const [showPropose, setShowPropose] = useState(false);
   const [proposedName, setProposedName] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const proposeThemeMutation = useProposeTheme();
 
   if (isLoading) {
@@ -267,6 +268,122 @@ export default function PhotoDetail() {
     );
   };
 
+  const canEdit = !!(myProfile?.id === photo.photographerId || adminStatus?.isAdmin);
+
+  /** Action dropdown — rendered in both the mobile header and the desktop sidebar */
+  const actionMenu = canEdit ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground shrink-0">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={openEdit} className="cursor-pointer gap-2">
+          <Pencil className="h-3.5 w-3.5" />
+          {t("photoDetail.edit")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => setDeleteOpen(true)}
+          className="text-destructive focus:bg-destructive/10 cursor-pointer gap-2"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {t("photoDetail.remove")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : null;
+
+  /** Metadata rows — rendered in the desktop sidebar (and partially reused for mobile) */
+  const metaRows = (
+    <>
+      {photo.description && (
+        <div className="mb-8 text-lg leading-relaxed text-foreground/90 font-serif break-words overflow-hidden">
+          {photo.description}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground font-mono">
+        <Calendar className="w-4 h-4" />
+        <span>{format(new Date(photo.createdAt), "MMMM d, yyyy")}</span>
+      </div>
+
+      {/* Like Action */}
+      <div className="flex items-center gap-4 mb-8 bg-secondary/30 p-4 rounded-lg border border-border/50">
+        {myProfile ? (
+          <Button
+            onClick={handleLike}
+            disabled={likeMutation.isPending}
+            variant="outline"
+            className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+          >
+            <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
+            <span className="font-mono">{photo.likeCount || 0}</span>
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Heart className="w-4 h-4" />
+            <span className="font-mono">{photo.likeCount || 0}</span>
+          </div>
+        )}
+      </div>
+
+      <Separator className="mb-8" />
+
+      <div className="flex flex-col gap-6">
+        {/* Photographer */}
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+            {photo.photographerAvatarUrl ? (
+              <img src={photo.photographerAvatarUrl} alt={photo.photographerName || ""} className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <User className="w-5 h-5 text-muted-foreground" />
+            )}
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.photographer")}</div>
+            <Link href={`/photographers/${photo.photographerId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
+              {photo.photographerName || t("common.unknown")}
+            </Link>
+          </div>
+        </div>
+
+        {/* Club */}
+        {photo.clubId && (
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+              <Users className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.community")}</div>
+              <Link href={`/clubs/${photo.clubId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
+                {photo.clubName}
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Theme */}
+        {photo.themeId && (
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+              <Tag className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.theme")}</div>
+              <Link href={`/photos?themeId=${photo.themeId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
+                <Badge variant="outline" className="text-sm font-normal py-1 border-primary/30 text-foreground">
+                  {photo.themeName}
+                </Badge>
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
       {photo && (
@@ -278,20 +395,134 @@ export default function PhotoDetail() {
           <meta property="og:type" content="article" />
         </Helmet>
       )}
+
+      {/* Edit dialog — single portal, controlled via editOpen state */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">{t("photoDetail.editTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-title">{t("photoDetail.title")}</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-desc">{t("photoDetail.description")}</Label>
+              <Textarea
+                id="edit-desc"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="resize-none h-24 bg-background font-serif"
+                placeholder={t("photoDetail.artistStatement")}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("photoDetail.community")}</Label>
+                <Select value={editClubId} onValueChange={setEditClubId}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={t("photoDetail.none")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("photoDetail.none")}</SelectItem>
+                    {clubs?.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("photoDetail.theme")}</Label>
+                <Select value={editThemeId} onValueChange={setEditThemeId}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={t("photoDetail.none")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("photoDetail.none")}</SelectItem>
+                    {themes?.map((theme) => (
+                      <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!showPropose ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowPropose(true)}
+                    className="mt-2 w-full text-sm font-medium text-primary border border-primary/40 rounded-md py-1.5 px-3 hover:bg-primary/10 transition-colors text-left"
+                  >
+                    + {t("upload.proposeTheme")}
+                  </button>
+                ) : (
+                  <div className="mt-2 space-y-2 p-3 border border-primary/40 rounded-md bg-primary/5">
+                    <Input
+                      value={proposedName}
+                      onChange={(e) => setProposedName(e.target.value)}
+                      placeholder={t("upload.proposeThemePlaceholder")}
+                      className="bg-background h-10"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleProposeTheme(); } if (e.key === "Escape") { setShowPropose(false); setProposedName(""); } }}
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button type="button" className="flex-1 h-9" disabled={!proposedName.trim() || proposeThemeMutation.isPending} onClick={handleProposeTheme}>
+                        {proposeThemeMutation.isPending ? t("upload.proposeThemeSubmitting") : t("upload.proposeThemeBtn")}
+                      </Button>
+                      <Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setShowPropose(false); setProposedName(""); }}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={handleEdit} disabled={updateMutation.isPending || !editTitle.trim()}>
+              {updateMutation.isPending ? t("photoDetail.saving") : t("photoDetail.saveChanges")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation — single portal, controlled via deleteOpen state */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("photoDetail.areYouSure")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("photoDetail.deleteBody", { title: photo.title })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Link href="/photos" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" />
         {t("photoDetail.back")}
       </Link>
 
       <div className="flex flex-col lg:flex-row gap-12">
-        {/* Mobile-only title — shown above the image so it's visible without scrolling */}
-        <h1 className="lg:hidden font-serif text-3xl font-bold leading-tight">{photo.title}</h1>
 
-        {/* Main Image */}
-        {/* display:contents on mobile collapses the wrapper so children join the outer
-            flex-col directly, enabling CSS order to put metadata between image and comments */}
-        <div className="[display:contents] lg:flex lg:flex-col lg:gap-8 lg:w-2/3">
-          <div className="order-2 lg:order-none relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
+        {/* ── Left column: image + comments ── */}
+        <div className="lg:w-2/3 flex flex-col gap-8">
+
+          {/* Mobile header: title only (hidden on lg+) */}
+          <h1 className="lg:hidden font-serif text-3xl font-bold leading-tight">{photo.title}</h1>
+
+          {/* Photo */}
+          <div className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
             <img
               src={photo.imageUrl}
               alt={photo.title}
@@ -317,8 +548,100 @@ export default function PhotoDetail() {
             )}
           </div>
 
+          {/* Mobile metadata block — sits between image and comments (hidden on lg+) */}
+          <div className="lg:hidden flex flex-col">
+            {/* Description first, right below the photo */}
+            {photo.description && (
+              <div className="mb-6 text-lg leading-relaxed text-foreground/90 font-serif break-words overflow-hidden">
+                {photo.description}
+              </div>
+            )}
+
+            {/* Date + edit button on the same row */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
+                <Calendar className="w-4 h-4" />
+                <span>{format(new Date(photo.createdAt), "MMMM d, yyyy")}</span>
+              </div>
+              {actionMenu}
+            </div>
+
+            {/* Like Action */}
+            <div className="flex items-center gap-4 mb-8 bg-secondary/30 p-4 rounded-lg border border-border/50">
+              {myProfile ? (
+                <Button
+                  onClick={handleLike}
+                  disabled={likeMutation.isPending}
+                  variant="outline"
+                  className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                >
+                  <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
+                  <span className="font-mono">{photo.likeCount || 0}</span>
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Heart className="w-4 h-4" />
+                  <span className="font-mono">{photo.likeCount || 0}</span>
+                </div>
+              )}
+            </div>
+
+            <Separator className="mb-8" />
+
+            <div className="flex flex-col gap-6">
+              {/* Photographer */}
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+                  {photo.photographerAvatarUrl ? (
+                    <img src={photo.photographerAvatarUrl} alt={photo.photographerName || ""} className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <User className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.photographer")}</div>
+                  <Link href={`/photographers/${photo.photographerId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
+                    {photo.photographerName || t("common.unknown")}
+                  </Link>
+                </div>
+              </div>
+
+              {/* Club */}
+              {photo.clubId && (
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+                    <Users className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.community")}</div>
+                    <Link href={`/clubs/${photo.clubId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
+                      {photo.clubName}
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Theme */}
+              {photo.themeId && (
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+                    <Tag className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.theme")}</div>
+                    <Link href={`/photos?themeId=${photo.themeId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
+                      <Badge variant="outline" className="text-sm font-normal py-1 border-primary/30 text-foreground">
+                        {photo.themeName}
+                      </Badge>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Comments Section */}
-          <div className="order-4 lg:order-none">
+          <div>
             <div className="flex items-center gap-3 mb-6">
               <MessageCircle className="w-5 h-5 text-primary" />
               <h2 className="font-serif text-2xl">
@@ -417,233 +740,15 @@ export default function PhotoDetail() {
           </div>
         </div>
 
-        {/* Metadata Sidebar */}
-        <div className="order-3 lg:order-none lg:w-1/3 flex flex-col lg:sticky lg:top-20 lg:self-start">
-          <div className="flex justify-between items-start mb-4">
-            <h1 className="hidden lg:block font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
-
-            {(myProfile?.id === photo.photographerId || adminStatus?.isAdmin) && (
-              <>
-                {/* Edit dialog */}
-                <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="font-serif text-xl">{t("photoDetail.editTitle")}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="edit-title">{t("photoDetail.title")}</Label>
-                        <Input
-                          id="edit-title"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className="bg-background"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="edit-desc">{t("photoDetail.description")}</Label>
-                        <Textarea
-                          id="edit-desc"
-                          value={editDescription}
-                          onChange={(e) => setEditDescription(e.target.value)}
-                          className="resize-none h-24 bg-background font-serif"
-                          placeholder={t("photoDetail.artistStatement")}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label>{t("photoDetail.community")}</Label>
-                          <Select value={editClubId} onValueChange={setEditClubId}>
-                            <SelectTrigger className="bg-background">
-                              <SelectValue placeholder={t("photoDetail.none")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">{t("photoDetail.none")}</SelectItem>
-                              {clubs?.map((c) => (
-                                <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label>{t("photoDetail.theme")}</Label>
-                          <Select value={editThemeId} onValueChange={setEditThemeId}>
-                            <SelectTrigger className="bg-background">
-                              <SelectValue placeholder={t("photoDetail.none")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">{t("photoDetail.none")}</SelectItem>
-                              {themes?.map((theme) => (
-                                <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {!showPropose ? (
-                            <button
-                              type="button"
-                              onClick={() => setShowPropose(true)}
-                              className="mt-2 w-full text-sm font-medium text-primary border border-primary/40 rounded-md py-1.5 px-3 hover:bg-primary/10 transition-colors text-left"
-                            >
-                              + {t("upload.proposeTheme")}
-                            </button>
-                          ) : (
-                            <div className="mt-2 space-y-2 p-3 border border-primary/40 rounded-md bg-primary/5">
-                              <Input
-                                value={proposedName}
-                                onChange={(e) => setProposedName(e.target.value)}
-                                placeholder={t("upload.proposeThemePlaceholder")}
-                                className="bg-background h-10"
-                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleProposeTheme(); } if (e.key === "Escape") { setShowPropose(false); setProposedName(""); } }}
-                                autoFocus
-                              />
-                              <div className="flex gap-2">
-                                <Button type="button" className="flex-1 h-9" disabled={!proposedName.trim() || proposeThemeMutation.isPending} onClick={handleProposeTheme}>
-                                  {proposeThemeMutation.isPending ? t("upload.proposeThemeSubmitting") : t("upload.proposeThemeBtn")}
-                                </Button>
-                                <Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setShowPropose(false); setProposedName(""); }}>
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setEditOpen(false)}>{t("common.cancel")}</Button>
-                      <Button onClick={handleEdit} disabled={updateMutation.isPending || !editTitle.trim()}>
-                        {updateMutation.isPending ? t("photoDetail.saving") : t("photoDetail.saveChanges")}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                {/* Owner dropdown */}
-                <AlertDialog>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={openEdit} className="cursor-pointer gap-2">
-                        <Pencil className="h-3.5 w-3.5" />
-                        {t("photoDetail.edit")}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <AlertDialogTrigger asChild>
-                        <DropdownMenuItem className="text-destructive focus:bg-destructive/10 cursor-pointer gap-2">
-                          <Trash2 className="h-3.5 w-3.5" />
-                          {t("photoDetail.remove")}
-                        </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t("photoDetail.areYouSure")}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t("photoDetail.deleteBody", { title: photo.title })}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        {t("common.delete")}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
-            )}
+        {/* ── Desktop sidebar: title + metadata (hidden below lg) ── */}
+        <div className="hidden lg:flex lg:flex-col lg:w-1/3 lg:sticky lg:top-20 lg:self-start">
+          <div className="flex items-start justify-between mb-4">
+            <h1 className="font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
+            {actionMenu}
           </div>
-
-          <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground font-mono">
-            <Calendar className="w-4 h-4" />
-            <span>{format(new Date(photo.createdAt), "MMMM d, yyyy")}</span>
-          </div>
-
-          {/* Like Action */}
-          <div className="flex items-center gap-4 mb-8 bg-secondary/30 p-4 rounded-lg border border-border/50">
-            {myProfile ? (
-              <Button
-                onClick={handleLike}
-                disabled={likeMutation.isPending}
-                variant="outline"
-                className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-              >
-                <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
-                <span className="font-mono">{photo.likeCount || 0}</span>
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <Heart className="w-4 h-4" />
-                <span className="font-mono">{photo.likeCount || 0}</span>
-              </div>
-            )}
-          </div>
-
-          {photo.description && (
-            <div className="mb-8 text-lg leading-relaxed text-foreground/90 font-serif">
-              {photo.description}
-            </div>
-          )}
-
-          <Separator className="mb-8" />
-
-          <div className="flex flex-col gap-6">
-            {/* Photographer */}
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
-                {photo.photographerAvatarUrl ? (
-                  <img src={photo.photographerAvatarUrl} alt={photo.photographerName || ""} className="w-full h-full rounded-full object-cover" />
-                ) : (
-                  <User className="w-5 h-5 text-muted-foreground" />
-                )}
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.photographer")}</div>
-                <Link href={`/photographers/${photo.photographerId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
-                  {photo.photographerName || t("common.unknown")}
-                </Link>
-              </div>
-            </div>
-
-            {/* Club */}
-            {photo.clubId && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
-                  <Users className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.community")}</div>
-                  <Link href={`/clubs/${photo.clubId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
-                    {photo.clubName}
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {/* Theme */}
-            {photo.themeId && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
-                  <Tag className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("photoDetail.theme")}</div>
-                  <Link href={`/photos?themeId=${photo.themeId}`} className="font-medium text-lg hover:text-primary transition-colors inline-block">
-                    <Badge variant="outline" className="text-sm font-normal py-1 border-primary/30 text-foreground">
-                      {photo.themeName}
-                    </Badge>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
+          {metaRows}
         </div>
+
       </div>
     </div>
   );
