@@ -58,7 +58,7 @@ export default function Gallery() {
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-10 items-start md:items-center bg-secondary/50 p-4 rounded-lg border border-border/50">
+      <div data-testid="gallery-filter-bar" className="flex flex-col md:flex-row gap-4 mb-10 items-start md:items-center bg-secondary/50 p-4 rounded-lg border border-border/50">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input 
