@@ -187,9 +187,68 @@ test.describe("PhotoDetail — mobile title position (390 × 844)", () => {
         { timeout: 15_000 },
       );
 
-      // The desktop h1 uses `hidden lg:block`; on a 390px viewport it must be hidden.
-      const desktopH1 = page.locator("h1.lg\\:block");
-      await expect(desktopH1).toBeHidden();
+      // The desktop sidebar uses `hidden lg:flex`; on a 390px viewport the sidebar
+      // (and the h1 inside it) must be hidden.
+      const sidebar = page.getByTestId("photo-metadata-sidebar");
+      await expect(sidebar).toBeHidden();
+    } finally {
+      await context.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Desktop sidebar metadata guard
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail — desktop sidebar metadata (1280 × 800)", () => {
+  test("the photographer name, theme, and club are visible in the sidebar", async ({
+    browser,
+  }) => {
+    // 1280 × 800 is above the lg breakpoint (1024px), so the desktop sidebar
+    // layout is active. The metadata block (photographer / theme / club) lives
+    // inside the sidebar and must remain visible after any layout refactor.
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page);
+      await page.goto(`/photos/${PHOTO.id}`, { waitUntil: "networkidle" });
+
+      // Dismiss any Vite/Replit runtime-error overlay.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
+      // Wait until the photo title text is present in the DOM.
+      await page.waitForFunction(
+        (title) => (document.body.textContent ?? "").includes(title),
+        PHOTO.title,
+        { timeout: 15_000 },
+      );
+
+      // Scope all assertions to the sidebar so a layout regression that moves
+      // metadata into the main content area still fails the test.
+      const sidebar = page.getByTestId("photo-metadata-sidebar");
+      await expect(sidebar).toBeVisible();
+
+      // --- Photographer name ---
+      // Rendered as a link inside the sidebar metadata block.
+      const photographerLink = sidebar.getByRole("link", {
+        name: PHOTO.photographerName,
+      });
+      await expect(photographerLink).toBeVisible();
+
+      // --- Club name ---
+      // Rendered as a link inside the sidebar metadata block (only when clubId is set).
+      const clubLink = sidebar.getByRole("link", { name: PHOTO.clubName });
+      await expect(clubLink).toBeVisible();
+
+      // --- Theme name ---
+      // Rendered as a Badge (span) inside a link inside the sidebar metadata block
+      // (only when themeId is set).
+      const themeText = sidebar.getByText(PHOTO.themeName, { exact: true });
+      await expect(themeText).toBeVisible();
     } finally {
       await context.close();
     }
@@ -225,9 +284,11 @@ test.describe("PhotoDetail — desktop sidebar title (1280 × 800)", () => {
         { timeout: 15_000 },
       );
 
-      // The desktop sidebar h1 uses `hidden lg:block`. At a 1280px viewport the
-      // `lg:` breakpoint is active, so `block` wins and the element must be visible.
-      const desktopH1 = page.locator("h1.lg\\:block");
+      // The desktop sidebar container uses `hidden lg:flex`, so at 1280px the
+      // sidebar is visible and the h1 inside it must be visible too.
+      const sidebar = page.getByTestId("photo-metadata-sidebar");
+      await expect(sidebar).toBeVisible();
+      const desktopH1 = sidebar.locator("h1");
       await expect(desktopH1).toBeVisible();
 
       // Confirm the element actually contains the photo title.

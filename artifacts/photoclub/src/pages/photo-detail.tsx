@@ -741,7 +741,7 @@ export default function PhotoDetail() {
         </div>
 
         {/* ── Desktop sidebar: title + metadata (hidden below lg) ── */}
-        <div className="hidden lg:flex lg:flex-col lg:w-1/3 lg:sticky lg:top-20 lg:self-start">
+        <div data-testid="photo-metadata-sidebar" className="hidden lg:flex lg:flex-col lg:w-1/3 lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-start justify-between mb-4">
             <h1 className="font-serif text-4xl font-bold leading-tight flex-1 min-w-0 pr-3">{photo.title}</h1>
             {actionMenu}
