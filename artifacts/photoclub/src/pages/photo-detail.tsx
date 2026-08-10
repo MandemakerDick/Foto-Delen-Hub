@@ -48,7 +48,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -522,7 +521,7 @@ export default function PhotoDetail() {
           <h1 className="lg:hidden font-serif text-3xl font-bold leading-tight">{photo.title}</h1>
 
           {/* Photo */}
-          <div className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
+          <div data-testid="photo-image-container" className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
             <img
               src={photo.imageUrl}
               alt={photo.title}
@@ -552,13 +551,13 @@ export default function PhotoDetail() {
           <div className="lg:hidden flex flex-col">
             {/* Description first, right below the photo */}
             {photo.description && (
-              <div className="mb-6 text-lg leading-relaxed text-foreground/90 font-serif break-words overflow-hidden">
+              <div data-testid="mobile-photo-description" className="mb-6 text-lg leading-relaxed text-foreground/90 font-serif break-words overflow-hidden">
                 {photo.description}
               </div>
             )}
 
             {/* Date + edit button on the same row */}
-            <div className="flex items-center justify-between mb-8">
+            <div data-testid="mobile-photo-date-row" className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
                 <Calendar className="w-4 h-4" />
                 <span>{format(new Date(photo.createdAt), "MMMM d, yyyy")}</span>
