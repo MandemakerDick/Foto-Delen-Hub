@@ -195,3 +195,75 @@ test.describe("PhotoDetail — mobile title position (390 × 844)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Desktop title guard
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail — desktop sidebar title (1280 × 800)", () => {
+  test("the desktop h1 inside the metadata sidebar is visible at a 1280px viewport", async ({
+    browser,
+  }) => {
+    // 1280 × 800 is a common laptop resolution and well above the lg breakpoint
+    // (1024px), so Tailwind's `hidden lg:block` class makes the element visible.
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page);
+      await page.goto(`/photos/${PHOTO.id}`, { waitUntil: "networkidle" });
+
+      // Dismiss any Vite/Replit runtime-error overlay.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
+      // Wait until the photo title text is present in the DOM.
+      await page.waitForFunction(
+        (title) => (document.body.textContent ?? "").includes(title),
+        PHOTO.title,
+        { timeout: 15_000 },
+      );
+
+      // The desktop sidebar h1 uses `hidden lg:block`. At a 1280px viewport the
+      // `lg:` breakpoint is active, so `block` wins and the element must be visible.
+      const desktopH1 = page.locator("h1.lg\\:block");
+      await expect(desktopH1).toBeVisible();
+
+      // Confirm the element actually contains the photo title.
+      await expect(desktopH1).toHaveText(PHOTO.title);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("the mobile-only h1 (lg:hidden) is not visible at a 1280px viewport", async ({
+    browser,
+  }) => {
+    // Sanity-check the inverse: the `lg:hidden` h1 must be hidden at a desktop
+    // viewport so we know only the desktop sidebar h1 is shown on large screens.
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page);
+      await page.goto(`/photos/${PHOTO.id}`, { waitUntil: "networkidle" });
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
+      await page.waitForFunction(
+        (title) => (document.body.textContent ?? "").includes(title),
+        PHOTO.title,
+        { timeout: 15_000 },
+      );
+
+      // The mobile h1 uses `lg:hidden`; on a 1280px viewport it must be hidden.
+      const mobileH1 = page.locator("h1.lg\\:hidden");
+      await expect(mobileH1).toBeHidden();
+    } finally {
+      await context.close();
+    }
+  });
+});
