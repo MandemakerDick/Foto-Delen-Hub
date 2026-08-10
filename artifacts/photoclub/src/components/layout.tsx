@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut } from "lucide-react";
+import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
 import { Show, useAuth, useUser, SignInButton } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -27,6 +28,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     await queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
   };
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const navItems = [
     { href: "/photos", label: t("nav.gallery"), icon: LayoutDashboard },
     { href: "/clubs", label: t("nav.clubs"), icon: Users },
@@ -43,6 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotoMatrix</span>
           </Link>
 
+          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
@@ -58,6 +62,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Hamburger — visible below md */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-9 w-9 text-muted-foreground"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
             {/* Clerk signed-in user */}
             <Show when="signed-in">
               <Link href="/my-photos">
@@ -127,6 +141,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+
+        {/* Mobile nav dropdown — slides in below the bar, hidden on md+ */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
+            <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium tracking-wide transition-colors ${
+                    location.startsWith(item.href)
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
       </header>
 
       <main className="flex-1">{children}</main>
