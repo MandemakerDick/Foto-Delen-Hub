@@ -211,6 +211,7 @@ test.describe("PhotoDetail — mobile description position (390 × 844)", () => 
     // guard ({photo.description && …}) is in place.
     const PHOTO_NO_DESC = { ...PHOTO, id: 304, description: null };
 
+
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
     });
@@ -260,6 +261,107 @@ test.describe("PhotoDetail — mobile description position (390 × 844)", () => 
       // The description element must be absent from the DOM when there is no description.
       const descEl = page.getByTestId("mobile-photo-description");
       await expect(descEl).toHaveCount(0);
+    } finally {
+      await context.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tablet viewport test (768 × 1024)
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail — tablet description position (768 × 1024)", () => {
+  test("description appears in the DOM before the date row on a tablet", async ({
+    browser,
+  }) => {
+    // 768 × 1024 sits in the tablet range (768–1023 px), still below the lg
+    // breakpoint (1024 px), so the mobile metadata block (lg:hidden) is active.
+    // A CSS-only change such as a flexbox `order` tweak could reorder the
+    // description at this width without affecting the 390 px phone test, so we
+    // assert both DOM order and rendered bounding-box position here.
+    const context = await browser.newContext({
+      viewport: { width: 768, height: 1024 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page);
+      await page.goto(`/photos/${PHOTO.id}`, { waitUntil: "networkidle" });
+
+      // Dismiss any Vite/Replit runtime-error overlay.
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
+      // Wait for the photo title to appear so the component has fully rendered.
+      await page.waitForFunction(
+        (title) => (document.body.textContent ?? "").includes(title),
+        PHOTO.title,
+        { timeout: 15_000 },
+      );
+
+      // All three anchors must be present in the DOM.
+      const photoContainer = page.getByTestId("photo-image-container");
+      const descEl = page.getByTestId("mobile-photo-description");
+      const dateRow = page.getByTestId("mobile-photo-date-row");
+
+      await expect(photoContainer).toBeVisible();
+      await expect(descEl).toBeVisible();
+      await expect(dateRow).toBeVisible();
+
+      // Verify the description text is correct.
+      await expect(descEl).toContainText(PHOTO.description);
+
+      // ── DOM order checks ──────────────────────────────────────────────────
+      // Node.DOCUMENT_POSITION_FOLLOWING (4) is set when the argument comes
+      // *after* the element in document order.
+
+      // 1. Photo image container must precede the description.
+      const imgBeforeDescInDom = await page.evaluate(() => {
+        const img = document.querySelector("[data-testid='photo-image-container']");
+        const desc = document.querySelector("[data-testid='mobile-photo-description']");
+        if (!img || !desc) return false;
+        return !!(img.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      expect(
+        imgBeforeDescInDom,
+        "Expected the photo image container to appear before the description in document order",
+      ).toBe(true);
+
+      // 2. Description must precede the date row.
+      const descBeforeDateInDom = await page.evaluate(() => {
+        const desc = document.querySelector("[data-testid='mobile-photo-description']");
+        const date = document.querySelector("[data-testid='mobile-photo-date-row']");
+        if (!desc || !date) return false;
+        return !!(desc.compareDocumentPosition(date) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      expect(
+        descBeforeDateInDom,
+        "Expected the description to appear before the date row in document order",
+      ).toBe(true);
+
+      // ── Bounding-box checks ───────────────────────────────────────────────
+      // Catches CSS-based reordering (e.g. flexbox `order:`) that DOM order
+      // alone would not detect.
+      const imgBox  = await photoContainer.boundingBox();
+      const descBox = await descEl.boundingBox();
+      const dateBox = await dateRow.boundingBox();
+
+      expect(imgBox,  "Could not measure the photo image container bounding box").not.toBeNull();
+      expect(descBox, "Could not measure the description bounding box").not.toBeNull();
+      expect(dateBox, "Could not measure the date row bounding box").not.toBeNull();
+
+      // 1. Description top must be below the photo image top — i.e., the
+      //    description is positioned after the photo, not above it.
+      expect(
+        descBox!.y,
+        `Expected description top (${descBox!.y}px) to be below the photo image top (${imgBox!.y}px)`,
+      ).toBeGreaterThan(imgBox!.y);
+
+      // 2. Description top must be above the date row top.
+      expect(
+        descBox!.y,
+        `Expected description top (${descBox!.y}px) to be above date row top (${dateBox!.y}px)`,
+      ).toBeLessThan(dateBox!.y);
     } finally {
       await context.close();
     }
