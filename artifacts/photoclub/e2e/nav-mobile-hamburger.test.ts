@@ -134,3 +134,37 @@ test("mobile menu closes automatically after a nav link is tapped", async ({
 
   await context.close();
 });
+
+test("mobile menu closes when the active nav link (same route) is tapped again", async ({
+  browser,
+}) => {
+  // 600 px wide — below Tailwind's md breakpoint (768 px).
+  const context = await browser.newContext({
+    viewport: { width: 600, height: 800 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  // Navigate to /photos — Gallery is already the active link.
+  await page.goto("/photos", { waitUntil: "networkidle" });
+
+  // Dismiss any Vite/Replit runtime-error overlay.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  // Open the hamburger menu.
+  const hamburger = page.getByRole("button", { name: /toggle menu/i });
+  await hamburger.click();
+
+  // Confirm the mobile dropdown is open (Gallery link visible).
+  const galleryLink = page.getByRole("link", { name: /gallery/i }).last();
+  await expect(galleryLink).toBeVisible();
+
+  // Tap the Gallery link while already on /photos (same active route).
+  await galleryLink.click();
+
+  // The mobile dropdown must close even when the active link is tapped.
+  await expect(galleryLink).not.toBeVisible();
+
+  await context.close();
+});
