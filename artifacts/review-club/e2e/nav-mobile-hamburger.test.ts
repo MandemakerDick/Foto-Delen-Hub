@@ -122,3 +122,39 @@ test("mobile menu closes after tapping a nav link (600 × 800)", async ({
 
   await context.close();
 });
+
+test("mobile menu closes after tapping the Sessions link (from /archive, 600 × 800)", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 600, height: 800 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+
+  // Start on /archive so that clicking Sessions is a cross-route navigation.
+  // Use a relative URL so Playwright resolves it against the configured baseURL
+  // (/review/), producing http://localhost:<port>/review/archive.
+  await page.goto("archive", { waitUntil: "networkidle" });
+
+  // Dismiss any Vite/Replit runtime-error overlay.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  // Open the mobile menu.
+  const hamburger = page.getByRole("button", { name: /toggle menu/i });
+  await hamburger.click();
+
+  // Verify the panel is open.
+  const mobileNav = page.getByTestId("mobile-nav");
+  await expect(mobileNav).toBeVisible();
+
+  // Click the Sessions link inside the mobile panel.
+  await mobileNav.getByRole("link", { name: /sessions/i }).click();
+
+  // The panel must no longer be visible after the navigation.
+  await expect(mobileNav).not.toBeVisible();
+
+  await context.close();
+});
