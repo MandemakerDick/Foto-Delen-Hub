@@ -168,3 +168,37 @@ test("mobile menu closes when the active nav link (same route) is tapped again",
 
   await context.close();
 });
+
+test("hamburger menu stays closed after tapping a link on a 320 px phone", async ({
+  browser,
+}) => {
+  // 320 × 568 px — the smallest common phone viewport (e.g. iPhone SE 1st gen).
+  const context = await browser.newContext({
+    viewport: { width: 320, height: 568 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  await page.goto("/photos", { waitUntil: "networkidle" });
+
+  // Dismiss any Vite/Replit runtime-error overlay.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  // Open the hamburger menu.
+  const hamburger = page.getByRole("button", { name: /toggle menu/i });
+  await expect(hamburger).toBeVisible();
+  await hamburger.click();
+
+  // Confirm the mobile dropdown is open (Gallery link visible).
+  const galleryLink = page.getByRole("link", { name: /gallery/i }).last();
+  await expect(galleryLink).toBeVisible();
+
+  // Tap a nav link.
+  await galleryLink.click();
+
+  // The mobile dropdown must no longer be visible after tapping a link.
+  await expect(galleryLink).not.toBeVisible();
+
+  await context.close();
+});
