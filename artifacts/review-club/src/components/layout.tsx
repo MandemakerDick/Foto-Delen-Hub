@@ -4,7 +4,7 @@ import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-cli
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { KeyRound, ScanEye, LogIn } from "lucide-react";
+import { KeyRound, ScanEye, LogIn, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTranslation } from "react-i18next";
@@ -71,6 +71,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const showBootstrapBanner = adminStatus?.totalAdmins === 0 && !adminStatus?.isAdmin;
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <header className="border-b border-border/50 sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -95,6 +97,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
+            {/* Hamburger — visible below md */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-9 w-9 text-muted-foreground"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
             <LanguageSwitcher />
             <Show when="signed-out">
               <SignInButton mode="modal">
@@ -124,6 +136,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      {/* Mobile nav dropdown — shown below md when hamburger is open */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-b border-border/50 bg-background/95 backdrop-blur px-4 py-3 flex flex-col gap-3">
+          <Link
+            href="/"
+            className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-primary" : "text-muted-foreground"}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            {t("nav.sessions")}
+          </Link>
+          <Link
+            href="/archive"
+            className={`text-sm font-medium transition-colors hover:text-primary ${location === "/archive" ? "text-primary" : "text-muted-foreground"}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            {t("nav.archive")}
+          </Link>
+          {adminStatus?.isAdmin && (
+            <Link
+              href="/admin"
+              className={`text-sm font-medium transition-colors hover:text-primary ${location === "/admin" ? "text-primary" : "text-muted-foreground"}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t("nav.admin")}
+            </Link>
+          )}
+        </div>
+      )}
 
       {showBootstrapBanner && (
         <div className="bg-primary/10 border-b border-primary/20 py-3 px-4">
