@@ -90,3 +90,35 @@ test("hamburger menu is present and functional below the md breakpoint (600 × 8
 
   await context.close();
 });
+
+test("mobile menu closes after tapping a nav link (600 × 800)", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 600, height: 800 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  await page.goto("/", { waitUntil: "networkidle" });
+
+  // Dismiss any Vite/Replit runtime-error overlay.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  // Open the mobile menu.
+  const hamburger = page.getByRole("button", { name: /toggle menu/i });
+  await hamburger.click();
+
+  // Verify the panel is open.
+  const mobileNav = page.getByTestId("mobile-nav");
+  await expect(mobileNav).toBeVisible();
+
+  // Click the Archive link inside the mobile panel.
+  await mobileNav.getByRole("link", { name: /archive/i }).click();
+
+  // The panel must no longer be in the DOM / visible.
+  await expect(mobileNav).not.toBeVisible();
+
+  await context.close();
+});

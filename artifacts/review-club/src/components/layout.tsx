@@ -139,7 +139,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile nav dropdown — shown below md when hamburger is open */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-border/50 bg-background/95 backdrop-blur px-4 py-3 flex flex-col gap-3">
+        <div data-testid="mobile-nav" className="md:hidden border-b border-border/50 bg-background/95 backdrop-blur px-4 py-3 flex flex-col gap-3">
           <Link
             href="/"
             className={`text-sm font-medium transition-colors hover:text-primary ${location === "/" ? "text-primary" : "text-muted-foreground"}`}
