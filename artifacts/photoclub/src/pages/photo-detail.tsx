@@ -527,7 +527,7 @@ export default function PhotoDetail() {
           <h1 className="lg:hidden font-serif text-3xl font-bold leading-tight">{photo.title}</h1>
 
           {/* Photo */}
-          <div data-testid="photo-image-container" className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50">
+          <div data-testid="photo-image-container" className="relative flex items-center justify-center bg-secondary/20 rounded-sm p-4 border border-border/50 h-[50vh] lg:h-[75vh]">
             <img
               src={photo.imageUrl}
               alt={photo.title}
