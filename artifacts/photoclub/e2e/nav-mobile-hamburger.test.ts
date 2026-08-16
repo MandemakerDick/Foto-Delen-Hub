@@ -236,3 +236,33 @@ test("hamburger menu stays closed after tapping a link on a 320 px phone", async
 
   await context.close();
 });
+
+test("hamburger is absent and desktop nav is visible at the md breakpoint (768 × 1024)", async ({
+  browser,
+}) => {
+  // 768 × 1024 px — exactly at Tailwind's md breakpoint boundary.
+  // At this width `md:hidden` kicks in so the hamburger must not be shown,
+  // and `hidden md:flex` makes the desktop nav visible.
+  const context = await browser.newContext({
+    viewport: { width: 768, height: 1024 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  await page.goto("/photos", { waitUntil: "networkidle" });
+
+  // Dismiss any Vite/Replit runtime-error overlay.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  // 1. Hamburger button must NOT be visible at 768 px+.
+  const hamburger = page.getByRole("button", { name: /toggle menu/i });
+  await expect(hamburger).toBeHidden();
+
+  // 2. Desktop nav links must be visible.
+  //    The desktop <nav> has class "hidden md:flex" — at 768 px it becomes visible.
+  const desktopNav = page.locator("header nav.hidden");
+  await expect(desktopNav).toBeVisible();
+
+  await context.close();
+});
