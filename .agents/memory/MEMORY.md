@@ -2,3 +2,6 @@
 - [Radix Select empty-value crash](radix-select-empty-value.md) — SelectItem value="" crashes at runtime; use "none" and check accordingly in save logic.
 - [Dark-theme dialog visibility](dark-theme-dialog.md) — with near-black backgrounds, dialog bg-background blends into the overlay; use hardcoded arbitrary values in dialog.tsx.
 - [Drizzle-kit non-TTY](drizzle-kit-noninteractive.md) — drizzle-kit push needs TTY; use executeSql for raw DDL in agent shells.
+- [Playwright locale injection for i18n tests](playwright-locale-injection.md) — storageState origin must match exact host:port; use addInitScript + page.evaluate + page.reload() instead.
+- [Playwright strict mode and getByText](playwright-strict-mode-text.md) — getByText("X") fails if multiple elements contain "X"; use locator("label").filter({hasText}) for specific elements.
+- [Review-club base path routing in tests](review-club-test-paths.md) — page.goto("/archive") bypasses /review/ base and lands on wrong page; use relative paths like "archive" without leading slash.

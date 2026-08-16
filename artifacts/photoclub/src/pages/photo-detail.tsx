@@ -25,6 +25,7 @@ import {
   useProposeTheme,
 } from "@workspace/api-client-react";
 import { useMyProfile } from "@/hooks/use-my-profile";
+import { useDateLocale } from "@/hooks/use-date-locale";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +100,7 @@ export default function PhotoDetail() {
 
   const { profile: myProfile } = useMyProfile();
   const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
+  const dateLocale = useDateLocale();
 
   const { data: allClubs } = useListClubs();
   const { data: themes } = useListThemes();
@@ -305,7 +307,7 @@ export default function PhotoDetail() {
 
       <div className="flex items-center gap-2 mb-8 text-sm text-muted-foreground font-mono">
         <Calendar className="w-4 h-4" />
-        <span>{format(new Date(photo.createdAt), "MMMM d, yyyy")}</span>
+        <span>{format(new Date(photo.createdAt), "d MMMM yyyy", { locale: dateLocale })}</span>
       </div>
 
       {/* Like Action */}
@@ -389,9 +391,13 @@ export default function PhotoDetail() {
         <Helmet>
           <title>{photo.title} — PhotoMatrix</title>
           <meta property="og:title" content={photo.title} />
-          <meta property="og:description" content={photo.description ?? `A photograph by ${photo.photographerName ?? "a PhotoMatrix member"}`} />
+          <meta property="og:description" content={photo.description ?? `A photograph by ${photo.photographerName || "a PhotoMatrix member"}`} />
           <meta property="og:image" content={photo.imageUrl} />
           <meta property="og:type" content="article" />
+          {/* Canonical URL — prevents duplicate-content signals when the same photo is
+              shared via different URL variants (e.g. with ?context=gallery:5 appended) */}
+          <meta property="og:url" content={`${window.location.origin}/photos/${photo.id}`} />
+          <link rel="canonical" href={`${window.location.origin}/photos/${photo.id}`} />
         </Helmet>
       )}
 
@@ -560,7 +566,7 @@ export default function PhotoDetail() {
             <div data-testid="mobile-photo-date-row" className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
                 <Calendar className="w-4 h-4" />
-                <span>{format(new Date(photo.createdAt), "MMMM d, yyyy")}</span>
+                <span>{format(new Date(photo.createdAt), "d MMMM yyyy", { locale: dateLocale })}</span>
               </div>
               {actionMenu}
             </div>

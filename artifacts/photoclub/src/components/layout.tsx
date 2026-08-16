@@ -144,7 +144,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile nav dropdown — slides in below the bar, hidden on md+ */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
+          <div data-testid="mobile-nav" className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
               {navItems.map((item) => (
                 <Link
