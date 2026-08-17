@@ -108,12 +108,12 @@ describe("Import button disabled condition", () => {
   });
 
   describe("club selection", () => {
-    it("is disabled when clubId is 'none'", () => {
+    it("is NOT disabled when clubId is 'none' (club is optional)", () => {
       const state: ImportButtonState = {
         ...validState,
         clubId: "none",
       };
-      expect(isImportButtonDisabled(state)).toBe(true);
+      expect(isImportButtonDisabled(state)).toBe(false);
     });
 
     it("is disabled when clubId is 'new' and newClubName is empty", () => {

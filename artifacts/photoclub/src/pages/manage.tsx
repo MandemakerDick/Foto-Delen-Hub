@@ -1299,11 +1299,11 @@ export default function Manage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Club</label>
+                    <label className="text-sm font-medium">Club <span className="text-muted-foreground font-normal">(optional)</span></label>
                     <Select value={importClubId} onValueChange={setImportClubId}>
                       <SelectTrigger className="bg-background"><SelectValue placeholder="Select club..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="none">No club</SelectItem>
                         <SelectItem value="new">+ Add new club</SelectItem>
                         {clubs?.map(c => (
                           <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>

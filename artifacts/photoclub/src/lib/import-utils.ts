@@ -40,7 +40,6 @@ export function isImportButtonDisabled(s: ImportButtonState): boolean {
     s.selectedCount === 0 ||
     s.isPending ||
     (s.photographerId === "new" && !s.newPhotographerName.trim()) ||
-    s.clubId === "none" ||
     (s.clubId === "new" && !s.newClubName.trim()) ||
     (s.photoEdits.some((e) => !e.title.trim() || isFileSlugTitle(e.title)) &&
       !s.warningAcknowledged)
