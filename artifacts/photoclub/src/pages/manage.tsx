@@ -129,7 +129,7 @@ export default function Manage() {
         onSuccess: (result) => {
           setScanResult(result);
           setSelectedImageIndices(new Set(result.images.map((_, i) => i)));
-          setImportNewPhotographerName("");
+          setImportNewPhotographerName(result.photographerName || "");
           setImportNewPhotographerBio(result.bio || "");
           setImportStep(2);
         },
@@ -155,7 +155,7 @@ export default function Manage() {
     if (!scanResult) return;
     const edits = scanResult.images
       .filter((_, i) => selectedImageIndices.has(i))
-      .map(img => ({
+      .map((img, idx) => ({
         title: isFileSlugTitle(img.alt?.trim() || "") ? `Photo import #${idx + 1}` : (img.alt?.trim() || ""),
         themeId: "none",
       }));
