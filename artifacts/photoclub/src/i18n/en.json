@@ -63,7 +63,16 @@
       "empty": "No photos found.",
       "toastAssignedTitle": "Club Assigned",
       "toastAssignedDesc": "{{count}} photo(s) updated.",
-      "toastAssignError": "Could not assign club to photos."
+      "toastAssignError": "Could not assign club to photos.",
+      "allPhotographers": "All photographers",
+      "deleteBtn": "Delete ({{count}})",
+      "deleteConfirmTitle": "Delete {{count}} photo(s)?",
+      "deleteConfirmDesc": "This will permanently remove {{count}} photo(s) from the gallery. This cannot be undone.",
+      "deleteConfirmAction": "Delete photos",
+      "deleteConfirmCancel": "Cancel",
+      "toastDeletedTitle": "Photos Deleted",
+      "toastDeletedDesc": "{{count}} photo(s) permanently deleted.",
+      "toastDeleteError": "Could not delete photos."
     },
     "club": {
       "createTitle": "Create Club",

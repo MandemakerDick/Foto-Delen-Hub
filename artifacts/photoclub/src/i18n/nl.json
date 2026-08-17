@@ -60,7 +60,16 @@
       "empty": "Geen foto's gevonden.",
       "toastAssignedTitle": "Club toegewezen",
       "toastAssignedDesc": "{{count}} foto('s) bijgewerkt.",
-      "toastAssignError": "Kon club niet toewijzen aan foto's."
+      "toastAssignError": "Kon club niet toewijzen aan foto's.",
+      "allPhotographers": "Alle fotografen",
+      "deleteBtn": "Verwijderen ({{count}})",
+      "deleteConfirmTitle": "{{count}} foto('s) verwijderen?",
+      "deleteConfirmDesc": "Dit verwijdert {{count}} foto('s) permanent uit de galerij. Dit kan niet ongedaan worden gemaakt.",
+      "deleteConfirmAction": "Foto's verwijderen",
+      "deleteConfirmCancel": "Annuleren",
+      "toastDeletedTitle": "Foto's verwijderd",
+      "toastDeletedDesc": "{{count}} foto('s) definitief verwijderd.",
+      "toastDeleteError": "Kon foto's niet verwijderen."
     },
     "club": {
       "createTitle": "Club aanmaken",

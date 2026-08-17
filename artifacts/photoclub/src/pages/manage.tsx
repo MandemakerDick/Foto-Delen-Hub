@@ -56,6 +56,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -159,7 +160,6 @@ export default function Manage() {
         themeId: "none",
       }));
     setImportPhotoEdits(edits);
-    setImportWarningAcknowledged(false);
     setImportStep(3);
   };
 
@@ -640,15 +640,20 @@ export default function Manage() {
     }
   };
 
-  // ── Photos (bulk club assign) state ──────────────────────
+  // ── Photos tab state ──────────────────────
   const [bulkSelectedPhotoIds, setBulkSelectedPhotoIds] = useState<Set<number>>(new Set());
   const [bulkClubId, setBulkClubId] = useState<string>("none");
   const [bulkShowUnassigned, setBulkShowUnassigned] = useState(true);
+  const [bulkPhotographerId, setBulkPhotographerId] = useState("all");
   const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
 
-  const filteredBulkPhotos = bulkShowUnassigned
-    ? (allPhotos ?? []).filter((p) => p.clubId == null)
-    : (allPhotos ?? []);
+  const filteredBulkPhotos = (allPhotos ?? []).filter((p) => {
+    if (bulkShowUnassigned && p.clubId != null) return false;
+    if (bulkPhotographerId !== "all" && String(p.photographerId ?? "") !== bulkPhotographerId) return false;
+    return true;
+  });
 
   const handleBulkAssignClub = async () => {
     if (bulkSelectedPhotoIds.size === 0 || bulkClubId === "none") return;
@@ -672,6 +677,28 @@ export default function Manage() {
       toast({ title: t("common.error"), description: t("manage.photos.toastAssignError"), variant: "destructive" });
     } finally {
       setBulkAssigning(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (bulkSelectedPhotoIds.size === 0) return;
+    setBulkDeleting(true);
+    const count = bulkSelectedPhotoIds.size;
+    try {
+      const res = await fetch("/api/photos/bulk-delete", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoIds: Array.from(bulkSelectedPhotoIds) }),
+      });
+      if (!res.ok) throw new Error("Bulk delete failed");
+      toast({ title: t("manage.photos.toastDeletedTitle"), description: t("manage.photos.toastDeletedDesc", { count }) });
+      setBulkSelectedPhotoIds(new Set());
+      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+    } catch {
+      toast({ title: t("common.error"), description: t("manage.photos.toastDeleteError"), variant: "destructive" });
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -1484,23 +1511,39 @@ export default function Manage() {
           </div>
         </TabsContent>
 
-        {/* ── Photos (bulk club assign) tab ────────────────── */}
+        {/* ── Photos tab ────────────────── */}
         <TabsContent value="photos" className="space-y-6">
           <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
             <h2 className="font-serif text-2xl font-medium mb-2">{t("manage.photos.title")}</h2>
             <p className="text-sm text-muted-foreground mb-5">{t("manage.photos.subtitle")}</p>
 
-            {/* Filter toggle */}
-            <label className="flex items-center gap-2 mb-4 cursor-pointer select-none">
-              <Checkbox
-                checked={bulkShowUnassigned}
-                onCheckedChange={(v) => {
-                  setBulkShowUnassigned(!!v);
-                  setBulkSelectedPhotoIds(new Set());
-                }}
-              />
-              <span className="text-sm">{t("manage.photos.showUnassignedOnly")}</span>
-            </label>
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <Checkbox
+                  checked={bulkShowUnassigned}
+                  onCheckedChange={(v) => {
+                    setBulkShowUnassigned(!!v);
+                    setBulkSelectedPhotoIds(new Set());
+                  }}
+                />
+                <span className="text-sm">{t("manage.photos.showUnassignedOnly")}</span>
+              </label>
+              <Select
+                value={bulkPhotographerId}
+                onValueChange={(v) => { setBulkPhotographerId(v); setBulkSelectedPhotoIds(new Set()); }}
+              >
+                <SelectTrigger className="w-48 bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("manage.photos.allPhotographers")}</SelectItem>
+                  {photographers?.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {filteredBulkPhotos.length > 0 ? (
               <>
@@ -1564,10 +1607,11 @@ export default function Manage() {
                   ))}
                 </div>
 
-                {/* Assign panel */}
-                <div className="flex gap-3 pt-4 mt-4 border-t border-border/50">
+                {/* Actions panel */}
+                <div className="flex flex-wrap items-center gap-3 pt-4 mt-4 border-t border-border/50">
+                  {/* Assign club */}
                   <Select value={bulkClubId} onValueChange={setBulkClubId}>
-                    <SelectTrigger className="flex-1 bg-background">
+                    <SelectTrigger className="flex-1 min-w-36 bg-background">
                       <SelectValue placeholder={t("manage.photos.selectClubPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1586,6 +1630,43 @@ export default function Manage() {
                     {bulkAssigning && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
                     {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
                   </Button>
+
+                  <div className="w-px h-6 bg-border/60 mx-1 hidden sm:block" />
+
+                  {/* Bulk delete */}
+                  <AlertDialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={bulkSelectedPhotoIds.size === 0 || bulkDeleting}
+                      >
+                        {bulkDeleting
+                          ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                          : <Trash2 className="w-4 h-4 mr-1.5" />}
+                        {t("manage.photos.deleteBtn", { count: bulkSelectedPhotoIds.size })}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {t("manage.photos.deleteConfirmTitle", { count: bulkSelectedPhotoIds.size })}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t("manage.photos.deleteConfirmDesc", { count: bulkSelectedPhotoIds.size })}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t("manage.photos.deleteConfirmCancel")}</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleBulkDelete}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {t("manage.photos.deleteConfirmAction")}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </>
             ) : (
