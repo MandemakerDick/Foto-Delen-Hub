@@ -5,3 +5,4 @@
 - [Playwright locale injection for i18n tests](playwright-locale-injection.md) — storageState origin must match exact host:port; use addInitScript + page.evaluate + page.reload() instead.
 - [Playwright strict mode and getByText](playwright-strict-mode-text.md) — getByText("X") fails if multiple elements contain "X"; use locator("label").filter({hasText}) for specific elements.
 - [Review-club base path routing in tests](review-club-test-paths.md) — page.goto("/archive") bypasses /review/ base and lands on wrong page; use relative paths like "archive" without leading slash.
+- [PhotoMatrix app store plans](photomatrix-app-store-plans.md) — remind about in-app feedback widget when native app work begins.
