@@ -115,7 +115,6 @@ export default function Manage() {
   const [importClubId, setImportClubId] = useState<string>("none");
   const [importNewClubName, setImportNewClubName] = useState("");
   const [importPhotoEdits, setImportPhotoEdits] = useState<Array<{ title: string; themeId: string }>>([]);
-  const [importWarningAcknowledged, setImportWarningAcknowledged] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; failed: number } | null>(null);
 
   const scanUrlMutation = useScanUrlForPhotos();
@@ -1413,15 +1412,6 @@ export default function Manage() {
                           : t("manage.import.warnPlural", { count: warnCount })}
                         {" "}{t("manage.import.warnSuffix")}
                       </p>
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <Checkbox
-                          checked={importWarningAcknowledged}
-                          onCheckedChange={v => setImportWarningAcknowledged(!!v)}
-                          id="import-warn-ack"
-                          className="border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                        />
-                        <span className="text-sm text-amber-800 dark:text-amber-300">{t("manage.import.warnAcknowledge")}</span>
-                      </label>
                     </div>
                   );
                 })()}
@@ -1454,7 +1444,6 @@ export default function Manage() {
                       clubId: importClubId,
                       newClubName: importNewClubName,
                       photoEdits: importPhotoEdits,
-                      warningAcknowledged: importWarningAcknowledged,
                     })}
                   >
                     {importPhotosMutation.isPending ? (

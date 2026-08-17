@@ -27,8 +27,6 @@ export interface ImportButtonState {
   newClubName: string;
   /** importPhotoEdits */
   photoEdits: Array<{ title: string }>;
-  /** importWarningAcknowledged */
-  warningAcknowledged: boolean;
 }
 
 /**
@@ -40,8 +38,6 @@ export function isImportButtonDisabled(s: ImportButtonState): boolean {
     s.selectedCount === 0 ||
     s.isPending ||
     (s.photographerId === "new" && !s.newPhotographerName.trim()) ||
-    (s.clubId === "new" && !s.newClubName.trim()) ||
-    (s.photoEdits.some((e) => !e.title.trim() || isFileSlugTitle(e.title)) &&
-      !s.warningAcknowledged)
+    (s.clubId === "new" && !s.newClubName.trim())
   );
 }

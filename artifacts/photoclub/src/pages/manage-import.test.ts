@@ -29,7 +29,6 @@ const validState: ImportButtonState = {
   clubId: "42",
   newClubName: "",
   photoEdits: [{ title: "Sunset at the pier" }],
-  warningAcknowledged: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -185,20 +184,10 @@ describe("Import button disabled condition", () => {
       expect(isImportButtonDisabled(state)).toBe(true);
     });
 
-    it("is disabled when a photo has a file-slug title and the warning is not acknowledged", () => {
+    it("is NOT disabled when a photo has a file-slug title (warning is informational only)", () => {
       const state: ImportButtonState = {
         ...validState,
         photoEdits: [{ title: "IMG_1234" }],
-        warningAcknowledged: false,
-      };
-      expect(isImportButtonDisabled(state)).toBe(true);
-    });
-
-    it("is NOT disabled when a photo has a file-slug title but the warning IS acknowledged", () => {
-      const state: ImportButtonState = {
-        ...validState,
-        photoEdits: [{ title: "IMG_1234" }],
-        warningAcknowledged: true,
       };
       expect(isImportButtonDisabled(state)).toBe(false);
     });
