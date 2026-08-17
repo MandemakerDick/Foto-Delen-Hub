@@ -20,8 +20,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     query: { retry: false, queryKey: getGetAdminStatusQueryKey() },
   });
 
-  // True only when signed in via email+password session (not Clerk)
-  const isSessionAdmin = !!adminStatus?.isAdmin && !isSignedIn;
+  // True when the session admin cookie is the active auth method.
+  // This includes the case where a Clerk member also signed in via the admin
+  // login form — in that situation isSignedIn is true but the admin badge and
+  // logout button should still appear.
+  const isSessionAdmin = !!adminStatus?.isAdmin && (!isSignedIn || !!adminStatus?.sessionAdminActive);
 
   const handleSessionSignOut = async () => {
     await fetch(`${basePath}/api/admins/logout`, { method: "POST", credentials: "include" });

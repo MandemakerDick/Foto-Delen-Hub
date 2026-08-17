@@ -202,6 +202,12 @@ export interface AdminStatusResponse {
   displayName?: string | null;
   /** @nullable */
   photographerId?: number | null;
+  /**
+   * True when the session admin cookie (email+password login) is the active
+   * auth method — even when a Clerk session is also present. Used by the
+   * frontend to show the correct admin badge and logout button.
+   */
+  sessionAdminActive?: boolean;
 }
 
 export interface AddAdminRequest {

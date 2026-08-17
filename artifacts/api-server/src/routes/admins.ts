@@ -158,25 +158,60 @@ router.post("/admins/logout", (req: any, res) => {
 // GET /api/admins/me — check admin status for the current user.
 // Always returns totalAdmins so the frontend can decide whether to show
 // the bootstrap prompt (when totalAdmins === 0).
+//
+// Priority:
+//  1. Clerk admin — fast path via clerkUserId / email match.
+//  2. Session admin — explicit email+password login (stored in req.session).
+//     This is checked even when a Clerk session is present, so a Clerk member
+//     who also signs in as a session admin is recognised correctly.
+//  3. Non-admin Clerk member — returns isAdmin:false with photographerId.
+//  4. Anonymous — isAdmin:false.
+//
+// sessionAdminActive: true when the *session* admin cookie is the reason the
+// user is recognised as an admin (used by the frontend to show the correct
+// logout button even when a Clerk session is also active).
 router.get("/admins/me", async (req: any, res) => {
   const total = await getTotalAdmins();
 
   const { userId } = getAuth(req);
+  const sessionAdminId = req.session?.adminId as number | undefined;
+
+  // 1. Clerk admin
   if (userId) {
-    const admin = await resolveClerkAdmin(userId);
+    const clerkAdmin = await resolveClerkAdmin(userId);
+    if (clerkAdmin) {
+      const photographerId = await getPhotographerIdForClerkUser(userId);
+      res.json({ isAdmin: true, totalAdmins: total, displayName: clerkAdmin.displayName, photographerId: photographerId ?? null, adminId: clerkAdmin.id, sessionAdminActive: false });
+      return;
+    }
+
+    // 2. Clerk member who also logged in via the admin form
+    if (sessionAdminId) {
+      const sessionAdmin = await getAdminById(sessionAdminId);
+      if (sessionAdmin) {
+        const photographerId = await getPhotographerIdForClerkUser(userId);
+        res.json({ isAdmin: true, totalAdmins: total, displayName: sessionAdmin.displayName, photographerId: photographerId ?? null, adminId: sessionAdmin.id, sessionAdminActive: true });
+        return;
+      }
+    }
+
+    // 3. Non-admin Clerk member
     const photographerId = await getPhotographerIdForClerkUser(userId);
-    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: photographerId ?? null, adminId: admin?.id ?? null });
+    res.json({ isAdmin: false, totalAdmins: total, displayName: null, photographerId: photographerId ?? null, adminId: null, sessionAdminActive: false });
     return;
   }
 
-  const sessionAdminId = req.session?.adminId as number | undefined;
+  // 2. Session-only admin (no Clerk session)
   if (sessionAdminId) {
     const admin = await getAdminById(sessionAdminId);
-    res.json({ isAdmin: !!admin, totalAdmins: total, displayName: admin?.displayName ?? null, photographerId: null, adminId: admin?.id ?? null });
-    return;
+    if (admin) {
+      res.json({ isAdmin: true, totalAdmins: total, displayName: admin.displayName, photographerId: null, adminId: admin.id, sessionAdminActive: true });
+      return;
+    }
   }
 
-  res.json({ isAdmin: false, totalAdmins: total, displayName: null, photographerId: null, adminId: null });
+  // 4. Anonymous
+  res.json({ isAdmin: false, totalAdmins: total, displayName: null, photographerId: null, adminId: null, sessionAdminActive: false });
 });
 
 // GET /api/admins — list all admins (admin only)
