@@ -1676,7 +1676,7 @@ export default function Manage() {
                           {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
                         </Button>
                         <Select value={bulkClubId} onValueChange={setBulkClubId}>
-                          <SelectTrigger className="flex-1 min-w-36 bg-background">
+                          <SelectTrigger className="flex-1 min-w-36 bg-background flex-row-reverse">
                             <SelectValue placeholder={t("manage.photos.selectClubPlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>

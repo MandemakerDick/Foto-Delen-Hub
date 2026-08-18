@@ -95,7 +95,7 @@ export default function Gallery() {
           </Select>
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
-            <SelectTrigger className="flex-1 min-w-[130px] bg-background border-border/50">
+            <SelectTrigger className="flex-1 min-w-[160px] bg-background border-border/50">
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
             </SelectTrigger>
             <SelectContent>
