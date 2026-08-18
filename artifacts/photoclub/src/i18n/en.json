@@ -328,7 +328,7 @@
     "createButton": "Add a Photographer"
   },
   "photographerDetail": {
-    "back": "Back to Directory",
+    "back": "Back to Photographers",
     "notFound": "Photographer not found",
     "returnLink": "Return to Directory",
     "joined": "Joined {{date}}",

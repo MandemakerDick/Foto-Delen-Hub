@@ -328,7 +328,7 @@
     "createButton": "Fotograaf toevoegen"
   },
   "photographerDetail": {
-    "back": "Terug naar overzicht",
+    "back": "Terug naar fotografen",
     "notFound": "Fotograaf niet gevonden",
     "returnLink": "Terug naar overzicht",
     "joined": "Lid sinds {{date}}",
