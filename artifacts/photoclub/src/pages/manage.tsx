@@ -641,16 +641,18 @@ export default function Manage() {
   };
 
   // ── Photos tab state ──────────────────────
+  const [bulkMode, setBulkMode] = useState<null | "assign" | "delete">(null);
   const [bulkSelectedPhotoIds, setBulkSelectedPhotoIds] = useState<Set<number>>(new Set());
   const [bulkClubId, setBulkClubId] = useState<string>("none");
-  const [bulkShowUnassigned, setBulkShowUnassigned] = useState(true);
+  const [bulkFilterClubId, setBulkFilterClubId] = useState<string>("all");
   const [bulkPhotographerId, setBulkPhotographerId] = useState("all");
   const [bulkAssigning, setBulkAssigning] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
 
   const filteredBulkPhotos = (allPhotos ?? []).filter((p) => {
-    if (bulkShowUnassigned && p.clubId != null) return false;
+    if (bulkFilterClubId === "none" && p.clubId != null) return false;
+    if (bulkFilterClubId !== "all" && bulkFilterClubId !== "none" && String(p.clubId ?? "") !== bulkFilterClubId) return false;
     if (bulkPhotographerId !== "all" && String(p.photographerId ?? "") !== bulkPhotographerId) return false;
     return true;
   });
@@ -1512,168 +1514,223 @@ export default function Manage() {
 
         {/* ── Photos tab ────────────────── */}
         <TabsContent value="photos" className="space-y-6">
-          <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
-            <h2 className="font-serif text-2xl font-medium mb-2">{t("manage.photos.title")}</h2>
-            <p className="text-sm text-muted-foreground mb-5">{t("manage.photos.subtitle")}</p>
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 mb-4">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <Checkbox
-                  checked={bulkShowUnassigned}
-                  onCheckedChange={(v) => {
-                    setBulkShowUnassigned(!!v);
-                    setBulkSelectedPhotoIds(new Set());
-                  }}
-                />
-                <span className="text-sm">{t("manage.photos.showUnassignedOnly")}</span>
-              </label>
-              <Select
-                value={bulkPhotographerId}
-                onValueChange={(v) => { setBulkPhotographerId(v); setBulkSelectedPhotoIds(new Set()); }}
-              >
-                <SelectTrigger className="w-48 bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("manage.photos.allPhotographers")}</SelectItem>
-                  {photographers?.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {bulkMode === null ? (
+            /* ── Mode picker ── */
+            <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
+              <h2 className="font-serif text-2xl font-medium mb-2">{t("manage.photos.modePickerTitle")}</h2>
+              <p className="text-sm text-muted-foreground mb-6">{t("manage.photos.modePickerSubtitle")}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => { setBulkMode("assign"); setBulkSelectedPhotoIds(new Set()); setBulkClubId("none"); }}
+                  className="group text-left p-5 rounded-lg border border-border/60 bg-background hover:border-primary/60 hover:bg-primary/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                      <Users className="w-4 h-4 text-primary/70" />
+                    </div>
+                    <span className="font-serif text-lg font-medium">{t("manage.photos.modeAssign")}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t("manage.photos.modeAssignDesc")}</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setBulkMode("delete"); setBulkSelectedPhotoIds(new Set()); }}
+                  className="group text-left p-5 rounded-lg border border-border/60 bg-background hover:border-destructive/50 hover:bg-destructive/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0 group-hover:bg-destructive/15 transition-colors">
+                      <Trash2 className="w-4 h-4 text-destructive/70" />
+                    </div>
+                    <span className="font-serif text-lg font-medium">{t("manage.photos.modeDelete")}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t("manage.photos.modeDeleteDesc")}</p>
+                </button>
+              </div>
             </div>
-
-            {filteredBulkPhotos.length > 0 ? (
-              <>
-                {/* Select all / clear row */}
-                <div className="flex items-center gap-3 mb-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBulkSelectedPhotoIds(new Set(filteredBulkPhotos.map((p) => p.id)))}
-                  >
-                    <SquareCheck className="w-3.5 h-3.5 mr-1.5" />
-                    {t("manage.photos.selectAll")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBulkSelectedPhotoIds(new Set())}
-                    disabled={bulkSelectedPhotoIds.size === 0}
-                  >
-                    <Square className="w-3.5 h-3.5 mr-1.5" />
-                    {t("manage.photos.clearSelection")}
-                  </Button>
-                  <span className="text-sm text-muted-foreground ml-auto">
-                    {t("manage.photos.selectedCount", { count: bulkSelectedPhotoIds.size })}
-                  </span>
-                </div>
-
-                {/* Scrollable photo list */}
-                <div className="max-h-80 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/50">
-                  {filteredBulkPhotos.map((photo) => (
-                    <label
-                      key={photo.id}
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                    >
-                      <Checkbox
-                        checked={bulkSelectedPhotoIds.has(photo.id)}
-                        onCheckedChange={(checked) => {
-                          const next = new Set(bulkSelectedPhotoIds);
-                          if (checked) next.add(photo.id);
-                          else next.delete(photo.id);
-                          setBulkSelectedPhotoIds(next);
-                        }}
-                      />
-                      {photo.imageUrl && (
-                        <img
-                          src={photo.imageUrl}
-                          alt={photo.title}
-                          className="w-10 h-10 object-cover rounded shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{photo.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {photo.clubName ?? t("manage.photos.noClub")}
-                          {photo.photographerName ? ` · ${photo.photographerName}` : ""}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-
-                {/* Actions panel */}
-                <div className="flex flex-wrap items-center gap-3 pt-4 mt-4 border-t border-border/50">
-                  {/* Assign club */}
-                  <Select value={bulkClubId} onValueChange={setBulkClubId}>
-                    <SelectTrigger className="flex-1 min-w-36 bg-background">
-                      <SelectValue placeholder={t("manage.photos.selectClubPlaceholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clubs?.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    onClick={handleBulkAssignClub}
-                    disabled={bulkSelectedPhotoIds.size === 0 || bulkClubId === "none" || bulkAssigning}
-                  >
-                    {bulkAssigning && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-                    {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
-                  </Button>
-
-                  <div className="w-px h-6 bg-border/60 mx-1 hidden sm:block" />
-
-                  {/* Bulk delete */}
-                  <AlertDialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={bulkSelectedPhotoIds.size === 0 || bulkDeleting}
-                      >
-                        {bulkDeleting
-                          ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                          : <Trash2 className="w-4 h-4 mr-1.5" />}
-                        {t("manage.photos.deleteBtn", { count: bulkSelectedPhotoIds.size })}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {t("manage.photos.deleteConfirmTitle", { count: bulkSelectedPhotoIds.size })}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t("manage.photos.deleteConfirmDesc", { count: bulkSelectedPhotoIds.size })}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t("manage.photos.deleteConfirmCancel")}</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleBulkDelete}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          {t("manage.photos.deleteConfirmAction")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </>
-            ) : (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {bulkShowUnassigned ? t("manage.photos.allAssigned") : t("manage.photos.empty")}
+          ) : (
+            /* ── Active mode UI ── */
+            <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
+              {/* Header with back link */}
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-serif text-2xl font-medium">
+                  {bulkMode === "assign" ? t("manage.photos.modeAssign") : t("manage.photos.modeDelete")}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => { setBulkMode(null); setBulkSelectedPhotoIds(new Set()); setBulkFilterClubId("all"); setBulkPhotographerId("all"); }}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />{t("manage.photos.changeMode")}
+                </button>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                {bulkMode === "assign" ? t("manage.photos.modeAssignDesc") : t("manage.photos.modeDeleteDesc")}
               </p>
-            )}
-          </div>
+
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <Select
+                  value={bulkFilterClubId}
+                  onValueChange={(v) => { setBulkFilterClubId(v); setBulkSelectedPhotoIds(new Set()); }}
+                >
+                  <SelectTrigger className="w-48 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("manage.photos.allClubs")}</SelectItem>
+                    <SelectItem value="none">{t("manage.photos.noClub")}</SelectItem>
+                    {clubs?.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={bulkPhotographerId}
+                  onValueChange={(v) => { setBulkPhotographerId(v); setBulkSelectedPhotoIds(new Set()); }}
+                >
+                  <SelectTrigger className="w-48 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("manage.photos.allPhotographers")}</SelectItem>
+                    {photographers?.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {filteredBulkPhotos.length > 0 ? (
+                <>
+                  {/* Select all / clear row */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBulkSelectedPhotoIds(new Set(filteredBulkPhotos.map((p) => p.id)))}
+                    >
+                      <SquareCheck className="w-3.5 h-3.5 mr-1.5" />
+                      {t("manage.photos.selectAll")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBulkSelectedPhotoIds(new Set())}
+                      disabled={bulkSelectedPhotoIds.size === 0}
+                    >
+                      <Square className="w-3.5 h-3.5 mr-1.5" />
+                      {t("manage.photos.clearSelection")}
+                    </Button>
+                    <span className="text-sm text-muted-foreground ml-auto">
+                      {t("manage.photos.selectedCount", { count: bulkSelectedPhotoIds.size })}
+                    </span>
+                  </div>
+
+                  {/* Scrollable photo list */}
+                  <div className="max-h-80 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/50">
+                    {filteredBulkPhotos.map((photo) => (
+                      <label
+                        key={photo.id}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                      >
+                        <Checkbox
+                          checked={bulkSelectedPhotoIds.has(photo.id)}
+                          onCheckedChange={(checked) => {
+                            const next = new Set(bulkSelectedPhotoIds);
+                            if (checked) next.add(photo.id);
+                            else next.delete(photo.id);
+                            setBulkSelectedPhotoIds(next);
+                          }}
+                        />
+                        {photo.imageUrl && (
+                          <img
+                            src={photo.imageUrl}
+                            alt={photo.title}
+                            className="w-10 h-10 object-cover rounded shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{photo.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {photo.clubName ?? t("manage.photos.noClub")}
+                            {photo.photographerName ? ` · ${photo.photographerName}` : ""}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Action panel */}
+                  <div className="pt-4 mt-4 border-t border-border/50">
+                    {bulkMode === "assign" && (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Select value={bulkClubId} onValueChange={setBulkClubId}>
+                          <SelectTrigger className="flex-1 min-w-36 bg-background">
+                            <SelectValue placeholder={t("manage.photos.selectClubPlaceholder")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clubs?.map((c) => (
+                              <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          onClick={handleBulkAssignClub}
+                          disabled={bulkSelectedPhotoIds.size === 0 || bulkClubId === "none" || bulkAssigning}
+                        >
+                          {bulkAssigning && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                          {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
+                        </Button>
+                      </div>
+                    )}
+                    {bulkMode === "delete" && (
+                      <AlertDialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={bulkSelectedPhotoIds.size === 0 || bulkDeleting}
+                          >
+                            {bulkDeleting
+                              ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                              : <Trash2 className="w-4 h-4 mr-1.5" />}
+                            {t("manage.photos.deleteBtn", { count: bulkSelectedPhotoIds.size })}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {t("manage.photos.deleteConfirmTitle", { count: bulkSelectedPhotoIds.size })}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t("manage.photos.deleteConfirmDesc", { count: bulkSelectedPhotoIds.size })}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t("manage.photos.deleteConfirmCancel")}</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleBulkDelete}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {t("manage.photos.deleteConfirmAction")}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {t("manage.photos.empty")}
+                </p>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* ── Admins tab ────────────────────────────────────── */}
