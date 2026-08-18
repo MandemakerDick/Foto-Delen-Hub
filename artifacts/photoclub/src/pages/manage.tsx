@@ -56,7 +56,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -101,7 +101,7 @@ export default function Manage() {
   const { data: photographers } = useListPhotographers();
   const { data: adminStatus } = useGetAdminStatus({ query: { retry: false, queryKey: getGetAdminStatusQueryKey() } });
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
-  const { data: allPhotos } = useListPhotos({}, { query: { enabled: !!adminStatus?.isAdmin } });
+  const { data: allPhotos } = useListPhotos({}, { query: { enabled: !!adminStatus?.isAdmin, queryKey: getListPhotosQueryKey() } });
 
   // ── Import tab state ──────────────────────────────────────
   const [importStep, setImportStep] = useState<1 | 2 | 3 | 4>(1);
@@ -1398,7 +1398,6 @@ export default function Manage() {
                                   const next = [...importPhotoEdits];
                                   if (next[idx]) next[idx] = { ...next[idx], title: e.target.value };
                                   setImportPhotoEdits(next);
-                                  setImportWarningAcknowledged(false);
                                 }}
                                 className={`w-full ${hasWarning ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 focus-visible:ring-amber-400" : "bg-background"}`}
                                 placeholder={t("manage.import.titlePlaceholder")}

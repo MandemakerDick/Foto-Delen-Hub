@@ -8,6 +8,7 @@ import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 import Home from "@/pages/home";
 import Gallery from "@/pages/gallery";
@@ -168,7 +169,11 @@ function Router() {
         <Route path="/photographers/:id" component={PhotographerDetail} />
         <Route path="/search" component={Search} />
         <Route path="/upload" component={Upload} />
-        <Route path="/manage" component={Manage} />
+        <Route path="/manage">
+          <ErrorBoundary>
+            <Manage />
+          </ErrorBoundary>
+        </Route>
         <Route path="/my-photos" component={MyPhotos} />
         <Route path="/join/:token?" component={Join} />
         <Route path="/admin/login" component={AdminLogin} />
