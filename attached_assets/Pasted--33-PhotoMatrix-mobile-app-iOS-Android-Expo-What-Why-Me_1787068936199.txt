@@ -1,0 +1,76 @@
+#33 - PhotoMatrix mobile app — iOS & Android (Expo)
+What & Why
+Members currently use PhotoMatrix through a browser. A native Expo app lets photographers browse the gallery, view and like photos, leave notes, and upload their own shots directly from their phone — and makes the community accessible to a wider audience through the App Store and Google Play.
+
+PhotoReviewHub is out of scope. This task covers PhotoMatrix only.
+
+Platform
+Framework: Expo (React Native) — Replit has first-class support for developing Expo apps
+Stores: Apple App Store (iOS) + Google Play (Android)
+Build / submission: Expo EAS (cloud build service) — binaries are built outside Replit and submitted to the stores by the project owner
+Apple Developer Program: €99/year required before submission
+Google Play: €25 one-time registration
+Architecture
+New artifact at artifacts/photoclub-mobile/ (Expo, slug photoclub-mobile)
+API: same @workspace/api-server backend — no changes needed
+API client: reuse @workspace/api-client-react (TanStack Query hooks work in React Native)
+Auth: Clerk via @clerk/clerk-expo (the existing Clerk tenant works on mobile with Expo's PKCE OAuth flow)
+Navigation: Expo Router (file-based, analogous to Next.js App Router)
+Styling: NativeWind (Tailwind utility classes on React Native components) to stay close to the web palette
+i18n: react-i18next — reuse the existing en.json / nl.json translation files from the web app
+Screens in scope
+Public (no login required)
+Screen	Web equivalent	Key behaviour
+Home / Feed	home.tsx	Hero stats, recent photos grid
+Gallery	gallery.tsx	Infinite scroll, filter by club / theme / photographer
+Photo Detail	photo-detail.tsx	Full-screen image, metadata, like, comments
+Clubs list	clubs.tsx	Club cards
+Club Detail	club-detail.tsx	Club info + photo grid
+Themes list	themes.tsx	Theme cards
+Theme Detail	theme-detail.tsx	Theme info + photo grid
+Photographer Directory	photographers.tsx	Search + filter
+Photographer Profile	photographer-detail.tsx	Profile + photo grid
+Search	search.tsx	Cross-entity search
+Authenticated members
+Screen	Web equivalent	Key behaviour
+Sign In / Sign Up	Clerk routes	Clerk Expo OAuth sheet
+Upload Photo	upload.tsx	Camera roll picker + metadata form + object storage upload
+My Photos	my-photos.tsx	Own photo list, edit title/description/club/theme, reorder
+Join (invite)	join.tsx	Redeem an invite token, link Clerk profile
+Out of scope for v1
+Admin Manage console (manage.tsx) — admin workflows are complex and admin use is desktop-appropriate
+Admin login page (admin-login.tsx) — admins use the web app
+URL import / bulk operations — admin-only
+Theme proposal approval / rejection — admin-only
+API surface used
+All operations hit the existing API server. No new endpoints are required for v1. Key calls:
+
+GET /api/photos, GET /api/photos/:id, GET /api/photos/recent
+POST /api/photos (upload), PATCH /api/photos/:id (edit), DELETE /api/photos/:id
+POST /api/photos/:id/like
+GET /api/photos/:id/comments, POST /api/photos/:id/comments, DELETE /api/photos/:id/comments/:cid
+GET /api/clubs, GET /api/clubs/:id
+GET /api/themes, GET /api/themes/:id
+GET /api/photographers, GET /api/photographers/:id
+GET /api/search
+GET /api/stats
+GET /api/me, POST /api/me/link, PATCH /api/me/profile
+POST /api/storage/uploads/request-url + direct S3 upload
+POST /api/invites/redeem
+GET /api/themes/my-proposals
+Done looks like
+The Expo app runs in Replit preview (Expo Go / dev client)
+A member can: browse the gallery, open a photo, like it, post a comment
+A signed-in member can: upload a photo from their camera roll, edit their own photos
+A new member can: redeem an invite link and link their Clerk account
+The app matches PhotoMatrix's visual identity (dark theme, serif headings, red accent)
+Both English and Dutch are selectable
+EAS build config (eas.json) is included so the owner can run eas build to produce store-ready binaries
+Relevant files
+artifacts/photoclub/src/pages/ — web page equivalents for all screens above
+artifacts/photoclub/src/i18n/en.json, nl.json — translation strings to reuse
+packages/api-client-react/ — shared query hooks
+artifacts/api-server/ — backend (no changes expected)
+.local/skills/expo/SKILL.md — Replit Expo development guidelines
+.local/skills/clerk-auth/SKILL.md — Clerk Expo auth setup
+Dependencies
