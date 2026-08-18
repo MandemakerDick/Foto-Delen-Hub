@@ -6,3 +6,4 @@
 - [Playwright strict mode and getByText](playwright-strict-mode-text.md) — getByText("X") fails if multiple elements contain "X"; use locator("label").filter({hasText}) for specific elements.
 - [Review-club base path routing in tests](review-club-test-paths.md) — page.goto("/archive") bypasses /review/ base and lands on wrong page; use relative paths like "archive" without leading slash.
 - [PhotoMatrix app store plans](photomatrix-app-store-plans.md) — remind about in-app feedback widget when native app work begins.
+- [Manage page crash lessons](manage-page-crash-lessons.md) — missing import + undefined state setter caused black screen; how to prevent and debug.
