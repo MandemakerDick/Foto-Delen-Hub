@@ -508,6 +508,205 @@ test.describe("PhotoDetail OG HTML served to crawlers — description fallback",
 });
 
 // ---------------------------------------------------------------------------
+// Tests: PhotoDetail OG — no photographer name fallback (#107)
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail OG — description fallback with no photographer name (#107)", () => {
+  const PHOTO_NO_PHOTOGRAPHER = {
+    id: 203,
+    title: "Unnamed Work",
+    imageUrl: "https://placehold.co/400x500/png",
+    description: null,
+    photographerId: null,
+    photographerName: null,
+    clubId: null,
+    clubName: null,
+    themeId: null,
+    themeName: null,
+    createdAt: "2024-04-01T00:00:00.000Z",
+    sortOrder: 0,
+    likeCount: 0,
+    likesCount: 0,
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/**", async (route) => {
+      const url = route.request().url();
+      if (url.includes("__clerk")) { await route.continue(); return; }
+      if (new RegExp(`/api/photos/${PHOTO_NO_PHOTOGRAPHER.id}(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PHOTO_NO_PHOTOGRAPHER) });
+        return;
+      }
+      if (new RegExp(`/api/photos/${PHOTO_NO_PHOTOGRAPHER.id}/comments(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/photos(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([PHOTO_NO_PHOTOGRAPHER]) });
+        return;
+      }
+      if (/\/api\/(clubs|themes|photographers)(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/admins\/me(\?|$)/.test(url)) {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Not authenticated" }) });
+        return;
+      }
+      if (/\/api\/(photographers\/me|me)(\?|$)/.test(url)) {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Not authenticated" }) });
+        return;
+      }
+      await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Not found (test stub)" }) });
+    });
+
+    await page.goto(`/photos/${PHOTO_NO_PHOTOGRAPHER.id}`, { waitUntil: "networkidle" });
+    await page.keyboard.press("Escape");
+    await waitForBodyText(page, PHOTO_NO_PHOTOGRAPHER.title);
+  });
+
+  test("og:description falls back to the generic member phrase when photographer name is null (#107)", async ({ page }) => {
+    const expectedFallback = "A photograph by a PhotoMatrix member";
+    await page.waitForFunction(
+      ([prop, text]: [string, string]) =>
+        Array.from(document.querySelectorAll<HTMLMetaElement>(`meta[property="${prop}"]`)).some((el) =>
+          el.content.includes(text),
+        ),
+      ["og:description", expectedFallback] as [string, string],
+      { timeout: 10_000 },
+    );
+    const content = await findMetaContent(page, "og:description", expectedFallback);
+    expect(content, `Expected og:description to contain "${expectedFallback}"`).toBeTruthy();
+    expect(content).toContain("a PhotoMatrix member");
+    expect(content).not.toContain("Capture. Connect. Create.");
+  });
+
+  test("crawler HTML includes generic fallback in og:description when photographer name is null (#107)", async () => {
+    const fixture = PHOTO_NO_PHOTOGRAPHER;
+    const originalFetch = global.fetch;
+    global.fetch = (async (url: string | URL | Request) => {
+      const href = typeof url === "string" ? url : url instanceof URL ? url.href : (url as Request).url;
+      if (new RegExp(`/api/photos/${fixture.id}(\\?|$)`).test(href)) {
+        return new Response(JSON.stringify(fixture), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+    }) as typeof fetch;
+
+    let htmlOut = "";
+    const req = { headers: { "user-agent": "facebookexternalhit/1.1" }, url: `/photos/${fixture.id}` };
+    const res = { statusCode: 0, setHeader(_k: string, _v: string) {}, end(body: string) { htmlOut = body; } };
+    try {
+      await ogMiddleware(req as never, res as never, () => {}, "http://localhost:5183", "http://localhost:5183", "http://localhost:5183/opengraph.jpg");
+    } finally {
+      global.fetch = originalFetch;
+    }
+    expect(htmlOut).toContain('property="og:description"');
+    expect(htmlOut).toContain("a PhotoMatrix member");
+    expect(htmlOut).not.toContain("Capture. Connect. Create.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: PhotoDetail OG — photo description shown in link preview (#108)
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail OG — photo description shown in link preview (#108)", () => {
+  const PHOTO_WITH_DESC = {
+    id: 204,
+    title: "City Reflections",
+    imageUrl: "https://placehold.co/400x500/png",
+    description: "Puddles mirror the neon lights of a rain-soaked street.",
+    photographerId: 42,
+    photographerName: "Jane Doe",
+    clubId: 7,
+    clubName: "City Shooters",
+    themeId: 1,
+    themeName: "Street",
+    createdAt: "2024-05-01T00:00:00.000Z",
+    sortOrder: 0,
+    likeCount: 0,
+    likesCount: 0,
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/**", async (route) => {
+      const url = route.request().url();
+      if (url.includes("__clerk")) { await route.continue(); return; }
+      if (new RegExp(`/api/photos/${PHOTO_WITH_DESC.id}(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PHOTO_WITH_DESC) });
+        return;
+      }
+      if (new RegExp(`/api/photos/${PHOTO_WITH_DESC.id}/comments(\\?|$)`).test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/photos(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([PHOTO_WITH_DESC]) });
+        return;
+      }
+      if (/\/api\/(clubs|themes|photographers)(\?|$)/.test(url)) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+        return;
+      }
+      if (/\/api\/admins\/me(\?|$)/.test(url)) {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Not authenticated" }) });
+        return;
+      }
+      if (/\/api\/(photographers\/me|me)(\?|$)/.test(url)) {
+        await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Not authenticated" }) });
+        return;
+      }
+      await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Not found (test stub)" }) });
+    });
+
+    await page.goto(`/photos/${PHOTO_WITH_DESC.id}`, { waitUntil: "networkidle" });
+    await page.keyboard.press("Escape");
+    await waitForBodyText(page, PHOTO_WITH_DESC.title);
+  });
+
+  test("og:description contains the photo's own description (#108)", async ({ page }) => {
+    await page.waitForFunction(
+      ([prop, text]: [string, string]) =>
+        Array.from(document.querySelectorAll<HTMLMetaElement>(`meta[property="${prop}"]`)).some((el) =>
+          el.content.includes(text),
+        ),
+      ["og:description", PHOTO_WITH_DESC.description] as [string, string],
+      { timeout: 10_000 },
+    );
+    const content = await findMetaContent(page, "og:description", PHOTO_WITH_DESC.description);
+    expect(content, `Expected og:description to contain "${PHOTO_WITH_DESC.description}"`).toBeTruthy();
+    expect(content).toContain(PHOTO_WITH_DESC.description);
+    // Must not fall back to the generic phrase.
+    expect(content).not.toContain("A photograph by");
+    expect(content).not.toContain("Capture. Connect. Create.");
+  });
+
+  test("crawler HTML shows the photo description in og:description (#108)", async () => {
+    const fixture = PHOTO_WITH_DESC;
+    const originalFetch = global.fetch;
+    global.fetch = (async (url: string | URL | Request) => {
+      const href = typeof url === "string" ? url : url instanceof URL ? url.href : (url as Request).url;
+      if (new RegExp(`/api/photos/${fixture.id}(\\?|$)`).test(href)) {
+        return new Response(JSON.stringify(fixture), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+    }) as typeof fetch;
+
+    let htmlOut = "";
+    const req = { headers: { "user-agent": "Slackbot 1.0 (+https://api.slack.com/robots)" }, url: `/photos/${fixture.id}` };
+    const res = { statusCode: 0, setHeader(_k: string, _v: string) {}, end(body: string) { htmlOut = body; } };
+    try {
+      await ogMiddleware(req as never, res as never, () => {}, "http://localhost:5183", "http://localhost:5183", "http://localhost:5183/opengraph.jpg");
+    } finally {
+      global.fetch = originalFetch;
+    }
+    expect(htmlOut).toContain('property="og:description"');
+    // The crawler HTML must contain the actual description text.
+    expect(htmlOut).toContain(fixture.description);
+    // Must not fall back to the photographer-name-based phrase.
+    expect(htmlOut).not.toContain("A photograph by");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tests: ClubDetail OG tags
 // ---------------------------------------------------------------------------
 test.describe("ClubDetail OG meta tags", () => {

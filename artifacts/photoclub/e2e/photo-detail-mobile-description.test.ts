@@ -268,6 +268,70 @@ test.describe("PhotoDetail — mobile description position (390 × 844)", () => 
 });
 
 // ---------------------------------------------------------------------------
+// Wide tablet viewport test (1000 × 900) — just below the lg breakpoint (#124)
+// ---------------------------------------------------------------------------
+test.describe("PhotoDetail — wide tablet description position (1000 × 900) (#124)", () => {
+  test("description appears before the date row at 1000 px (just below the lg breakpoint) (#124)", async ({
+    browser,
+  }) => {
+    // 1000 × 900 sits just below the lg breakpoint (1024 px) so the mobile
+    // metadata block (lg:hidden) is still active. A CSS change targeting
+    // wide tablet widths could reorder the description at this specific
+    // viewport without affecting the 390 px or 768 px tests — this catches it.
+    const context = await browser.newContext({
+      viewport: { width: 1000, height: 900 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page);
+      await page.goto(`/photos/${PHOTO.id}`, { waitUntil: "networkidle" });
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
+      await page.waitForFunction(
+        (title) => (document.body.textContent ?? "").includes(title),
+        PHOTO.title,
+        { timeout: 15_000 },
+      );
+
+      const descEl = page.getByTestId("mobile-photo-description");
+      const dateRow = page.getByTestId("mobile-photo-date-row");
+
+      await expect(descEl).toBeVisible();
+      await expect(dateRow).toBeVisible();
+      await expect(descEl).toContainText(PHOTO.description);
+
+      // Description must precede the date row in document order.
+      const descBeforeDateInDom = await page.evaluate(() => {
+        const desc = document.querySelector("[data-testid='mobile-photo-description']");
+        const date = document.querySelector("[data-testid='mobile-photo-date-row']");
+        if (!desc || !date) return false;
+        return !!(desc.compareDocumentPosition(date) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      expect(
+        descBeforeDateInDom,
+        "Expected description to appear before the date row in document order at 1000 px",
+      ).toBe(true);
+
+      // Bounding-box check: catches CSS-based reordering (e.g. flexbox `order:`).
+      const descBox = await descEl.boundingBox();
+      const dateBox = await dateRow.boundingBox();
+
+      expect(descBox, "Could not measure the description bounding box at 1000 px").not.toBeNull();
+      expect(dateBox, "Could not measure the date row bounding box at 1000 px").not.toBeNull();
+
+      expect(
+        descBox!.y,
+        `Expected description top (${descBox!.y}px) to be above date row top (${dateBox!.y}px) at 1000 px`,
+      ).toBeLessThan(dateBox!.y);
+    } finally {
+      await context.close();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tablet viewport test (768 × 1024)
 // ---------------------------------------------------------------------------
 test.describe("PhotoDetail — tablet description position (768 × 1024)", () => {

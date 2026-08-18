@@ -97,3 +97,40 @@ test("gallery filter bar does not overflow horizontally on mobile (390 × 844)",
 
   await context.close();
 });
+
+test("gallery search input does not extend past the viewport width on mobile (390 × 844) (#113)", async ({
+  browser,
+}) => {
+  // Specifically guard the text search <Input> element: a fixed-width or
+  // unconstrained input can push past the right edge of the screen even when
+  // the surrounding filter bar container itself does not overflow.
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  await page.goto("/photos", { waitUntil: "networkidle" });
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  const filterBar = page.getByTestId("gallery-filter-bar");
+  await expect(filterBar).toBeVisible();
+
+  // The search input is the first <input> inside the filter bar.
+  const searchInput = filterBar.locator("input").first();
+  await expect(searchInput, "Expected a search input inside the gallery filter bar").toBeVisible();
+
+  // Measure the rendered bounding box of the input element.
+  const inputBox = await searchInput.boundingBox();
+  expect(inputBox, "Could not measure the search input bounding box").not.toBeNull();
+
+  // The right edge of the input must not exceed the 390 px viewport width.
+  const rightEdge = inputBox!.x + inputBox!.width;
+  expect(
+    rightEdge,
+    `Search input right edge (${rightEdge.toFixed(1)}px) extends past the 390px viewport — input is off-screen`,
+  ).toBeLessThanOrEqual(390);
+
+  await context.close();
+});

@@ -227,6 +227,82 @@ test.describe("PhotoDetail — mobile edit button (390 × 844)", () => {
     }
   });
 
+  test("clicking Edit details in the (…) dropdown opens the edit dialog (#122)", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page, PHOTO.id, /* asAdmin */ true);
+      await openPhotoDetail(page, PHOTO.id, PHOTO.title);
+
+      // Open the (…) dropdown.
+      const dateRow = page.getByTestId("mobile-photo-date-row");
+      const editButton = dateRow.getByRole("button");
+      await expect(editButton).toBeVisible({ timeout: 10_000 });
+      await editButton.click();
+
+      // Click the "Edit details" menu item.
+      const editMenuItem = page.getByRole("menuitem", { name: /edit details/i });
+      await expect(editMenuItem).toBeVisible({ timeout: 5_000 });
+      await editMenuItem.click();
+
+      // The edit dialog must open — its title is "Edit Photograph".
+      await expect(
+        page.getByRole("dialog"),
+        "Expected the edit dialog to open after clicking Edit details",
+      ).toBeVisible({ timeout: 5_000 });
+
+      await expect(
+        page.getByRole("dialog").getByText(/edit photograph/i),
+        'Expected the dialog title to contain "Edit Photograph"',
+      ).toBeVisible({ timeout: 5_000 });
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("clicking Remove photograph in the (…) dropdown opens the delete confirmation (#123)", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+    });
+    const page = await context.newPage();
+
+    try {
+      await stubApiCalls(page, PHOTO.id, /* asAdmin */ true);
+      await openPhotoDetail(page, PHOTO.id, PHOTO.title);
+
+      // Open the (…) dropdown.
+      const dateRow = page.getByTestId("mobile-photo-date-row");
+      const editButton = dateRow.getByRole("button");
+      await expect(editButton).toBeVisible({ timeout: 10_000 });
+      await editButton.click();
+
+      // Click the "Remove photograph" menu item.
+      const removeMenuItem = page.getByRole("menuitem", { name: /remove photograph/i });
+      await expect(removeMenuItem).toBeVisible({ timeout: 5_000 });
+      await removeMenuItem.click();
+
+      // The delete confirmation AlertDialog must appear.
+      await expect(
+        page.getByRole("alertdialog"),
+        "Expected the delete confirmation dialog to open after clicking Remove photograph",
+      ).toBeVisible({ timeout: 5_000 });
+
+      await expect(
+        page.getByRole("alertdialog").getByText(/are you absolutely sure/i),
+        'Expected the alert dialog to contain "Are you absolutely sure?"',
+      ).toBeVisible({ timeout: 5_000 });
+    } finally {
+      await context.close();
+    }
+  });
+
   test("(…) button is absent when the viewer has no edit permission", async ({
     browser,
   }) => {
