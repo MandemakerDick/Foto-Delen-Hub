@@ -1667,6 +1667,14 @@ export default function Manage() {
                   <div className="pt-4 mt-4 border-t border-border/50">
                     {bulkMode === "assign" && (
                       <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="button"
+                          onClick={handleBulkAssignClub}
+                          disabled={bulkSelectedPhotoIds.size === 0 || bulkClubId === "none" || bulkAssigning}
+                        >
+                          {bulkAssigning && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                          {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
+                        </Button>
                         <Select value={bulkClubId} onValueChange={setBulkClubId}>
                           <SelectTrigger className="flex-1 min-w-36 bg-background">
                             <SelectValue placeholder={t("manage.photos.selectClubPlaceholder")} />
@@ -1677,14 +1685,6 @@ export default function Manage() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button
-                          type="button"
-                          onClick={handleBulkAssignClub}
-                          disabled={bulkSelectedPhotoIds.size === 0 || bulkClubId === "none" || bulkAssigning}
-                        >
-                          {bulkAssigning && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-                          {t("manage.photos.assignBtn", { count: bulkSelectedPhotoIds.size })}
-                        </Button>
                       </div>
                     )}
                     {bulkMode === "delete" && (
