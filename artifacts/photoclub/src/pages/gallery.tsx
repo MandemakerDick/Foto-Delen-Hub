@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Search, Filter, Shuffle, CalendarDays, ArrowDownUp, X } from "lucide-react";
@@ -35,6 +35,7 @@ export default function Gallery() {
   const [dateTo, setDateTo] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: photos, isLoading: photosLoading } = useListPhotos();
   const { data: clubs } = useListClubs();
@@ -99,18 +100,26 @@ export default function Gallery() {
         </p>
       </div>
 
-      <div data-testid="gallery-filter-bar" className="flex flex-col md:flex-row gap-4 mb-10 items-start md:items-center bg-secondary/50 p-4 rounded-lg border border-border/50">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+      <div data-testid="gallery-filter-bar" className="mb-10 space-y-4 bg-secondary/50 p-4 rounded-lg border border-border/50">
+        <div className="relative w-full md:max-w-md">
+          <button
+            type="button"
+            aria-label={t("common.search")}
+            onClick={() => searchInputRef.current?.focus()}
+            className="absolute left-0 top-0 z-10 flex h-9 w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Search className="w-4 h-4" />
+          </button>
           <Input 
+            ref={searchInputRef}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("gallery.searchPlaceholder")}
-            className="pl-9 w-full bg-background border-border/50"
+            className="w-full bg-background border-border/50 pl-10"
           />
         </div>
         
-        <div className="flex flex-wrap gap-3 w-full">
+        <div className="flex min-w-0 flex-wrap gap-3">
           <Popover>
             <PopoverTrigger asChild>
               <Button data-testid="gallery-club-filter" type="button" variant="outline" className="flex-1 min-w-[150px] justify-between bg-background border-border/50 font-normal">
@@ -152,10 +161,7 @@ export default function Gallery() {
           </Popover>
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
-            <SelectTrigger
-              icon={<Filter className="h-4 w-4 opacity-60" />}
-              className="flex-1 min-w-[160px] bg-background border-border/50"
-            >
+            <SelectTrigger className="flex-1 min-w-[160px] bg-background border-border/50">
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
             </SelectTrigger>
             <SelectContent>
