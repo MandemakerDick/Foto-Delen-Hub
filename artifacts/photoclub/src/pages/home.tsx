@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Image, TrendingUp, Users, User } from "lucide-react";
+import { Image, TrendingUp, Users, User } from "lucide-react";
 import { useListRecentPhotos, useGetStats, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/search-bar";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -38,18 +38,13 @@ export default function Home() {
             {t("home.heroSubtitle")}
           </p>
 
-          <form onSubmit={handleSearch} className="w-full max-w-md relative mt-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("home.searchPlaceholder")}
-              className="w-full pl-12 h-14 bg-background border-border/50 text-base focus-visible:ring-primary rounded-full shadow-lg"
-            />
-            <Button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6">
-              {t("common.find")}
-            </Button>
-          </form>
+          <SearchBar
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onSubmit={handleSearch}
+            placeholder={t("home.searchPlaceholder")}
+            className="mt-4"
+          />
         </div>
       </section>
 

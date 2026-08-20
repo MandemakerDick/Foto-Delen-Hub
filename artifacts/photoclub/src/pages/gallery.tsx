@@ -1,7 +1,7 @@
-import { useRef, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Filter, Shuffle, CalendarDays, ArrowDownUp, X } from "lucide-react";
+import { Filter, Shuffle, CalendarDays, ArrowDownUp, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SearchBar } from "@/components/search-bar";
 
 type SortOption = "newest" | "oldest" | "likes" | "comments" | "random";
 
@@ -23,7 +24,7 @@ function randomRank(id: number, seed: number) {
 
 export default function Gallery() {
   const { t } = useTranslation();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(location.split('?')[1] || "");
   const initialSearch = searchParams.get("search") || "";
   
@@ -35,7 +36,6 @@ export default function Gallery() {
   const [dateTo, setDateTo] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: photos, isLoading: photosLoading } = useListPhotos();
   const { data: clubs } = useListClubs();
@@ -47,7 +47,9 @@ export default function Gallery() {
     return photos.filter((photo) => {
       const matchesSearch = search === "" || 
         photo.title.toLowerCase().includes(search.toLowerCase()) || 
-        (photo.description && photo.description.toLowerCase().includes(search.toLowerCase()));
+        (photo.description && photo.description.toLowerCase().includes(search.toLowerCase())) ||
+        (photo.photographerName && photo.photographerName.toLowerCase().includes(search.toLowerCase())) ||
+        (photo.themeName && photo.themeName.toLowerCase().includes(search.toLowerCase()));
       
       const matchesClub = clubFilter.length === 0 || clubFilter.includes(photo.clubId?.toString() ?? "");
       const matchesTheme = themeFilter.length === 0 || themeFilter.includes(photo.themeId?.toString() ?? "");
@@ -91,6 +93,13 @@ export default function Gallery() {
     setDateTo("");
   };
 
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = search.trim();
+    setSearch(query);
+    setLocation(query ? `/photos?search=${encodeURIComponent(query)}` : "/photos");
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-10">
@@ -101,23 +110,13 @@ export default function Gallery() {
       </div>
 
       <div data-testid="gallery-filter-bar" className="mb-10 space-y-4 bg-secondary/50 p-4 rounded-lg border border-border/50">
-        <div className="relative w-full md:max-w-md">
-          <button
-            type="button"
-            aria-label={t("common.search")}
-            onClick={() => searchInputRef.current?.focus()}
-            className="absolute left-0 top-0 z-10 flex h-9 w-9 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-          <Input 
-            ref={searchInputRef}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("gallery.searchPlaceholder")}
-            className="w-full bg-background border-border/50 pl-10"
-          />
-        </div>
+        <SearchBar
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onSubmit={handleSearchSubmit}
+          placeholder={t("home.searchPlaceholder")}
+          className="mt-0"
+        />
         
         <div className="flex min-w-0 flex-wrap gap-3">
           <Popover>
