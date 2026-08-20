@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Filter, Shuffle, CalendarDays, X } from "lucide-react";
+import { Search, Filter, Shuffle, CalendarDays, ArrowDownUp, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
@@ -152,7 +152,10 @@ export default function Gallery() {
           </Popover>
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
-            <SelectTrigger className="flex-1 min-w-[160px] bg-background border-border/50">
+            <SelectTrigger
+              icon={<Filter className="h-4 w-4 opacity-60" />}
+              className="flex-1 min-w-[160px] bg-background border-border/50"
+            >
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
             </SelectTrigger>
             <SelectContent>
@@ -167,7 +170,11 @@ export default function Gallery() {
             setSortBy(next);
             if (next === "random") setRandomSeed(Date.now());
           }}>
-            <SelectTrigger data-testid="gallery-sort" className="flex-1 min-w-[155px] bg-background border-border/50">
+            <SelectTrigger
+              data-testid="gallery-sort"
+              icon={<ArrowDownUp className="h-4 w-4 opacity-60" />}
+              className="flex-1 min-w-[155px] bg-background border-border/50"
+            >
               <SelectValue placeholder={t("gallery.sortLabel")} />
             </SelectTrigger>
             <SelectContent>
