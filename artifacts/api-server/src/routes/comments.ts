@@ -9,6 +9,7 @@ import {
   DeleteCommentParams,
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
+import { sendPhotoCommentNotification } from "../lib/notifications";
 
 const router = Router();
 
@@ -63,6 +64,21 @@ router.post("/photos/:id/comments", async (req, res) => {
     .where(eq(commentsTable.id, comment.id));
 
   res.status(201).json({ ...rows[0], createdAt: rows[0].createdAt.toISOString() });
+
+  // Notify the photo owner about someone else's comment. The sender's own
+  // comments do not need an email notification.
+  const [photo] = await db
+    .select({ title: photosTable.title, photographerId: photosTable.photographerId })
+    .from(photosTable)
+    .where(eq(photosTable.id, params.data.id));
+  if (photo?.photographerId && photo.photographerId !== rows[0]?.photographerId) {
+    void sendPhotoCommentNotification(
+      photo.photographerId,
+      photo.title,
+      rows[0]?.photographerName ?? "A PhotoMatrix member",
+      rows[0]?.body ?? "",
+    );
+  }
 });
 
 // DELETE /api/photos/:id/comments/:commentId — remove a comment.

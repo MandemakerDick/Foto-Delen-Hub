@@ -426,7 +426,19 @@
     "filterPhotographer": "Fotograaf",
     "filterAll": "Alle",
     "empty": "Geen foto's voldoen aan deze filters",
-    "clearFilters": "Filters wissen"
+    "clearFilters": "Filters wissen",
+    "sortLabel": "Foto's sorteren",
+    "sortNewest": "Nieuwste eerst",
+    "sortOldest": "Oudste eerst",
+    "sortLikes": "Meest gewaardeerd",
+    "sortComments": "Meest becommentarieerd",
+    "sortRandom": "Willekeurige ontdekking",
+    "shuffle": "Toon een andere willekeurige selectie",
+    "filterClubs": "Filter op clubs",
+    "filterThemes": "Filter op thema's",
+    "filterSelected": "{{count}} {{label}} geselecteerd",
+    "dateFrom": "Vanaf datum",
+    "dateTo": "Tot datum"
   },
   "upload": {
     "linkFirstTitle": "Koppel eerst je fotografenprofiel",

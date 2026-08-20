@@ -1,13 +1,25 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, Shuffle, CalendarDays, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+type SortOption = "newest" | "oldest" | "likes" | "comments" | "random";
+
+function randomRank(id: number, seed: number) {
+  let value = (id * 1103515245 + seed) | 0;
+  value ^= value << 13;
+  value ^= value >>> 17;
+  value ^= value << 5;
+  return value >>> 0;
+}
 
 export default function Gallery() {
   const { t } = useTranslation();
@@ -16,9 +28,13 @@ export default function Gallery() {
   const initialSearch = searchParams.get("search") || "";
   
   const [search, setSearch] = useState(initialSearch);
-  const [clubFilter, setClubFilter] = useState<string>("all");
-  const [themeFilter, setThemeFilter] = useState<string>("all");
+  const [clubFilter, setClubFilter] = useState<string[]>([]);
+  const [themeFilter, setThemeFilter] = useState<string[]>([]);
   const [photographerFilter, setPhotographerFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [randomSeed, setRandomSeed] = useState(() => Date.now());
 
   const { data: photos, isLoading: photosLoading } = useListPhotos();
   const { data: clubs } = useListClubs();
@@ -32,21 +48,46 @@ export default function Gallery() {
         photo.title.toLowerCase().includes(search.toLowerCase()) || 
         (photo.description && photo.description.toLowerCase().includes(search.toLowerCase()));
       
-      const matchesClub = clubFilter === "all" || photo.clubId?.toString() === clubFilter;
-      const matchesTheme = themeFilter === "all" || photo.themeId?.toString() === themeFilter;
+      const matchesClub = clubFilter.length === 0 || clubFilter.includes(photo.clubId?.toString() ?? "");
+      const matchesTheme = themeFilter.length === 0 || themeFilter.includes(photo.themeId?.toString() ?? "");
       const matchesPhotographer = photographerFilter === "all" || photo.photographerId?.toString() === photographerFilter;
-      
-      return matchesSearch && matchesClub && matchesTheme && matchesPhotographer;
-    });
-  }, [photos, search, clubFilter, themeFilter, photographerFilter]);
+      const createdAt = new Date(photo.createdAt);
+      const matchesStartDate = !dateFrom || createdAt >= new Date(`${dateFrom}T00:00:00`);
+      const matchesEndDate = !dateTo || createdAt <= new Date(`${dateTo}T23:59:59.999`);
 
-  const activeFiltersCount = (clubFilter !== "all" ? 1 : 0) + (themeFilter !== "all" ? 1 : 0) + (photographerFilter !== "all" ? 1 : 0);
+      return matchesSearch && matchesClub && matchesTheme && matchesPhotographer && matchesStartDate && matchesEndDate;
+    });
+  }, [photos, search, clubFilter, themeFilter, photographerFilter, dateFrom, dateTo]);
+
+  const sortedPhotos = useMemo(() => {
+    const result = [...filteredPhotos];
+    const newestFirst = (a: typeof result[number], b: typeof result[number]) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
+    if (sortBy === "oldest") return result.sort((a, b) => -newestFirst(a, b));
+    if (sortBy === "likes") return result.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || newestFirst(a, b));
+    if (sortBy === "comments") return result.sort((a, b) => (b.commentCount ?? 0) - (a.commentCount ?? 0) || newestFirst(a, b));
+    if (sortBy === "random") return result.sort((a, b) => randomRank(a.id, randomSeed) - randomRank(b.id, randomSeed));
+    return result.sort(newestFirst);
+  }, [filteredPhotos, randomSeed, sortBy]);
+
+  const activeFiltersCount = clubFilter.length + themeFilter.length + (photographerFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+
+  const toggleFilter = (
+    value: string,
+    selected: string[],
+    setSelected: React.Dispatch<React.SetStateAction<string[]>>,
+  ) => {
+    setSelected((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  };
 
   const clearFilters = () => {
-    setClubFilter("all");
-    setThemeFilter("all");
+    setClubFilter([]);
+    setThemeFilter([]);
     setPhotographerFilter("all");
     setSearch("");
+    setDateFrom("");
+    setDateTo("");
   };
 
   return (
@@ -69,30 +110,46 @@ export default function Gallery() {
           />
         </div>
         
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
-          <Select value={clubFilter} onValueChange={setClubFilter}>
-            <SelectTrigger className="flex-1 min-w-[130px] bg-background border-border/50">
-              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.clubs")}`} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.clubs")}`}</SelectItem>
-              {clubs?.map((club) => (
-                <SelectItem key={club.id} value={club.id.toString()}>{club.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap gap-3 w-full">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button data-testid="gallery-club-filter" type="button" variant="outline" className="flex-1 min-w-[150px] justify-between bg-background border-border/50 font-normal">
+                <span>{clubFilter.length ? t("gallery.filterSelected", { count: clubFilter.length, label: t("nav.clubs") }) : `${t("gallery.filterAll")} ${t("nav.clubs")}`}</span>
+                <Filter className="w-4 h-4 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="max-h-72 overflow-y-auto">
+              <p className="mb-3 text-sm font-medium">{t("gallery.filterClubs")}</p>
+              <div className="space-y-2">
+                {clubs?.map((club) => (
+                  <label key={club.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox checked={clubFilter.includes(String(club.id))} onCheckedChange={() => toggleFilter(String(club.id), clubFilter, setClubFilter)} />
+                    {club.name}
+                  </label>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          <Select value={themeFilter} onValueChange={setThemeFilter}>
-            <SelectTrigger className="flex-1 min-w-[130px] bg-background border-border/50">
-              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.themes")}`} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.themes")}`}</SelectItem>
-              {themes?.map((theme) => (
-                <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button data-testid="gallery-theme-filter" type="button" variant="outline" className="flex-1 min-w-[150px] justify-between bg-background border-border/50 font-normal">
+                <span>{themeFilter.length ? t("gallery.filterSelected", { count: themeFilter.length, label: t("nav.themes") }) : `${t("gallery.filterAll")} ${t("nav.themes")}`}</span>
+                <Filter className="w-4 h-4 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="max-h-72 overflow-y-auto">
+              <p className="mb-3 text-sm font-medium">{t("gallery.filterThemes")}</p>
+              <div className="space-y-2">
+                {themes?.map((theme) => (
+                  <label key={theme.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox checked={themeFilter.includes(String(theme.id))} onCheckedChange={() => toggleFilter(String(theme.id), themeFilter, setThemeFilter)} />
+                    {theme.name}
+                  </label>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
             <SelectTrigger className="flex-1 min-w-[160px] bg-background border-border/50">
@@ -105,6 +162,33 @@ export default function Gallery() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={sortBy} onValueChange={(value) => {
+            const next = value as SortOption;
+            setSortBy(next);
+            if (next === "random") setRandomSeed(Date.now());
+          }}>
+            <SelectTrigger data-testid="gallery-sort" className="flex-1 min-w-[155px] bg-background border-border/50">
+              <SelectValue placeholder={t("gallery.sortLabel")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{t("gallery.sortNewest")}</SelectItem>
+              <SelectItem value="oldest">{t("gallery.sortOldest")}</SelectItem>
+              <SelectItem value="likes">{t("gallery.sortLikes")}</SelectItem>
+              <SelectItem value="comments">{t("gallery.sortComments")}</SelectItem>
+              <SelectItem value="random">{t("gallery.sortRandom")}</SelectItem>
+            </SelectContent>
+          </Select>
+          {sortBy === "random" && (
+            <Button type="button" variant="outline" size="icon" onClick={() => setRandomSeed(Date.now())} aria-label={t("gallery.shuffle")}>
+              <Shuffle className="w-4 h-4" />
+            </Button>
+          )}
+          <div className="flex items-center gap-2 rounded-md border border-border/50 bg-background px-3 py-1.5">
+            <CalendarDays className="w-4 h-4 shrink-0 text-muted-foreground" />
+            <Input data-testid="gallery-date-from" aria-label={t("gallery.dateFrom")} type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-7 w-32 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
+            <span className="text-xs text-muted-foreground">{t("gallery.dateTo")}</span>
+            <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-32 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
+          </div>
 
           {activeFiltersCount > 0 && (
             <Button variant="ghost" onClick={clearFilters} className="px-3">
@@ -117,12 +201,12 @@ export default function Gallery() {
 
       <div className="mb-6 flex items-center justify-between">
         <div className="text-sm font-mono text-muted-foreground">
-          {filteredPhotos.length} {t("common.prints")}
+          {sortedPhotos.length} {t("common.prints")}
         </div>
         {activeFiltersCount > 0 && (
           <div className="flex gap-2">
-            {clubFilter !== "all" && <Badge variant="secondary">{t("gallery.filterClub")}: {clubs?.find(c => c.id.toString() === clubFilter)?.name}</Badge>}
-            {themeFilter !== "all" && <Badge variant="secondary">{t("gallery.filterTheme")}: {themes?.find(th => th.id.toString() === themeFilter)?.name}</Badge>}
+            {clubFilter.map((id) => <Badge key={id} variant="secondary">{t("gallery.filterClub")}: {clubs?.find(c => c.id.toString() === id)?.name}</Badge>)}
+            {themeFilter.map((id) => <Badge key={id} variant="secondary">{t("gallery.filterTheme")}: {themes?.find(th => th.id.toString() === id)?.name}</Badge>)}
             {photographerFilter !== "all" && <Badge variant="secondary">{t("gallery.filterPhotographer")}: {photographers?.find(p => p.id.toString() === photographerFilter)?.name}</Badge>}
           </div>
         )}
@@ -138,9 +222,9 @@ export default function Gallery() {
             </div>
           ))}
         </div>
-      ) : filteredPhotos.length > 0 ? (
+      ) : sortedPhotos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
-          {filteredPhotos.map((photo, i) => (
+          {sortedPhotos.map((photo, i) => (
             <PhotoCard key={photo.id} photo={photo} index={i} context="gallery" />
           ))}
         </div>

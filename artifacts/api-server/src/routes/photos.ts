@@ -15,6 +15,7 @@ import {
   ReorderPhotosBody,
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
+import { sendPhotoUploadConfirmation } from "../lib/notifications";
 
 const router = Router();
 
@@ -167,6 +168,9 @@ router.post("/photos", async (req: any, res) => {
   // Re-fetch via buildPhotoSelect so the response includes all joined fields
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
   res.status(201).json(mapPhoto(rows[0]));
+
+  // Email delivery must never make a successful upload fail.
+  void sendPhotoUploadConfirmation(photographerId!, photo.title);
 });
 
 // GET /api/photos/:id — fetch a single photo by id

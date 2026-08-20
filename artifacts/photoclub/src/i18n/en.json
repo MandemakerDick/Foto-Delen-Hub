@@ -426,7 +426,19 @@
     "filterPhotographer": "Photographer",
     "filterAll": "All",
     "empty": "No photographs match these filters",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "sortLabel": "Sort photos",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortLikes": "Most liked",
+    "sortComments": "Most commented",
+    "sortRandom": "Random discovery",
+    "shuffle": "Show another random selection",
+    "filterClubs": "Filter by clubs",
+    "filterThemes": "Filter by themes",
+    "filterSelected": "{{count}} {{label}} selected",
+    "dateFrom": "From date",
+    "dateTo": "To date"
   },
   "upload": {
     "linkFirstTitle": "Link your photographer profile first",
