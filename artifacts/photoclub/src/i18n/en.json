@@ -6,6 +6,8 @@
     "photographers": "Photographers",
     "upload": "Upload",
     "myPhotos": "My Photos",
+    "likedPhotos": "Liked Photos",
+    "following": "Following",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "adminLogin": "Admin"
@@ -350,7 +352,9 @@
     "noChanges": "No changes",
     "saveSuccess": "{{count}} photo(s) updated.",
     "saveError": "Could not save all changes.",
-    "savePartialError": "{{succeeded}} saved, {{failed}} failed — failed rows are highlighted."
+    "savePartialError": "{{succeeded}} saved, {{failed}} failed — failed rows are highlighted.",
+    "follow": "Follow",
+    "unfollow": "Following"
   },
   "themeDetail": {
     "back": "Back to Themes",
@@ -415,7 +419,39 @@
     "areYouSure": "Are you absolutely sure?",
     "deleteBody": "This will permanently delete \"{{title}}\" from the gallery. This action cannot be undone.",
     "likeSelect": "Select profile to like as...",
-    "photographer": "Photographer"
+    "photographer": "Photographer",
+    "like": "Like photo",
+    "unlike": "Unlike photo",
+    "signInToLike": "Sign in to like this photo"
+  },
+  "likedPhotos": {
+    "eyebrow": "Your collection",
+    "title": "Liked Photos",
+    "subtitle": "A private collection of photographs you want to revisit.",
+    "signInTitle": "Sign in to save your likes",
+    "signInBody": "Your liked photographs are private to your account.",
+    "emptyTitle": "Nothing liked yet",
+    "emptyBody": "Tap the heart on any photograph to build your private collection.",
+    "saved": "Added to your liked photos",
+    "removed": "Removed from your liked photos"
+  },
+  "following": {
+    "eyebrow": "Your circle",
+    "title": "Following",
+    "subtitle": "New work from the photographers you follow.",
+    "signInTitle": "Sign in to follow photographers",
+    "signInBody": "Follow your favorite photographers and keep their latest work in one private feed.",
+    "followed": "Now following this photographer",
+    "unfollowed": "Unfollowed this photographer",
+    "error": "Could not update your following list.",
+    "emptyTitle": "Your following list is empty",
+    "emptyBody": "Follow a photographer to see their newest work here.",
+    "browsePhotographers": "Browse photographers",
+    "photoCount_one": "{{count}} photo",
+    "photoCount_other": "{{count}} photos",
+    "feedTitle": "Latest from your circle",
+    "feedEmptyTitle": "No photos yet",
+    "feedEmptyBody": "The photographers you follow have not shared a photo yet."
   },
   "gallery": {
     "title": "The Gallery",

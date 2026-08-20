@@ -1,7 +1,19 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
-import { db, photographersTable, photographerClubsTable, photographerThemesTable, clubsTable, themesTable } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import {
+  db,
+  photographersTable,
+  photographerClubsTable,
+  photographerThemesTable,
+  photographerFollowsTable,
+  photoLikesTable,
+  clubsTable,
+  themesTable,
+  photosTable,
+} from "@workspace/db";
+import { eq, asc, desc, inArray } from "drizzle-orm";
+import { buildPhotoSelect, mapPhoto } from "./photos";
+import { buildRow, groupByFields, photographerBaseQuery } from "./photographers";
 
 const router = Router();
 
@@ -72,6 +84,69 @@ router.get("/me", requireAuth, async (req: any, res) => {
     return;
   }
   res.json({ ...profile, createdAt: profile.createdAt.toISOString() });
+});
+
+// GET /api/me/liked-photos — private collection, ordered by most recent like.
+router.get("/me/liked-photos", requireAuth, async (req: any, res) => {
+  const likes = await db
+    .select({ photoId: photoLikesTable.photoId })
+    .from(photoLikesTable)
+    .where(eq(photoLikesTable.clerkUserId, req.clerkUserId))
+    .orderBy(desc(photoLikesTable.createdAt));
+
+  if (likes.length === 0) {
+    res.setHeader("Cache-Control", "no-store");
+    res.json([]);
+    return;
+  }
+
+  const rows = await buildPhotoSelect()
+    .where(inArray(photosTable.id, likes.map((like) => like.photoId)));
+  const byId = new Map(rows.map((row) => [row.id, mapPhoto(row)]));
+  res.setHeader("Cache-Control", "no-store");
+  res.json(likes.map((like) => byId.get(like.photoId)).filter(Boolean));
+});
+
+// GET /api/me/following — private list, ordered by most recently followed.
+router.get("/me/following", requireAuth, async (req: any, res) => {
+  const follows = await db
+    .select({ photographerId: photographerFollowsTable.photographerId })
+    .from(photographerFollowsTable)
+    .where(eq(photographerFollowsTable.clerkUserId, req.clerkUserId))
+    .orderBy(desc(photographerFollowsTable.createdAt));
+
+  if (follows.length === 0) {
+    res.setHeader("Cache-Control", "no-store");
+    res.json([]);
+    return;
+  }
+
+  const rows = await photographerBaseQuery()
+    .where(inArray(photographersTable.id, follows.map((follow) => follow.photographerId)))
+    .groupBy(...groupByFields());
+  const byId = new Map(rows.map((row) => [row.id, buildRow(row)]));
+  res.setHeader("Cache-Control", "no-store");
+  res.json(follows.map((follow) => byId.get(follow.photographerId)).filter(Boolean));
+});
+
+// GET /api/me/following/photos — recent public photos from followed photographers.
+router.get("/me/following/photos", requireAuth, async (req: any, res) => {
+  const follows = await db
+    .select({ photographerId: photographerFollowsTable.photographerId })
+    .from(photographerFollowsTable)
+    .where(eq(photographerFollowsTable.clerkUserId, req.clerkUserId));
+
+  if (follows.length === 0) {
+    res.setHeader("Cache-Control", "no-store");
+    res.json([]);
+    return;
+  }
+
+  const rows = await buildPhotoSelect()
+    .where(inArray(photosTable.photographerId, follows.map((follow) => follow.photographerId)))
+    .orderBy(desc(photosTable.createdAt));
+  res.setHeader("Cache-Control", "no-store");
+  res.json(rows.map(mapPhoto));
 });
 
 // POST /api/me/link — link an existing photographer profile to the Clerk account.

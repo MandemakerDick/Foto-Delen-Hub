@@ -52,15 +52,27 @@ export interface ThemeInput {
   description?: string;
 }
 
+export interface PhotographerClub {
+  id: number;
+  name: string;
+  /**
+     * Year the photographer joined this club (not the club's founding year)
+     * @nullable
+     */
+  memberSince?: number | null;
+}
+
 export interface PhotographerTheme {
   id: number;
   name: string;
 }
 
-export interface PhotographerClub {
+export interface ClubMembershipInput {
   id: number;
-  name: string;
-  /** Year the photographer joined this club (not the club's founding year) */
+  /**
+     * Year the photographer joined this club
+     * @nullable
+     */
   memberSince?: number | null;
 }
 
@@ -72,7 +84,7 @@ export interface Photographer {
   /** @nullable */
   avatarUrl?: string | null;
   clubs: PhotographerClub[];
-  themes: PhotographerTheme[];
+  themes?: PhotographerTheme[];
   photoCount?: number;
   createdAt: string;
 }
@@ -82,7 +94,7 @@ export interface PhotographerInput {
   name: string;
   bio?: string;
   avatarUrl?: string;
-  clubs?: Array<{ id: number; memberSince?: number | null }>;
+  clubs?: ClubMembershipInput[];
   themeIds?: number[];
 }
 
@@ -91,7 +103,7 @@ export interface PhotographerUpdate {
   name?: string;
   bio?: string;
   avatarUrl?: string;
-  clubs?: Array<{ id: number; memberSince?: number | null }>;
+  clubs?: ClubMembershipInput[];
   themeIds?: number[];
 }
 
@@ -140,8 +152,21 @@ export interface PhotoUpdate {
   themeId?: number | null;
 }
 
-export interface LikeInput {
-  photographerId: number;
+export interface LikeStatus {
+  liked: boolean;
+}
+
+export interface LikeAction {
+  photo: Photo;
+  liked: boolean;
+}
+
+export interface FollowStatus {
+  following: boolean;
+}
+
+export interface ReorderPhotosInput {
+  photoIds: number[];
 }
 
 export interface Comment {
@@ -202,11 +227,8 @@ export interface AdminStatusResponse {
   displayName?: string | null;
   /** @nullable */
   photographerId?: number | null;
-  /**
-   * True when the session admin cookie (email+password login) is the active
-   * auth method — even when a Clerk session is also present. Used by the
-   * frontend to show the correct admin badge and logout button.
-   */
+  /** @nullable */
+  adminId?: number | null;
   sessionAdminActive?: boolean;
 }
 
@@ -338,10 +360,15 @@ export interface SessionPhoto {
   reviewCount?: number;
 }
 
-export interface SessionPhotoInput {
+export type SessionPhotoInput = {
   photoId: number;
   sortOrder?: number;
-}
+} | {
+  title: string;
+  imageUrl: string;
+  photographerId?: number;
+  sortOrder?: number;
+};
 
 export interface SessionReviewer {
   id: number;

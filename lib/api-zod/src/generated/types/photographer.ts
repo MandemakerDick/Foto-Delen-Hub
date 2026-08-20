@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PhotographerClub } from './photographerClub';
+import type { PhotographerTheme } from './photographerTheme';
 
 export interface Photographer {
   id: number;
@@ -15,14 +16,7 @@ export interface Photographer {
   /** @nullable */
   avatarUrl?: string | null;
   clubs: PhotographerClub[];
-  /** @nullable */
-  themeId1?: number | null;
-  /** @nullable */
-  themeName1?: string | null;
-  /** @nullable */
-  themeId2?: number | null;
-  /** @nullable */
-  themeName2?: string | null;
+  themes?: PhotographerTheme[];
   photoCount?: number;
   createdAt: string;
 }

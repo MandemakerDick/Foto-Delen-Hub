@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable } from "@workspace/db";
+import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable, photoLikesTable } from "@workspace/db";
 import { eq, ilike, desc, sql, count, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
@@ -10,8 +10,6 @@ import {
   UpdatePhotoParams,
   UpdatePhotoBody,
   DeletePhotoParams,
-  LikePhotoParams,
-  LikePhotoBody,
   ReorderPhotosBody,
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
@@ -30,7 +28,7 @@ const router = Router();
  * The ::int cast is required because Postgres returns count() as bigint,
  * which the pg driver serialises as a string — casting forces a numeric result.
  */
-function buildPhotoSelect() {
+export function buildPhotoSelect() {
   const commentCountSq = db
     .select({ photoId: commentsTable.photoId, commentCount: count().as("comment_count") })
     .from(commentsTable)
@@ -62,7 +60,7 @@ function buildPhotoSelect() {
 }
 
 /** Serialise a photo row — convert the Date to an ISO string for JSON output. */
-function mapPhoto(p: { createdAt: Date; [key: string]: unknown }) {
+export function mapPhoto(p: { createdAt: Date; [key: string]: unknown }) {
   return { ...p, createdAt: p.createdAt.toISOString() };
 }
 
@@ -345,24 +343,77 @@ router.patch("/me/photos/order", async (req, res) => {
   res.status(204).send();
 });
 
-// POST /api/photos/:id/like — increment the like counter (no per-user dedup by design)
+// GET /api/photos/:id/like — private state for the authenticated member.
+router.get("/photos/:id/like", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to view your like state" }); return; }
+
+  const params = GetPhotoParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [existing] = await db
+    .select({ photoId: photoLikesTable.photoId })
+    .from(photoLikesTable)
+    .where(and(eq(photoLikesTable.photoId, params.data.id), eq(photoLikesTable.clerkUserId, userId)));
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ liked: !!existing });
+});
+
+// POST /api/photos/:id/like — toggle the current member's unique like.
 router.post("/photos/:id/like", async (req, res) => {
-  const params = LikePhotoParams.safeParse({ id: Number(req.params.id) });
-  const body = LikePhotoBody.safeParse(req.body);
-  if (!params.success || !body.success) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-  await db
-    .update(photosTable)
-    .set({ likeCount: sql`${photosTable.likeCount} + 1` })
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to like photos" }); return; }
+
+  const params = GetPhotoParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [photo] = await db
+    .select({ id: photosTable.id })
+    .from(photosTable)
     .where(eq(photosTable.id, params.data.id));
+  if (!photo) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Serialize toggles for this one member/photo pair. The relationship update
+  // and denormalised public counter are then committed atomically, so retries
+  // or double-clicks cannot make like_count drift from member reactions.
+  const liked = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`photo-like:${params.data.id}:${userId}`}))`);
+    const [existing] = await tx
+      .select({ photoId: photoLikesTable.photoId })
+      .from(photoLikesTable)
+      .where(and(eq(photoLikesTable.photoId, params.data.id), eq(photoLikesTable.clerkUserId, userId)));
+
+    if (existing) {
+      const [removed] = await tx
+        .delete(photoLikesTable)
+        .where(and(eq(photoLikesTable.photoId, params.data.id), eq(photoLikesTable.clerkUserId, userId)))
+        .returning({ photoId: photoLikesTable.photoId });
+      if (removed) {
+        await tx
+          .update(photosTable)
+          .set({ likeCount: sql`greatest(${photosTable.likeCount} - 1, 0)` })
+          .where(eq(photosTable.id, params.data.id));
+      }
+      return false;
+    }
+
+    const [inserted] = await tx
+      .insert(photoLikesTable)
+      .values({ photoId: params.data.id, clerkUserId: userId })
+      .onConflictDoNothing()
+      .returning({ photoId: photoLikesTable.photoId });
+    if (inserted) {
+      await tx
+        .update(photosTable)
+        .set({ likeCount: sql`${photosTable.likeCount} + 1` })
+        .where(eq(photosTable.id, params.data.id));
+    }
+    return !!inserted;
+  });
+
   const rows = await buildPhotoSelect().where(eq(photosTable.id, params.data.id));
-  if (!rows[0]) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  res.json(mapPhoto(rows[0]));
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ photo: mapPhoto(rows[0]!), liked });
 });
 
 export default router;

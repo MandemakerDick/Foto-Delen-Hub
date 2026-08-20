@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SessionPhotoInput {
+export type SessionPhotoInput = {
   photoId: number;
   sortOrder?: number;
-}
+} | {
+  title: string;
+  imageUrl: string;
+  photographerId?: number;
+  sortOrder?: number;
+};

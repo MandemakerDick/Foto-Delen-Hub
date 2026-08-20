@@ -11,7 +11,10 @@ import {
   getGetPhotoQueryKey,
   useListPhotos,
   getListPhotosQueryKey,
-  useLikePhoto,
+  useTogglePhotoLike,
+  useGetPhotoLikeStatus,
+  getGetPhotoLikeStatusQueryKey,
+  getListLikedPhotosQueryKey,
   useDeletePhoto,
   useUpdatePhoto,
   useListClubs,
@@ -24,6 +27,7 @@ import {
   getGetAdminStatusQueryKey,
   useProposeTheme,
 } from "@workspace/api-client-react";
+import { SignInButton, useAuth } from "@clerk/react";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { Button } from "@/components/ui/button";
@@ -65,6 +69,7 @@ export default function PhotoDetail() {
   const photoId = Number(id);
   const search = useSearch();
   const { toast } = useToast();
+  const { isSignedIn, userId } = useAuth();
 
   // Always start at the top of the page regardless of scroll position in the gallery
   useEffect(() => { window.scrollTo(0, 0); }, [photoId]);
@@ -91,8 +96,14 @@ export default function PhotoDetail() {
   const { data: comments = [], isLoading: commentsLoading } = useListComments(photoId, {
     query: { enabled: !!photoId, queryKey: getListCommentsQueryKey(photoId) },
   });
+  const { data: likeStatus } = useGetPhotoLikeStatus(photoId, {
+    query: {
+      enabled: !!photoId && !!isSignedIn,
+      queryKey: [...getGetPhotoLikeStatusQueryKey(photoId), userId] as const,
+    },
+  });
 
-  const likeMutation = useLikePhoto();
+  const likeMutation = useTogglePhotoLike();
   const deleteMutation = useDeletePhoto();
   const updateMutation = useUpdatePhoto();
   const createCommentMutation = useCreateComment();
@@ -162,22 +173,45 @@ export default function PhotoDetail() {
   };
 
   const handleLike = () => {
-    if (!myProfile) return;
     likeMutation.mutate(
-      { id: photoId, data: { photographerId: myProfile.id } },
+      { id: photoId },
       {
-        onSuccess: (updatedPhoto) => {
+        onSuccess: ({ photo: updatedPhoto, liked }) => {
           queryClient.setQueryData(getGetPhotoQueryKey(photoId), updatedPhoto);
+          queryClient.setQueryData([...getGetPhotoLikeStatusQueryKey(photoId), userId] as const, { liked });
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListLikedPhotosQueryKey() });
           if (photo?.photographerId) {
             queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: photo.photographerId }) });
           }
-          toast({ title: t("toasts.likedTitle"), description: t("toasts.likedDesc") });
+          toast({ title: liked ? t("likedPhotos.saved") : t("likedPhotos.removed") });
         },
         onError: () => toast({ title: t("common.error"), description: t("toasts.likeError"), variant: "destructive" }),
       },
     );
   };
+
+  const likeButton = isSignedIn ? (
+    <Button
+      onClick={handleLike}
+      disabled={likeMutation.isPending}
+      variant="outline"
+      aria-pressed={!!likeStatus?.liked}
+      className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+    >
+      <Heart className={`w-4 h-4 ${likeStatus?.liked ? "fill-current" : ""} ${likeMutation.isPending ? "animate-pulse" : ""}`} />
+      <span className="font-mono">{photo.likeCount || 0}</span>
+      <span className="sr-only">{likeStatus?.liked ? t("photoDetail.unlike") : t("photoDetail.like")}</span>
+    </Button>
+  ) : (
+    <SignInButton mode="modal">
+      <Button variant="outline" className="gap-2 border-primary/50 text-primary">
+        <Heart className="w-4 h-4" />
+        <span className="font-mono">{photo.likeCount || 0}</span>
+        <span className="sr-only">{t("photoDetail.signInToLike")}</span>
+      </Button>
+    </SignInButton>
+  );
 
   const handleDelete = () => {
     deleteMutation.mutate(
@@ -312,22 +346,7 @@ export default function PhotoDetail() {
 
       {/* Like Action */}
       <div className="flex items-center gap-4 mb-8 bg-secondary/30 p-4 rounded-lg border border-border/50">
-        {myProfile ? (
-          <Button
-            onClick={handleLike}
-            disabled={likeMutation.isPending}
-            variant="outline"
-            className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-          >
-            <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
-            <span className="font-mono">{photo.likeCount || 0}</span>
-          </Button>
-        ) : (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Heart className="w-4 h-4" />
-            <span className="font-mono">{photo.likeCount || 0}</span>
-          </div>
-        )}
+        {likeButton}
       </div>
 
       <Separator className="mb-8" />
@@ -573,22 +592,7 @@ export default function PhotoDetail() {
 
             {/* Like Action */}
             <div className="flex items-center gap-4 mb-8 bg-secondary/30 p-4 rounded-lg border border-border/50">
-              {myProfile ? (
-                <Button
-                  onClick={handleLike}
-                  disabled={likeMutation.isPending}
-                  variant="outline"
-                  className="gap-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-                >
-                  <Heart className={`w-4 h-4 ${likeMutation.isPending ? "animate-pulse" : ""}`} />
-                  <span className="font-mono">{photo.likeCount || 0}</span>
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Heart className="w-4 h-4" />
-                  <span className="font-mono">{photo.likeCount || 0}</span>
-                </div>
-              )}
+              {likeButton}
             </div>
 
             <Separator className="mb-8" />

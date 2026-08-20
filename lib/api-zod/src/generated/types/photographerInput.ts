@@ -5,13 +5,13 @@
  * PhotoMatrix API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ClubMembershipInput } from './clubMembershipInput';
 
 export interface PhotographerInput {
   /** @minLength 1 */
   name: string;
   bio?: string;
   avatarUrl?: string;
-  clubs?: Array<{ id: number; memberSince?: number | null }>;
-  themeId1?: number;
-  themeId2?: number;
+  clubs?: ClubMembershipInput[];
+  themeIds?: number[];
 }

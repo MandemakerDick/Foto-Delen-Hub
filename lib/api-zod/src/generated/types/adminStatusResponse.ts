@@ -14,4 +14,5 @@ export interface AdminStatusResponse {
   photographerId?: number | null;
   /** @nullable */
   adminId?: number | null;
+  sessionAdminActive?: boolean;
 }

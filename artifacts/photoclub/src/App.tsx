@@ -21,6 +21,8 @@ import PhotographerDetail from "@/pages/photographer-detail";
 import Upload from "@/pages/upload";
 import Manage from "@/pages/manage";
 import MyPhotos from "@/pages/my-photos";
+import LikedPhotos from "@/pages/liked-photos";
+import Following from "@/pages/following";
 import ThemeDetail from "@/pages/theme-detail";
 import Search from "@/pages/search";
 import NotFound from "@/pages/not-found";
@@ -175,6 +177,8 @@ function Router() {
           </ErrorBoundary>
         </Route>
         <Route path="/my-photos" component={MyPhotos} />
+        <Route path="/liked-photos" component={LikedPhotos} />
+        <Route path="/following" component={Following} />
         <Route path="/join/:token?" component={Join} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/sign-in/*?" component={SignInPage} />

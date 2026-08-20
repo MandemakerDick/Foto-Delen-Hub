@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X } from "lucide-react";
+import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X, Heart, UserPlus } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
 import { Show, useAuth, useUser, SignInButton } from "@clerk/react";
@@ -38,6 +38,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/clubs", label: t("nav.clubs"), icon: Users },
     { href: "/themes", label: t("nav.themes"), icon: Camera },
     { href: "/photographers", label: t("nav.photographers"), icon: User },
+  ];
+  const personalItems = [
+    { href: "/liked-photos", label: t("nav.likedPhotos"), icon: Heart },
+    { href: "/following", label: t("nav.following"), icon: UserPlus },
   ];
 
   return (
@@ -77,6 +81,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Button>
             {/* Clerk signed-in user */}
             <Show when="signed-in">
+              {personalItems.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant={location.startsWith(item.href) ? "default" : "ghost"}
+                    size="sm"
+                    className="gap-1.5 px-2 text-muted-foreground"
+                    title={item.label}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span className="hidden xl:inline">{item.label}</span>
+                  </Button>
+                </Link>
+              ))}
               <Link href="/my-photos">
                 <Button
                   variant={location.startsWith("/my-photos") ? "default" : "outline"}
@@ -150,6 +167,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div data-testid="mobile-nav" className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
               {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium tracking-wide transition-colors ${
+                    location.startsWith(item.href)
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  {item.label}
+                </Link>
+              ))}
+              {isSignedIn && personalItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

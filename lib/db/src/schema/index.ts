@@ -9,3 +9,5 @@ export * from "./review-sessions";
 export * from "./theme-proposals";
 export * from "./photographer-clubs";
 export * from "./photographer-themes";
+export * from "./photo-likes";
+export * from "./photographer-follows";

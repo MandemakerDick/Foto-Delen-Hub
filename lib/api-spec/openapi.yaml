@@ -400,6 +400,42 @@ paths:
         "404":
           description: Not found
 
+  /photographers/{id}/follow:
+    get:
+      operationId: getPhotographerFollowStatus
+      tags: [photographers]
+      summary: Get the signed-in member's follow state for a photographer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Follow state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatus"
+    post:
+      operationId: togglePhotographerFollow
+      tags: [photographers]
+      summary: Follow or unfollow a photographer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated follow state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatus"
+
   /photos:
     get:
       operationId: listPhotos
@@ -528,29 +564,40 @@ paths:
           description: Deleted
 
   /photos/{id}/like:
-    post:
-      operationId: likePhoto
+    get:
+      operationId: getPhotoLikeStatus
       tags: [photos]
-      summary: Like a photo
+      summary: Get the signed-in member's like state for a photo
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LikeInput"
       responses:
         "200":
-          description: Liked
+          description: Like state
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Photo"
+                $ref: "#/components/schemas/LikeStatus"
+    post:
+      operationId: togglePhotoLike
+      tags: [photos]
+      summary: Like or unlike a photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated like state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeAction"
 
   /photos/{id}/comments:
     get:
@@ -615,6 +662,66 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /me/liked-photos:
+    get:
+      operationId: listLikedPhotos
+      tags: [photos]
+      summary: List the signed-in member's private liked photos
+      responses:
+        "200":
+          description: Liked photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+
+  /me/following:
+    get:
+      operationId: listFollowingPhotographers
+      tags: [photographers]
+      summary: List photographers followed by the signed-in member
+      responses:
+        "200":
+          description: Followed photographers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photographer"
+
+  /me/following/photos:
+    get:
+      operationId: listFollowingPhotos
+      tags: [photos]
+      summary: List recent photos from photographers followed by the signed-in member
+      responses:
+        "200":
+          description: Following feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+
+  /me/photos/order:
+    patch:
+      operationId: reorderPhotos
+      tags: [photos]
+      summary: Set the signed-in photographer's portfolio order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderPhotosInput"
+      responses:
+        "204":
+          description: Updated
 
   /stats:
     get:
@@ -1404,6 +1511,15 @@ components:
           type: ["integer", "null"]
           description: Year the photographer joined this club (not the club's founding year)
 
+    PhotographerTheme:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
     ClubMembershipInput:
       type: object
       required: [id]
@@ -1430,14 +1546,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PhotographerClub'
-        themeId1:
-          type: ["integer", "null"]
-        themeName1:
-          type: ["string", "null"]
-        themeId2:
-          type: ["integer", "null"]
-        themeName2:
-          type: ["string", "null"]
+        themes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotographerTheme'
         photoCount:
           type: integer
         createdAt:
@@ -1458,10 +1570,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClubMembershipInput'
-        themeId1:
-          type: integer
-        themeId2:
-          type: integer
+        themeIds:
+          type: array
+          items:
+            type: integer
 
     PhotographerUpdate:
       type: object
@@ -1477,10 +1589,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClubMembershipInput'
-        themeId1:
-          type: ["integer", "null"]
-        themeId2:
-          type: ["integer", "null"]
+        themeIds:
+          type: array
+          items:
+            type: integer
 
     Photo:
       type: object
@@ -1546,12 +1658,37 @@ components:
         themeId:
           type: ["integer", "null"]
 
-    LikeInput:
+    LikeStatus:
       type: object
-      required: [photographerId]
+      required: [liked]
       properties:
-        photographerId:
-          type: integer
+        liked:
+          type: boolean
+
+    LikeAction:
+      type: object
+      required: [photo, liked]
+      properties:
+        photo:
+          $ref: "#/components/schemas/Photo"
+        liked:
+          type: boolean
+
+    FollowStatus:
+      type: object
+      required: [following]
+      properties:
+        following:
+          type: boolean
+
+    ReorderPhotosInput:
+      type: object
+      required: [photoIds]
+      properties:
+        photoIds:
+          type: array
+          items:
+            type: integer
 
     Comment:
       type: object
@@ -1660,6 +1797,8 @@ components:
           type: ["integer", "null"]
         adminId:
           type: ["integer", "null"]
+        sessionAdminActive:
+          type: boolean
 
     AddAdminRequest:
       type: object

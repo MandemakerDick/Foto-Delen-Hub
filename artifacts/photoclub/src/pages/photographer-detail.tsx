@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
-import { User, Users, Calendar, ArrowLeft, Image as ImageIcon, Pencil, Loader2 } from "lucide-react";
+import { User, Users, Calendar, ArrowLeft, Image as ImageIcon, Pencil, Loader2, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import {
   useGetPhotographer, getGetPhotographerQueryKey,
@@ -11,14 +11,21 @@ import {
   useGetAdminStatus, getGetAdminStatusQueryKey,
   useListThemes,
   useListClubs,
+  useGetPhotographerFollowStatus,
+  getGetPhotographerFollowStatusQueryKey,
+  useTogglePhotographerFollow,
+  getListFollowingPhotographersQueryKey,
+  getListFollowingPhotosQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { SignInButton, useAuth } from "@clerk/react";
 import { PhotoCard } from "@/components/photo-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useMyProfile } from "@/hooks/use-my-profile";
 
 type PhotoEdit = { title: string; themeId: string; clubId: string };
 
@@ -28,6 +35,8 @@ export default function PhotographerDetail() {
   const photographerId = Number(id);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isSignedIn, userId } = useAuth();
+  const { profile: myProfile } = useMyProfile();
 
   const { data: photographer, isLoading: photographerLoading } = useGetPhotographer(photographerId, {
     query: { enabled: !!photographerId, queryKey: getGetPhotographerQueryKey(photographerId) },
@@ -36,6 +45,12 @@ export default function PhotographerDetail() {
   const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
   const { data: themes } = useListThemes();
   const { data: clubs } = useListClubs();
+  const { data: followStatus } = useGetPhotographerFollowStatus(photographerId, {
+    query: {
+      enabled: !!photographerId && !!isSignedIn,
+      queryKey: [...getGetPhotographerFollowStatusQueryKey(photographerId), userId] as const,
+    },
+  });
 
   const isAdmin = !!adminStatus?.isAdmin;
 
@@ -47,6 +62,22 @@ export default function PhotographerDetail() {
   const [failedIds, setFailedIds] = useState<Set<number>>(new Set());
 
   const updateMutation = useUpdatePhoto();
+  const followMutation = useTogglePhotographerFollow();
+
+  const handleFollow = () => {
+    followMutation.mutate(
+      { id: photographerId },
+      {
+        onSuccess: ({ following }) => {
+          queryClient.setQueryData([...getGetPhotographerFollowStatusQueryKey(photographerId), userId] as const, { following });
+          queryClient.invalidateQueries({ queryKey: getListFollowingPhotographersQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListFollowingPhotosQueryKey() });
+          toast({ title: following ? t("following.followed") : t("following.unfollowed") });
+        },
+        onError: () => toast({ title: t("common.error"), description: t("following.error"), variant: "destructive" }),
+      },
+    );
+  };
 
   // react-helmet-async v3 + React 19: the <title> child is received as an
   // array of strings by React 19's document-metadata hoisting path, which
@@ -186,6 +217,27 @@ export default function PhotographerDetail() {
   }
 
   const themeNames = (photographer.themes ?? []).map((t) => t.name);
+  const canFollow = myProfile?.id !== photographer.id;
+  const followButton = canFollow && (isSignedIn ? (
+    <Button
+      variant={followStatus?.following ? "secondary" : "default"}
+      size="sm"
+      disabled={followMutation.isPending}
+      onClick={handleFollow}
+      className="gap-2"
+      aria-pressed={!!followStatus?.following}
+    >
+      <UserPlus className="w-4 h-4" />
+      {followStatus?.following ? t("photographerDetail.unfollow") : t("photographerDetail.follow")}
+    </Button>
+  ) : (
+    <SignInButton mode="modal">
+      <Button variant="default" size="sm" className="gap-2">
+        <UserPlus className="w-4 h-4" />
+        {t("photographerDetail.follow")}
+      </Button>
+    </SignInButton>
+  ));
 
   return (
     <div className="flex flex-col">
@@ -262,6 +314,7 @@ export default function PhotographerDetail() {
                   <span>{t("photographerDetail.joined", { date: format(new Date(photographer.createdAt), "MMM yyyy") })}</span>
                 </div>
               </div>
+              {followButton && <div className="mt-6">{followButton}</div>}
             </div>
           </div>
         </div>

@@ -6,6 +6,8 @@
     "photographers": "Fotografen",
     "upload": "Uploaden",
     "myPhotos": "Mijn foto's",
+    "likedPhotos": "Favoriete foto's",
+    "following": "Volgend",
     "signIn": "Inloggen",
     "signOut": "Uitloggen",
     "adminLogin": "Beheer"
@@ -350,7 +352,9 @@
     "noChanges": "Geen wijzigingen",
     "saveSuccess": "{{count}} foto('s) bijgewerkt.",
     "saveError": "Kon niet alle wijzigingen opslaan.",
-    "savePartialError": "{{succeeded}} opgeslagen, {{failed}} mislukt — mislukte rijen zijn gemarkeerd."
+    "savePartialError": "{{succeeded}} opgeslagen, {{failed}} mislukt — mislukte rijen zijn gemarkeerd.",
+    "follow": "Volgen",
+    "unfollow": "Volgend"
   },
   "themeDetail": {
     "back": "Terug naar thema's",
@@ -415,7 +419,39 @@
     "areYouSure": "Weet je het zeker?",
     "deleteBody": "Hiermee wordt \"{{title}}\" definitief uit de galerij verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "likeSelect": "Selecteer profiel om als te liken...",
-    "photographer": "Fotograaf"
+    "photographer": "Fotograaf",
+    "like": "Foto waarderen",
+    "unlike": "Waardering verwijderen",
+    "signInToLike": "Log in om deze foto te waarderen"
+  },
+  "likedPhotos": {
+    "eyebrow": "Jouw verzameling",
+    "title": "Favoriete foto's",
+    "subtitle": "Een privéverzameling van foto's die je opnieuw wilt bekijken.",
+    "signInTitle": "Log in om je waarderingen te bewaren",
+    "signInBody": "Je favoriete foto's zijn alleen zichtbaar voor jouw account.",
+    "emptyTitle": "Nog geen favoriete foto's",
+    "emptyBody": "Tik op het hart bij een foto om je privéverzameling op te bouwen.",
+    "saved": "Toegevoegd aan je favoriete foto's",
+    "removed": "Verwijderd uit je favoriete foto's"
+  },
+  "following": {
+    "eyebrow": "Jouw kring",
+    "title": "Volgend",
+    "subtitle": "Nieuw werk van de fotografen die je volgt.",
+    "signInTitle": "Log in om fotografen te volgen",
+    "signInBody": "Volg je favoriete fotografen en zie hun nieuwste werk in één privéfeed.",
+    "followed": "Je volgt deze fotograaf nu",
+    "unfollowed": "Je volgt deze fotograaf niet meer",
+    "error": "Kon je volglijst niet bijwerken.",
+    "emptyTitle": "Je volgt nog niemand",
+    "emptyBody": "Volg een fotograaf om hier hun nieuwste werk te zien.",
+    "browsePhotographers": "Fotografen bekijken",
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} foto's",
+    "feedTitle": "Nieuw uit jouw kring",
+    "feedEmptyTitle": "Nog geen foto's",
+    "feedEmptyBody": "De fotografen die je volgt hebben nog geen foto gedeeld."
   },
   "gallery": {
     "title": "De galerij",

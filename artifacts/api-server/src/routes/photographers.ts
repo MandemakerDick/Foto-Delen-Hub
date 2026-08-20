@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable } from "@workspace/db";
-import { eq, ilike, count, or, sql, exists } from "drizzle-orm";
+import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable, photographerFollowsTable } from "@workspace/db";
+import { eq, ilike, count, or, sql, exists, and } from "drizzle-orm";
 import {
   ListPhotographersQueryParams,
   CreatePhotographerBody,
@@ -49,7 +49,7 @@ function selectFields() {
 }
 
 /** Apply the LEFT JOINs common to every photographer SELECT. */
-function photographerBaseQuery() {
+export function photographerBaseQuery() {
   return db
     .select(selectFields())
     .from(photographersTable)
@@ -57,12 +57,12 @@ function photographerBaseQuery() {
 }
 
 /** GROUP BY list required whenever aggregate columns are used (photoCount). */
-function groupByFields() {
+export function groupByFields() {
   return [photographersTable.id] as const;
 }
 
 /** Serialise a photographer row — convert the Date to ISO string for JSON. */
-function buildRow(r: {
+export function buildRow(r: {
   id: number;
   name: string;
   bio: string | null;
@@ -181,6 +181,75 @@ router.post("/photographers", async (req, res) => {
     .where(eq(photographersTable.id, photographer.id))
     .groupBy(...groupByFields());
   res.status(201).json(buildRow(rows[0]!));
+});
+
+// GET /api/photographers/:id/follow — private state for the authenticated member.
+router.get("/photographers/:id/follow", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to view your follow state" }); return; }
+
+  const params = GetPhotographerParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [existing] = await db
+    .select({ photographerId: photographerFollowsTable.photographerId })
+    .from(photographerFollowsTable)
+    .where(and(
+      eq(photographerFollowsTable.photographerId, params.data.id),
+      eq(photographerFollowsTable.clerkUserId, userId),
+    ));
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ following: !!existing });
+});
+
+// POST /api/photographers/:id/follow — toggle the current member's follow.
+router.post("/photographers/:id/follow", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to follow photographers" }); return; }
+
+  const params = GetPhotographerParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [photographer] = await db
+    .select({ id: photographersTable.id, clerkUserId: photographersTable.clerkUserId })
+    .from(photographersTable)
+    .where(eq(photographersTable.id, params.data.id));
+  if (!photographer) { res.status(404).json({ error: "Not found" }); return; }
+  if (photographer.clerkUserId === userId) {
+    res.status(400).json({ error: "You cannot follow your own photographer profile" });
+    return;
+  }
+
+  // Keep a double-click or two browser tabs from racing the toggle result.
+  const following = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`photographer-follow:${params.data.id}:${userId}`}))`);
+    const [existing] = await tx
+      .select({ photographerId: photographerFollowsTable.photographerId })
+      .from(photographerFollowsTable)
+      .where(and(
+        eq(photographerFollowsTable.photographerId, params.data.id),
+        eq(photographerFollowsTable.clerkUserId, userId),
+      ));
+
+    if (existing) {
+      await tx
+        .delete(photographerFollowsTable)
+        .where(and(
+          eq(photographerFollowsTable.photographerId, params.data.id),
+          eq(photographerFollowsTable.clerkUserId, userId),
+        ));
+      return false;
+    }
+
+    const [inserted] = await tx
+      .insert(photographerFollowsTable)
+      .values({ photographerId: params.data.id, clerkUserId: userId })
+      .onConflictDoNothing()
+      .returning({ photographerId: photographerFollowsTable.photographerId });
+    return !!inserted;
+  });
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ following });
 });
 
 // GET /api/photographers/:id — fetch a single photographer by id

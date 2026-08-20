@@ -907,7 +907,7 @@ function MyPhotosDashboard({
 
   const saveOrder = () => {
     reorderMutation.mutate(
-      { photoIds: localOrder.map((p) => p.id) },
+      { data: { photoIds: localOrder.map((p) => p.id) } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey({ photographerId: profile.id }) });

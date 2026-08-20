@@ -242,9 +242,13 @@ export const ListPhotographersResponseItem = zod.object({
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
   "id": zod.number(),
-  "name": zod.string()
+  "name": zod.string(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club (not the club\'s founding year)')
 })),
-  "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
+  "themes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -257,16 +261,14 @@ export const ListPhotographersResponse = zod.array(ListPhotographersResponseItem
 
 
 
-export const ClubMembershipInput = zod.object({
-  "id": zod.number(),
-  "memberSince": zod.number().nullable().optional()
-})
-
 export const CreatePhotographerBody = zod.object({
   "name": zod.string().min(1),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubs": zod.array(ClubMembershipInput).optional(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club')
+})).optional(),
   "themeIds": zod.array(zod.number()).optional()
 })
 
@@ -284,11 +286,14 @@ export const GetPhotographerResponse = zod.object({
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
-    "id": zod.number(),
-    "name": zod.string(),
-    "memberSince": zod.number().nullable().optional()
-  })),
-  "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
+  "id": zod.number(),
+  "name": zod.string(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club (not the club\'s founding year)')
+})),
+  "themes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -308,7 +313,10 @@ export const UpdatePhotographerBody = zod.object({
   "name": zod.string().min(1).optional(),
   "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
-  "clubs": zod.array(ClubMembershipInput).optional(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club')
+})).optional(),
   "themeIds": zod.array(zod.number()).optional()
 })
 
@@ -318,11 +326,14 @@ export const UpdatePhotographerResponse = zod.object({
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
-    "id": zod.number(),
-    "name": zod.string(),
-    "memberSince": zod.number().nullable().optional()
-  })),
-  "themes": zod.array(zod.object({ "id": zod.number(), "name": zod.string() })),
+  "id": zod.number(),
+  "name": zod.string(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club (not the club\'s founding year)')
+})),
+  "themes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
   "photoCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -333,6 +344,30 @@ export const UpdatePhotographerResponse = zod.object({
  */
 export const DeletePhotographerParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get the signed-in member's follow state for a photographer
+ */
+export const GetPhotographerFollowStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPhotographerFollowStatusResponse = zod.object({
+  "following": zod.boolean()
+})
+
+
+/**
+ * @summary Follow or unfollow a photographer
+ */
+export const TogglePhotographerFollowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const TogglePhotographerFollowResponse = zod.object({
+  "following": zod.boolean()
 })
 
 
@@ -476,17 +511,26 @@ export const DeletePhotoParams = zod.object({
 
 
 /**
- * @summary Like a photo
+ * @summary Get the signed-in member's like state for a photo
  */
-export const LikePhotoParams = zod.object({
+export const GetPhotoLikeStatusParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const LikePhotoBody = zod.object({
-  "photographerId": zod.number()
+export const GetPhotoLikeStatusResponse = zod.object({
+  "liked": zod.boolean()
 })
 
-export const LikePhotoResponse = zod.object({
+
+/**
+ * @summary Like or unlike a photo
+ */
+export const TogglePhotoLikeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const TogglePhotoLikeResponse = zod.object({
+  "photo": zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
@@ -501,6 +545,8 @@ export const LikePhotoResponse = zod.object({
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
+}),
+  "liked": zod.boolean()
 })
 
 
@@ -545,6 +591,81 @@ export const CreateCommentBody = zod.object({
 export const DeleteCommentParams = zod.object({
   "id": zod.coerce.number(),
   "commentId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List the signed-in member's private liked photos
+ */
+export const ListLikedPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "themeId": zod.number().nullish(),
+  "themeName": zod.string().nullish(),
+  "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+export const ListLikedPhotosResponse = zod.array(ListLikedPhotosResponseItem)
+
+
+/**
+ * @summary List photographers followed by the signed-in member
+ */
+export const ListFollowingPhotographersResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club (not the club\'s founding year)')
+})),
+  "themes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "photoCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+export const ListFollowingPhotographersResponse = zod.array(ListFollowingPhotographersResponseItem)
+
+
+/**
+ * @summary List recent photos from photographers followed by the signed-in member
+ */
+export const ListFollowingPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "themeId": zod.number().nullish(),
+  "themeName": zod.string().nullish(),
+  "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+export const ListFollowingPhotosResponse = zod.array(ListFollowingPhotosResponseItem)
+
+
+/**
+ * @summary Set the signed-in photographer's portfolio order
+ */
+export const ReorderPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number())
 })
 
 
@@ -618,7 +739,9 @@ export const GetAdminStatusResponse = zod.object({
   "isAdmin": zod.boolean(),
   "totalAdmins": zod.number(),
   "displayName": zod.string().nullish(),
-  "photographerId": zod.number().nullish()
+  "photographerId": zod.number().nullish(),
+  "adminId": zod.number().nullish(),
+  "sessionAdminActive": zod.boolean().optional()
 })
 
 
@@ -934,18 +1057,15 @@ export const SubmitSessionPhotoParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const SubmitSessionPhotoBody = zod.union([
-  zod.object({
-    "photoId": zod.number(),
-    "sortOrder": zod.number().optional()
-  }),
-  zod.object({
-    "title": zod.string(),
-    "imageUrl": zod.string(),
-    "photographerId": zod.number().optional(),
-    "sortOrder": zod.number().optional()
-  })
-])
+export const SubmitSessionPhotoBody = zod.union([zod.object({
+  "photoId": zod.number(),
+  "sortOrder": zod.number().optional()
+}),zod.object({
+  "title": zod.string(),
+  "imageUrl": zod.string(),
+  "photographerId": zod.number().optional(),
+  "sortOrder": zod.number().optional()
+})])
 
 
 /**
@@ -1076,13 +1196,6 @@ export const UpdatePhotoReviewResponse = zod.object({
   "updatedAt": zod.string().optional()
 })
 
-
-/**
- * @summary Reorder the authenticated photographer's photos
- */
-export const ReorderPhotosBody = zod.object({
-  photoIds: zod.array(zod.number()),
-})
 
 /**
  * @summary Redeem an invite token to gain contributor access
