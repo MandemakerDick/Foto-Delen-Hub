@@ -87,9 +87,10 @@ async function setLanguage(page: Page, lang: string) {
 
 /** Open the (…) action dropdown in the desktop sidebar and click Edit. */
 async function openEditDialog(page: Page) {
-  // At 1280px the sidebar is visible. The DropdownMenuTrigger wraps an icon button.
+  // At 1280px the sidebar is visible. The actionMenu renders in both mobile and desktop
+  // sections; scope to the sidebar to avoid the strict-mode 2-element match.
   const sidebar = page.getByTestId("photo-metadata-sidebar");
-  const moreButton = sidebar.getByRole("button");
+  const moreButton = sidebar.getByTestId("photo-action-menu");
   await expect(moreButton).toBeVisible({ timeout: 8_000 });
   await moreButton.click();
 

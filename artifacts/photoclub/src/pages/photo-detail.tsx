@@ -309,7 +309,7 @@ export default function PhotoDetail() {
   const actionMenu = canEdit ? (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground shrink-0">
+        <Button data-testid="photo-action-menu" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground shrink-0" aria-label="Photo actions">
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>

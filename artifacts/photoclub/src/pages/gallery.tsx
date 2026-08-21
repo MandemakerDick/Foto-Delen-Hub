@@ -109,15 +109,15 @@ export default function Gallery() {
         </p>
       </div>
 
-      <div data-testid="gallery-filter-bar" className="mb-10 space-y-4 bg-secondary/50 p-4 rounded-lg border border-border/50">
-        <SearchBar
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onSubmit={handleSearchSubmit}
-          placeholder={t("home.searchPlaceholder")}
-          className="mt-0"
-        />
-        
+      <SearchBar
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        onSubmit={handleSearchSubmit}
+        placeholder={t("home.searchPlaceholder")}
+        className="mb-4"
+      />
+
+      <div data-testid="gallery-filter-bar" className="mb-10 bg-secondary/50 p-4 rounded-lg border border-border/50">
         <div className="flex min-w-0 flex-wrap gap-3">
           <Popover>
             <PopoverTrigger asChild>
@@ -197,9 +197,9 @@ export default function Gallery() {
           )}
           <div className="flex items-center gap-2 rounded-md border border-border/50 bg-background px-3 py-1.5">
             <CalendarDays className="w-4 h-4 shrink-0 text-muted-foreground" />
-            <Input data-testid="gallery-date-from" aria-label={t("gallery.dateFrom")} type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-7 w-32 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
-            <span className="text-xs text-muted-foreground">{t("gallery.dateTo")}</span>
-            <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-32 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
+            <Input data-testid="gallery-date-from" aria-label={t("gallery.dateFrom")} type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-7 w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
+            <span className="text-xs text-muted-foreground shrink-0">{t("gallery.dateTo")}</span>
+            <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
           </div>
 
           {activeFiltersCount > 0 && (
