@@ -471,6 +471,7 @@ export default function Manage() {
   const [memberSinces, setMemberSinces] = useState<Record<number, number | undefined>>({});
   // inviteEmail: optional email to send a join link after profile creation
   const [inviteEmail, setInviteEmail] = useState("");
+  const [editInviteEmail, setEditInviteEmail] = useState("");
   // inviteDialog: tracks which photographer to send a standalone invite to
   const [inviteDialog, setInviteDialog] = useState<{ id: number; name: string } | null>(null);
   const [inviteDialogEmail, setInviteDialogEmail] = useState("");
@@ -596,6 +597,7 @@ export default function Manage() {
       if (c.memberSince) sinces[c.id] = c.memberSince;
     }
     setMemberSinces(sinces);
+    setEditInviteEmail("");
     photographerForm.reset({ name: p.name, bio: p.bio ?? "", clubIds: p.clubs?.map((c) => c.id) ?? [] });
     setTimeout(() => photographerFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
@@ -605,6 +607,7 @@ export default function Manage() {
     setAvatarUrl(null);
     setSelectedThemeIds([]);
     setMemberSinces({});
+    setEditInviteEmail("");
     photographerForm.reset({ name: "", bio: "", clubIds: [] });
   };
 
@@ -1137,7 +1140,7 @@ export default function Manage() {
                   <FormItem><FormLabel>{t("manage.photographer.biographyLabel")}</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
                 )} />
 
-                {editingPhotographerId === null && (
+                {editingPhotographerId === null ? (
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">{t("manage.photographer.inviteEmailLabel")}</label>
                     <Input
@@ -1148,7 +1151,46 @@ export default function Manage() {
                       className="bg-background"
                     />
                   </div>
-                )}
+                ) : (() => {
+                  const editingP = photographers?.find((p) => p.id === editingPhotographerId);
+                  if (editingP?.claimed) return null;
+                  return (
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">{t("manage.photographer.inviteEmailLabel")}</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          value={editInviteEmail}
+                          onChange={(e) => setEditInviteEmail(e.target.value)}
+                          placeholder={t("manage.photographer.inviteEmailPlaceholder")}
+                          className="bg-background flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!editInviteEmail.trim() || sendPhotographerInviteEmailMutation.isPending}
+                          onClick={() => {
+                            const email = editInviteEmail.trim();
+                            if (!email || editingPhotographerId === null) return;
+                            sendPhotographerInviteEmailMutation.mutate(
+                              { data: { photographerId: editingPhotographerId, email, label: `Invite for ${editingP?.name ?? ""}` } },
+                              {
+                                onSuccess: () => {
+                                  toast({ title: t("manage.photographer.inviteSentTitle"), description: t("manage.photographer.inviteSentDesc", { email }) });
+                                  setEditInviteEmail("");
+                                },
+                                onError: () => toast({ title: t("common.error"), description: t("manage.photographer.inviteSendError"), variant: "destructive" }),
+                              },
+                            );
+                          }}
+                        >
+                          {sendPhotographerInviteEmailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                          {t("manage.photographer.inviteBtn")}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex gap-3 pt-2">
                   {editingPhotographerId !== null && <Button type="button" variant="outline" onClick={cancelEditingPhotographer} className="flex-1">{t("common.cancel")}</Button>}
