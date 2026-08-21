@@ -26,16 +26,28 @@ PhotoMatrix is a portfolio platform for photography club members. You can share 
 
 PhotoMatrix uses invite-only registration. You need an invite link from an administrator to create an account.
 
-1. Open the invite link you received.
-2. You will be taken to the registration page where you can create an account with an email address or a social login (Google, etc.).
-3. After signing up, you will be asked to create your photographer profile — enter your name and optionally select your preferred themes.
+1. Open the invite link you received by email.
+2. You will be taken to the registration page where you can create an account with a social login (Google) or an email address.
+3. If the administrator pre-built a profile for you, you will see a **"Claim my profile"** screen after signing in — click the button to link your account to your photographer profile in one step. No manual linking is needed.
 
-If you already have a PhotoMatrix profile from before you had a Clerk account, choose **Link existing profile** and select your name from the list.
+### Signing In
 
-### Signing In and Out
+- Click **Sign in** in the top-right corner and choose Google or email/password.
 
-- Click **Sign in** in the top-right corner.
-- To sign out, click your name in the top-right corner and choose **Sign out** from the menu on the My Photos page.
+### Signing Out
+
+There are two quick ways to sign out:
+
+- Click the **→ (log-out) icon** next to your avatar in the top-right corner — signs you out immediately.
+- Or click your **avatar** → **Sign out** at the bottom of the dropdown.
+
+### Account Settings & Passkeys
+
+Click your **avatar** in the top-right corner, then choose **Manage account**. From there you can:
+
+- Change your name or email address
+- Connect or disconnect social login providers
+- **Add a passkey** (Security → Passkeys → Add passkey) — once set up, you can sign in with a fingerprint, Face ID, or device PIN instead of going through Google every time. No app store installation required.
 
 ---
 
@@ -93,7 +105,7 @@ Click any photo to open its detail page. Here you can:
 
 ## 6. Your Profile and Photos
 
-Click your name in the top-right corner (or navigate to **My Photos**) to manage your profile and your uploaded work.
+Click your **avatar** in the top-right corner and choose **My Photos** (or navigate to **My Photos** directly) to manage your profile and your uploaded work.
 
 ### Profile
 
@@ -198,6 +210,10 @@ Navigate to **Clubs** in the top menu to see all registered photography clubs. E
 - All photographers who are members
 - All photos submitted under that club
 
+### Joining a Club
+
+If you are signed in as a photographer, a **Join** button appears on each club page you are not yet a member of. Click it to join; the button changes to **Leave** so you can undo at any time. Admins manage club membership centrally and are not affected by this button.
+
 ---
 
 ## 10. Photographers
@@ -209,3 +225,7 @@ Navigate to **Photographers** in the top menu to browse all members. Click a pho
 ## 11. Switching Language
 
 PhotoMatrix is available in **English** and **Dutch**. Click the language indicator (EN / NL) in the top-right corner to switch. Your choice is remembered for future visits.
+
+---
+
+*Last updated: August 2026*
