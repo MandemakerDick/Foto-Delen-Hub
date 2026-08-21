@@ -390,7 +390,14 @@
     "noChanges": "No changes",
     "saveSuccess": "{{count}} photo(s) updated.",
     "saveError": "Could not save all changes.",
-    "savePartialError": "{{succeeded}} saved, {{failed}} failed — failed rows are highlighted."
+    "savePartialError": "{{succeeded}} saved, {{failed}} failed — failed rows are highlighted.",
+    "joinClub": "Join club",
+    "leaveClub": "Leave club",
+    "joinSuccess": "You joined the club!",
+    "leaveSuccess": "You left the club.",
+    "joinError": "Could not update membership. Please try again.",
+    "joinNeedsProfile": "You need a photographer profile to join a club.",
+    "signInToJoin": "Sign in to join"
   },
   "photoDetail": {
     "back": "Back to Gallery",

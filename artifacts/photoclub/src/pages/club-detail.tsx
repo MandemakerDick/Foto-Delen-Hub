@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
+import { useAuth, SignInButton } from "@clerk/react";
 import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, X, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -12,6 +13,8 @@ import {
   useGetAdminStatus, getGetAdminStatusQueryKey,
   useListThemes,
   useListClubs,
+  useGetClubMembershipStatus, getGetClubMembershipStatusQueryKey,
+  useToggleClubMembership,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PhotoCard } from "@/components/photo-card";
@@ -58,6 +61,38 @@ export default function ClubDetail() {
   const { data: clubs } = useListClubs();
 
   const isAdmin = !!adminStatus?.isAdmin;
+
+  const { isSignedIn } = useAuth();
+  const { data: membershipData, refetch: refetchMembership } = useGetClubMembershipStatus(clubId, {
+    query: {
+      enabled: !!isSignedIn && !!clubId,
+      queryKey: getGetClubMembershipStatusQueryKey(clubId),
+      retry: false,
+    },
+  });
+  const isMember = !!membershipData?.member;
+
+  const toggleMembershipMutation = useToggleClubMembership({
+    mutation: {
+      onSuccess: (data) => {
+        refetchMembership();
+        queryClient.invalidateQueries({ queryKey: getGetClubQueryKey(clubId) });
+        queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey({ clubId }) });
+        toast({
+          title: data.member ? t("clubDetail.joinSuccess") : t("clubDetail.leaveSuccess"),
+        });
+      },
+      onError: (error: unknown) => {
+        const msg = error instanceof Error ? error.message : "";
+        toast({
+          title: msg.includes("profile")
+            ? t("clubDetail.joinNeedsProfile")
+            : t("clubDetail.joinError"),
+          variant: "destructive",
+        });
+      },
+    },
+  });
 
   const updateMutation = useUpdatePhoto();
 
@@ -266,22 +301,48 @@ export default function ClubDetail() {
             </div>
 
             {/* Stats — members count is clickable */}
-            <div className="flex gap-8 p-6 bg-background rounded-lg border border-border/50 shadow-sm w-full md:w-auto">
-              <button
-                onClick={handleMembersToggle}
-                className={`text-center group focus:outline-none transition-colors ${showMembers ? "text-primary" : ""}`}
-              >
-                <div className="text-3xl font-mono font-medium mb-1">{club.memberCount || 0}</div>
-                <div className={`text-xs uppercase tracking-widest flex items-center gap-1 justify-center transition-colors ${showMembers ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`}>
-                  {t("clubDetail.members")}
-                  {showMembers && <X className="w-3 h-3" />}
+            <div className="flex flex-col gap-4 w-full md:w-auto">
+              <div className="flex gap-8 p-6 bg-background rounded-lg border border-border/50 shadow-sm">
+                <button
+                  onClick={handleMembersToggle}
+                  className={`text-center group focus:outline-none transition-colors ${showMembers ? "text-primary" : ""}`}
+                >
+                  <div className="text-3xl font-mono font-medium mb-1">{club.memberCount || 0}</div>
+                  <div className={`text-xs uppercase tracking-widest flex items-center gap-1 justify-center transition-colors ${showMembers ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`}>
+                    {t("clubDetail.members")}
+                    {showMembers && <X className="w-3 h-3" />}
+                  </div>
+                </button>
+                <Separator orientation="vertical" className="h-12" />
+                <div className="text-center">
+                  <div className="text-3xl font-mono font-medium mb-1">{club.photoCount || 0}</div>
+                  <div className="text-xs uppercase tracking-widest text-muted-foreground">{t("clubDetail.prints")}</div>
                 </div>
-              </button>
-              <Separator orientation="vertical" className="h-12" />
-              <div className="text-center">
-                <div className="text-3xl font-mono font-medium mb-1">{club.photoCount || 0}</div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">{t("clubDetail.prints")}</div>
               </div>
+
+              {/* Join / leave club */}
+              {!isAdmin && (
+                isSignedIn ? (
+                  <Button
+                    variant={isMember ? "outline" : "default"}
+                    className="w-full"
+                    disabled={toggleMembershipMutation.isPending}
+                    onClick={() => toggleMembershipMutation.mutate({ id: clubId })}
+                  >
+                    {toggleMembershipMutation.isPending
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : isMember
+                        ? t("clubDetail.leaveClub")
+                        : t("clubDetail.joinClub")}
+                  </Button>
+                ) : (
+                  <SignInButton mode="modal">
+                    <Button variant="outline" className="w-full">
+                      {t("clubDetail.signInToJoin")}
+                    </Button>
+                  </SignInButton>
+                )
+              )}
             </div>
           </div>
         </div>

@@ -124,6 +124,42 @@ paths:
         "404":
           description: Not found
 
+  /clubs/{id}/membership:
+    get:
+      operationId: getClubMembershipStatus
+      tags: [clubs]
+      summary: Get the signed-in member's membership state for a club
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Membership state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipStatus"
+    post:
+      operationId: toggleClubMembership
+      tags: [clubs]
+      summary: Join or leave a club
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated membership state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipStatus"
+
   /themes:
     get:
       operationId: listThemes
@@ -1657,6 +1693,13 @@ components:
           type: ["integer", "null"]
         themeId:
           type: ["integer", "null"]
+
+    MembershipStatus:
+      type: object
+      required: [member]
+      properties:
+        member:
+          type: boolean
 
     LikeStatus:
       type: object

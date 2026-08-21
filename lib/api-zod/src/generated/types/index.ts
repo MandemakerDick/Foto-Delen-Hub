@@ -32,6 +32,7 @@ export * from './listPhotosParams';
 export * from './listRecentPhotosParams';
 export * from './listReviewSessionsParams';
 export * from './listThemesParams';
+export * from './membershipStatus';
 export * from './photo';
 export * from './photographer';
 export * from './photographerClub';

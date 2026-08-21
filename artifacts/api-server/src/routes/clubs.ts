@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { db, clubsTable, photosTable, photographerClubsTable } from "@workspace/db";
-import { eq, ilike, countDistinct, sql } from "drizzle-orm";
+import { db, clubsTable, photosTable, photographerClubsTable, photographersTable } from "@workspace/db";
+import { eq, ilike, countDistinct, sql, and } from "drizzle-orm";
+import { getAuth } from "@clerk/express";
 import {
   ListClubsQueryParams,
   CreateClubBody,
@@ -130,6 +131,98 @@ router.put("/clubs/:id", async (req, res) => {
     .groupBy(clubsTable.id);
 
   res.json(mapClub(rows[0]));
+});
+
+// GET /api/clubs/:id/membership — membership state for the authenticated member.
+router.get("/clubs/:id/membership", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to view your membership state" }); return; }
+
+  const params = GetClubParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  // Look up the photographer profile linked to this Clerk account.
+  const [photographer] = await db
+    .select({ id: photographersTable.id })
+    .from(photographersTable)
+    .where(eq(photographersTable.clerkUserId, userId));
+
+  if (!photographer) {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ member: false });
+    return;
+  }
+
+  const [existing] = await db
+    .select({ clubId: photographerClubsTable.clubId })
+    .from(photographerClubsTable)
+    .where(and(
+      eq(photographerClubsTable.clubId, params.data.id),
+      eq(photographerClubsTable.photographerId, photographer.id),
+    ));
+
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ member: !!existing });
+});
+
+// POST /api/clubs/:id/membership — toggle join / leave for the authenticated member.
+router.post("/clubs/:id/membership", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) { res.status(401).json({ error: "Sign in to join a club" }); return; }
+
+  const params = GetClubParams.safeParse({ id: Number(req.params.id) });
+  if (!params.success) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  // Require a linked photographer profile to join.
+  const [photographer] = await db
+    .select({ id: photographersTable.id })
+    .from(photographersTable)
+    .where(eq(photographersTable.clerkUserId, userId));
+
+  if (!photographer) {
+    res.status(403).json({ error: "You need a photographer profile to join a club" });
+    return;
+  }
+
+  // Verify the club exists.
+  const [club] = await db
+    .select({ id: clubsTable.id })
+    .from(clubsTable)
+    .where(eq(clubsTable.id, params.data.id));
+  if (!club) { res.status(404).json({ error: "Club not found" }); return; }
+
+  // Advisory lock prevents race conditions on double-click / two tabs.
+  const member = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`club-membership:${params.data.id}:${photographer.id}`}))`);
+
+    const [existing] = await tx
+      .select({ clubId: photographerClubsTable.clubId })
+      .from(photographerClubsTable)
+      .where(and(
+        eq(photographerClubsTable.clubId, params.data.id),
+        eq(photographerClubsTable.photographerId, photographer.id),
+      ));
+
+    if (existing) {
+      await tx
+        .delete(photographerClubsTable)
+        .where(and(
+          eq(photographerClubsTable.clubId, params.data.id),
+          eq(photographerClubsTable.photographerId, photographer.id),
+        ));
+      return false;
+    }
+
+    const [inserted] = await tx
+      .insert(photographerClubsTable)
+      .values({ clubId: params.data.id, photographerId: photographer.id })
+      .onConflictDoNothing()
+      .returning({ clubId: photographerClubsTable.clubId });
+    return !!inserted;
+  });
+
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ member });
 });
 
 export default router;

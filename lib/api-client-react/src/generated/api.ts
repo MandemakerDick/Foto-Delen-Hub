@@ -44,6 +44,7 @@ import type {
   ListRecentPhotosParams,
   ListReviewSessionsParams,
   ListThemesParams,
+  MembershipStatus,
   Photo,
   PhotoInput,
   PhotoReview,
@@ -468,6 +469,153 @@ export const useUpdateClub = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateClubMutationOptions(options));
+    }
+
+export const getGetClubMembershipStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/clubs/${id}/membership`
+}
+
+/**
+ * @summary Get the signed-in member's membership state for a club
+ */
+export const getClubMembershipStatus = async (id: number, options?: RequestInit): Promise<MembershipStatus> => {
+
+  return customFetch<MembershipStatus>(getGetClubMembershipStatusUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubMembershipStatusQueryKey = (id: number,) => {
+    return [
+    `/api/clubs/${id}/membership`
+    ] as const;
+    }
+
+
+export const getGetClubMembershipStatusQueryOptions = <TData = Awaited<ReturnType<typeof getClubMembershipStatus>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubMembershipStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubMembershipStatusQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubMembershipStatus>>> = ({ signal }) => getClubMembershipStatus(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubMembershipStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubMembershipStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getClubMembershipStatus>>>
+export type GetClubMembershipStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the signed-in member's membership state for a club
+ */
+
+export function useGetClubMembershipStatus<TData = Awaited<ReturnType<typeof getClubMembershipStatus>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubMembershipStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubMembershipStatusQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getToggleClubMembershipUrl = (id: number,) => {
+
+
+
+
+  return `/api/clubs/${id}/membership`
+}
+
+/**
+ * @summary Join or leave a club
+ */
+export const toggleClubMembership = async (id: number, options?: RequestInit): Promise<MembershipStatus> => {
+
+  return customFetch<MembershipStatus>(getToggleClubMembershipUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getToggleClubMembershipMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleClubMembership>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleClubMembership>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['toggleClubMembership'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleClubMembership>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  toggleClubMembership(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleClubMembershipMutationResult = NonNullable<Awaited<ReturnType<typeof toggleClubMembership>>>
+
+    export type ToggleClubMembershipMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Join or leave a club
+ */
+export const useToggleClubMembership = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleClubMembership>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleClubMembership>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getToggleClubMembershipMutationOptions(options));
     }
 
 export const getListThemesUrl = (params?: ListThemesParams,) => {

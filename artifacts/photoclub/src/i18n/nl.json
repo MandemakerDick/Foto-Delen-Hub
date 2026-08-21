@@ -390,7 +390,14 @@
     "noChanges": "Geen wijzigingen",
     "saveSuccess": "{{count}} foto('s) bijgewerkt.",
     "saveError": "Kon niet alle wijzigingen opslaan.",
-    "savePartialError": "{{succeeded}} opgeslagen, {{failed}} mislukt — mislukte rijen zijn gemarkeerd."
+    "savePartialError": "{{succeeded}} opgeslagen, {{failed}} mislukt — mislukte rijen zijn gemarkeerd.",
+    "joinClub": "Word lid",
+    "leaveClub": "Club verlaten",
+    "joinSuccess": "Je bent lid geworden van de club!",
+    "leaveSuccess": "Je hebt de club verlaten.",
+    "joinError": "Lidmaatschap kon niet worden bijgewerkt. Probeer opnieuw.",
+    "joinNeedsProfile": "Je hebt een fotografenprofiel nodig om lid te worden van een club.",
+    "signInToJoin": "Aanmelden om lid te worden"
   },
   "photoDetail": {
     "back": "Terug naar galerij",

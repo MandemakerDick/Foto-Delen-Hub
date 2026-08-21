@@ -110,6 +110,30 @@ export const UpdateClubResponse = zod.object({
 
 
 /**
+ * @summary Get the signed-in member's membership state for a club
+ */
+export const GetClubMembershipStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubMembershipStatusResponse = zod.object({
+  "member": zod.boolean()
+})
+
+
+/**
+ * @summary Join or leave a club
+ */
+export const ToggleClubMembershipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ToggleClubMembershipResponse = zod.object({
+  "member": zod.boolean()
+})
+
+
+/**
  * @summary List all themes
  */
 export const ListThemesQueryParams = zod.object({

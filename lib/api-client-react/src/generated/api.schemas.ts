@@ -152,6 +152,10 @@ export interface PhotoUpdate {
   themeId?: number | null;
 }
 
+export interface MembershipStatus {
+  member: boolean;
+}
+
 export interface LikeStatus {
   liked: boolean;
 }
