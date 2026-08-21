@@ -274,6 +274,7 @@ export const ListPhotographersResponseItem = zod.object({
   "name": zod.string()
 })).optional(),
   "photoCount": zod.number().optional(),
+  "claimed": zod.boolean().optional().describe('Whether this photographer has linked a Clerk account and can log in'),
   "createdAt": zod.string()
 })
 export const ListPhotographersResponse = zod.array(ListPhotographersResponseItem)
@@ -319,6 +320,7 @@ export const GetPhotographerResponse = zod.object({
   "name": zod.string()
 })).optional(),
   "photoCount": zod.number().optional(),
+  "claimed": zod.boolean().optional().describe('Whether this photographer has linked a Clerk account and can log in'),
   "createdAt": zod.string()
 })
 
@@ -359,6 +361,7 @@ export const UpdatePhotographerResponse = zod.object({
   "name": zod.string()
 })).optional(),
   "photoCount": zod.number().optional(),
+  "claimed": zod.boolean().optional().describe('Whether this photographer has linked a Clerk account and can log in'),
   "createdAt": zod.string()
 })
 
@@ -658,6 +661,7 @@ export const ListFollowingPhotographersResponseItem = zod.object({
   "name": zod.string()
 })).optional(),
   "photoCount": zod.number().optional(),
+  "claimed": zod.boolean().optional().describe('Whether this photographer has linked a Clerk account and can log in'),
   "createdAt": zod.string()
 })
 export const ListFollowingPhotographersResponse = zod.array(ListFollowingPhotographersResponseItem)
@@ -910,6 +914,7 @@ export const ListInvitesResponseItem = zod.object({
   "id": zod.number(),
   "token": zod.string(),
   "label": zod.string(),
+  "photographerId": zod.number().nullish().describe('Pre-linked photographer profile this invite is intended for'),
   "maxUses": zod.number().nullish(),
   "useCount": zod.number(),
   "expiresAt": zod.string().nullish(),
@@ -924,8 +929,19 @@ export const ListInvitesResponse = zod.array(ListInvitesResponseItem)
  */
 export const CreateInviteBody = zod.object({
   "label": zod.string(),
+  "photographerId": zod.number().nullish().describe('Pre-link this invite to a specific photographer profile'),
   "maxUses": zod.number().nullish(),
   "expiresInDays": zod.number().nullish()
+})
+
+
+/**
+ * @summary Create an invite token for a specific photographer and email them the join link (admin only)
+ */
+export const SendPhotographerInviteEmailBody = zod.object({
+  "photographerId": zod.number(),
+  "email": zod.string().email(),
+  "label": zod.string().optional()
 })
 
 
@@ -1237,7 +1253,8 @@ export const RedeemInviteResponse = zod.object({
  * @summary Check if current session has contributor access via invite
  */
 export const GetInviteSessionResponse = zod.object({
-  "hasAccess": zod.boolean()
+  "hasAccess": zod.boolean(),
+  "photographerId": zod.number().nullish().describe('Pre-linked photographer profile to auto-link on sign-in')
 })
 
 

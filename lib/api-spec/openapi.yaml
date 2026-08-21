@@ -1075,6 +1075,33 @@ paths:
         '403':
           description: Forbidden
 
+  /invites/send-email:
+    post:
+      operationId: sendPhotographerInviteEmail
+      tags: [invites]
+      summary: Create an invite token for a specific photographer and email them the join link (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendPhotographerInviteRequest'
+      responses:
+        '201':
+          description: Invite created and email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteToken'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Photographer not found
+
   /invites/{id}:
     delete:
       operationId: revokeInvite
@@ -1588,6 +1615,9 @@ components:
             $ref: '#/components/schemas/PhotographerTheme'
         photoCount:
           type: integer
+        claimed:
+          type: boolean
+          description: Whether this photographer has linked a Clerk account and can log in
         createdAt:
           type: string
 
@@ -1900,6 +1930,10 @@ components:
           type: string
         label:
           type: string
+        photographerId:
+          type: integer
+          nullable: true
+          description: Pre-linked photographer profile this invite is intended for
         maxUses:
           type: integer
           nullable: true
@@ -1919,12 +1953,28 @@ components:
       properties:
         label:
           type: string
+        photographerId:
+          type: integer
+          nullable: true
+          description: Pre-link this invite to a specific photographer profile
         maxUses:
           type: integer
           nullable: true
         expiresInDays:
           type: integer
           nullable: true
+
+    SendPhotographerInviteRequest:
+      type: object
+      required: [photographerId, email]
+      properties:
+        photographerId:
+          type: integer
+        email:
+          type: string
+          format: email
+        label:
+          type: string
 
     RedeemInviteRequest:
       type: object
@@ -1946,6 +1996,10 @@ components:
       properties:
         hasAccess:
           type: boolean
+        photographerId:
+          type: integer
+          nullable: true
+          description: Pre-linked photographer profile to auto-link on sign-in
 
     ReviewSession:
       type: object

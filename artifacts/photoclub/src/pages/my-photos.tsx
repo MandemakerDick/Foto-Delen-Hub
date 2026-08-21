@@ -28,6 +28,7 @@ import {
   useProposeTheme,
   useReorderPhotos,
   getGetPhotographerQueryKey,
+  useGetInviteSession,
 } from "@workspace/api-client-react";
 import { ObjectUploader } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
@@ -182,6 +183,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   const { t } = useTranslation();
   const { data: photographers } = useListPhotographers();
   const { data: themes } = useListThemes();
+  const { data: inviteSession } = useGetInviteSession();
   const { toast } = useToast();
   const [mode, setMode] = useState<"link" | "create">("link");
   const [selectedId, setSelectedId] = useState("");
@@ -189,14 +191,19 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
   const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const handleLink = async () => {
-    if (!selectedId) return;
+  // If the invite token was pre-linked to a specific photographer profile,
+  // offer a one-click auto-link instead of the manual form.
+  const preLinkedPhotographerId = inviteSession?.photographerId ?? null;
+
+  const handleLink = async (overrideId?: number) => {
+    const idToLink = overrideId ?? (selectedId ? Number(selectedId) : null);
+    if (!idToLink) return;
     setBusy(true);
     const res = await fetch("/api/me/link", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ photographerId: Number(selectedId) }),
+      body: JSON.stringify({ photographerId: idToLink }),
     });
     setBusy(false);
     if (res.ok) {
@@ -228,6 +235,23 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
       toast({ title: t("common.error"), description: err.error, variant: "destructive" });
     }
   };
+
+  // When the invite was pre-linked to a profile, skip the manual form entirely
+  // and show a single "Claim my profile" button.
+  if (preLinkedPhotographerId) {
+    return (
+      <div className="max-w-md mx-auto text-center py-16 px-4">
+        <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
+          <Link2 className="w-7 h-7 text-primary" />
+        </div>
+        <h2 className="font-serif text-2xl mb-2">{t("myPhotos.preLinkedTitle")}</h2>
+        <p className="text-muted-foreground text-sm mb-8">{t("myPhotos.preLinkedBody")}</p>
+        <Button onClick={() => handleLink(preLinkedPhotographerId)} disabled={busy} className="w-full">
+          {busy ? t("myPhotos.autoLinking") : t("myPhotos.autoLink")}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto text-center py-16 px-4">
@@ -262,7 +286,7 @@ function LinkProfilePanel({ onLinked }: { onLinked: () => void }) {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleLink} disabled={!selectedId || busy} className="w-full">
+          <Button onClick={() => handleLink()} disabled={!selectedId || busy} className="w-full">
             {busy ? t("myPhotos.linking") : t("myPhotos.linkProfile")}
           </Button>
         </div>

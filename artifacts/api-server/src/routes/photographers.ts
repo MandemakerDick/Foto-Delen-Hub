@@ -45,6 +45,7 @@ function selectFields() {
     themes: themesSubquery,
     createdAt: photographersTable.createdAt,
     photoCount: count(photosTable.id),
+    claimed: sql<boolean>`(${photographersTable.clerkUserId} IS NOT NULL)`,
   };
 }
 
@@ -71,6 +72,7 @@ export function buildRow(r: {
   themes: { id: number; name: string }[];
   createdAt: Date;
   photoCount: number;
+  claimed: boolean;
 }) {
   return { ...r, createdAt: r.createdAt.toISOString() };
 }

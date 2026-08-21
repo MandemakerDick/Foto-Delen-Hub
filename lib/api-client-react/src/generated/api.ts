@@ -58,6 +58,7 @@ import type {
   ReviewSession,
   ReviewSessionInput,
   ReviewSessionUpdate,
+  SendPhotographerInviteRequest,
   SessionPhoto,
   SessionPhotoInput,
   SessionReviewer,
@@ -4022,6 +4023,77 @@ export const useCreateInvite = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateInviteMutationOptions(options));
+    }
+
+export const getSendPhotographerInviteEmailUrl = () => {
+
+
+
+
+  return `/api/invites/send-email`
+}
+
+/**
+ * @summary Create an invite token for a specific photographer and email them the join link (admin only)
+ */
+export const sendPhotographerInviteEmail = async (sendPhotographerInviteRequest: SendPhotographerInviteRequest, options?: RequestInit): Promise<InviteToken> => {
+
+  return customFetch<InviteToken>(getSendPhotographerInviteEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sendPhotographerInviteRequest,)
+  }
+);}
+
+
+
+
+export const getSendPhotographerInviteEmailMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPhotographerInviteEmail>>, TError,{data: BodyType<SendPhotographerInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendPhotographerInviteEmail>>, TError,{data: BodyType<SendPhotographerInviteRequest>}, TContext> => {
+
+const mutationKey = ['sendPhotographerInviteEmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendPhotographerInviteEmail>>, {data: BodyType<SendPhotographerInviteRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendPhotographerInviteEmail(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendPhotographerInviteEmailMutationResult = NonNullable<Awaited<ReturnType<typeof sendPhotographerInviteEmail>>>
+    export type SendPhotographerInviteEmailMutationBody = BodyType<SendPhotographerInviteRequest>
+    export type SendPhotographerInviteEmailMutationError = ErrorType<void>
+
+    /**
+ * @summary Create an invite token for a specific photographer and email them the join link (admin only)
+ */
+export const useSendPhotographerInviteEmail = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPhotographerInviteEmail>>, TError,{data: BodyType<SendPhotographerInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendPhotographerInviteEmail>>,
+        TError,
+        {data: BodyType<SendPhotographerInviteRequest>},
+        TContext
+      > => {
+      return useMutation(getSendPhotographerInviteEmailMutationOptions(options));
     }
 
 export const getRevokeInviteUrl = (id: number,) => {

@@ -8,6 +8,8 @@
 
 export interface CreateInviteRequest {
   label: string;
+  /** Pre-link this invite to a specific photographer profile */
+  photographerId?: number | null;
   maxUses?: number | null;
   expiresInDays?: number | null;
 }

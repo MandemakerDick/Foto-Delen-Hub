@@ -10,6 +10,8 @@ export interface InviteToken {
   id: number;
   token: string;
   label: string;
+  /** Pre-linked photographer profile this invite is intended for */
+  photographerId?: number | null;
   maxUses?: number | null;
   useCount: number;
   expiresAt?: string | null;

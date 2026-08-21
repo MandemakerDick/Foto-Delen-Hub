@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
-import { db, inviteTokensTable } from "@workspace/db";
+import { db, inviteTokensTable, photographersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "./admins";
+import { ReplitConnectors } from "@replit/connectors-sdk";
 
 const router = Router();
 
@@ -12,6 +13,7 @@ function serializeToken(t: typeof inviteTokensTable.$inferSelect) {
     id: t.id,
     token: t.token,
     label: t.label,
+    photographerId: t.photographerId ?? null,
     maxUses: t.maxUses ?? null,
     useCount: t.useCount,
     expiresAt: t.expiresAt ? t.expiresAt.toISOString() : null,
@@ -31,10 +33,11 @@ router.get("/invites", requireAdmin, async (_req, res) => {
 
 // POST /api/invites — create a new invite token (admin only).
 // Tokens are 16 random bytes encoded as hex (32 chars).
-// Optional: maxUses (null = unlimited), expiresInDays (null = no expiry).
+// Optional: photographerId (pre-links to a profile), maxUses, expiresInDays.
 router.post("/invites", requireAdmin, async (req: any, res) => {
-  const { label, maxUses, expiresInDays } = req.body as {
+  const { label, photographerId, maxUses, expiresInDays } = req.body as {
     label?: string;
+    photographerId?: number | null;
     maxUses?: number | null;
     expiresInDays?: number | null;
   };
@@ -50,6 +53,7 @@ router.post("/invites", requireAdmin, async (req: any, res) => {
     .values({
       token,
       label: label?.trim() || "Invite",
+      photographerId: photographerId ?? null,
       maxUses: maxUses ?? null,
       useCount: 0,
       expiresAt,
@@ -57,6 +61,73 @@ router.post("/invites", requireAdmin, async (req: any, res) => {
       createdByAdminId: req.adminId ?? null,
     })
     .returning();
+
+  res.status(201).json(serializeToken(row));
+});
+
+// POST /api/invites/send-email — create a token linked to a specific photographer
+// and send them a join-link email via Resend (admin only).
+router.post("/invites/send-email", requireAdmin, async (req: any, res) => {
+  const { photographerId, email, label } = req.body as {
+    photographerId?: number;
+    email?: string;
+    label?: string;
+  };
+
+  if (!photographerId || typeof photographerId !== "number") {
+    res.status(400).json({ error: "photographerId required" });
+    return;
+  }
+  if (!email || typeof email !== "string" || !email.includes("@")) {
+    res.status(400).json({ error: "valid email required" });
+    return;
+  }
+
+  // Verify the photographer exists.
+  const [photographer] = await db
+    .select({ id: photographersTable.id, name: photographersTable.name })
+    .from(photographersTable)
+    .where(eq(photographersTable.id, photographerId));
+
+  if (!photographer) {
+    res.status(404).json({ error: "Photographer not found" });
+    return;
+  }
+
+  const token = randomBytes(16).toString("hex");
+  const [row] = await db
+    .insert(inviteTokensTable)
+    .values({
+      token,
+      label: label?.trim() || `Invite for ${photographer.name}`,
+      photographerId,
+      maxUses: 1,
+      useCount: 0,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      revoked: false,
+      createdByAdminId: req.adminId ?? null,
+    })
+    .returning();
+
+  // Send the invite email.
+  const joinUrl = `${process.env.APP_ORIGIN ?? "https://photomatrix.repl.co"}/join/${token}`;
+  try {
+    const connectors = new ReplitConnectors();
+    const from = process.env.EMAIL_FROM ?? "PhotoMatrix <noreply@connectingthedots.fit>";
+    await connectors.proxy("resend", "/emails", {
+      method: "POST",
+      body: JSON.stringify({
+        from,
+        to: [email.trim()],
+        subject: `You've been invited to join PhotoMatrix`,
+        html: `<p>Hi ${photographer.name},</p><p>An administrator has set up a photographer profile for you on PhotoMatrix. Click the link below to create your account and claim your profile:</p><p><a href="${joinUrl}">${joinUrl}</a></p><p>This link expires in 30 days and can only be used once.</p><p>— The PhotoMatrix Team</p>`,
+        text: `Hi ${photographer.name},\n\nAn administrator has set up a photographer profile for you on PhotoMatrix. Click the link below to create your account and claim your profile:\n\n${joinUrl}\n\nThis link expires in 30 days and can only be used once.\n\n— The PhotoMatrix Team`,
+      }),
+    });
+  } catch (err) {
+    // Log but still return the token — admin can copy it manually.
+    console.error("Failed to send invite email:", err);
+  }
 
   res.status(201).json(serializeToken(row));
 });
@@ -91,7 +162,8 @@ router.delete("/invites/:id", requireAdmin, async (req, res) => {
 
 // POST /api/invites/redeem — exchange a token for a session-level access grant.
 // Validates: token exists, not revoked, not expired, within usage limit.
-// On success: increments useCount, sets req.session.inviteGranted = true.
+// On success: increments useCount, sets req.session.inviteGranted = true,
+// and stores photographerId (if set) for auto-linking after Clerk sign-in.
 router.post("/invites/redeem", async (req: any, res) => {
   const { token } = req.body as { token?: string };
   if (!token) {
@@ -120,13 +192,20 @@ router.post("/invites/redeem", async (req: any, res) => {
 
   req.session.inviteGranted = true;
   req.session.inviteTokenId = row.id;
+  if (row.photographerId) {
+    req.session.invitePhotographerId = row.photographerId;
+  }
 
   res.json({ ok: true });
 });
 
-// GET /api/invites/session — check whether the current session holds an invite grant
+// GET /api/invites/session — check whether the current session holds an invite grant.
+// Also returns photographerId when the token was linked to a pre-created profile.
 router.get("/invites/session", (req: any, res) => {
-  res.json({ hasAccess: req.session?.inviteGranted === true });
+  res.json({
+    hasAccess: req.session?.inviteGranted === true,
+    photographerId: req.session?.invitePhotographerId ?? null,
+  });
 });
 
 export default router;

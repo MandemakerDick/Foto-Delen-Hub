@@ -48,6 +48,7 @@ export * from './reorderPhotosInput';
 export * from './reviewSession';
 export * from './reviewSessionInput';
 export * from './reviewSessionUpdate';
+export * from './sendPhotographerInviteRequest';
 export * from './sessionPhoto';
 export * from './sessionPhotoInput';
 export * from './sessionReviewer';

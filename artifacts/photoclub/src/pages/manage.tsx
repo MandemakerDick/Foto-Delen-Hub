@@ -24,6 +24,7 @@ import {
   useListInvites,
   useCreateInvite,
   useRevokeInvite,
+  useSendPhotographerInviteEmail,
   useListThemeProposals,
   useApproveThemeProposal,
   useRejectThemeProposal,
@@ -62,7 +63,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { isFileSlugTitle, isImportButtonDisabled } from "@/lib/import-utils";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon, Mail } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -420,6 +421,7 @@ export default function Manage() {
   const createPhotographerMutation = useCreatePhotographer();
   const updatePhotographerMutation = useUpdatePhotographer();
   const deletePhotographerMutation = useDeletePhotographer();
+  const sendPhotographerInviteEmailMutation = useSendPhotographerInviteEmail();
 
   // ── Photographer delete dialog state ──────────────────────
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
@@ -467,6 +469,12 @@ export default function Manage() {
   const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([]);
   // memberSinces[clubId] = year the photographer joined that club
   const [memberSinces, setMemberSinces] = useState<Record<number, number | undefined>>({});
+  // inviteEmail: optional email to send a join link after profile creation
+  const [inviteEmail, setInviteEmail] = useState("");
+  // inviteDialog: tracks which photographer to send a standalone invite to
+  const [inviteDialog, setInviteDialog] = useState<{ id: number; name: string } | null>(null);
+  const [inviteDialogEmail, setInviteDialogEmail] = useState("");
+  const [inviteDialogSending, setInviteDialogSending] = useState(false);
 
   // ── Forms ─────────────────────────────────────────────────
   const clubForm = useForm<ClubFormValues>({
@@ -629,14 +637,48 @@ export default function Manage() {
         clubs,
         themeIds: selectedThemeIds,
       };
+      const emailToSend = inviteEmail.trim();
       createPhotographerMutation.mutate({ data }, {
-        onSuccess: () => {
+        onSuccess: (newPhotographer) => {
           toast({ title: t("manage.photographer.toastCreatedTitle"), description: t("manage.photographer.toastCreatedDesc", { name: values.name }) });
           cancelEditingPhotographer();
+          setInviteEmail("");
           queryClient.invalidateQueries({ queryKey: getListPhotographersQueryKey() });
+          if (emailToSend) {
+            sendPhotographerInviteEmailMutation.mutate(
+              { data: { photographerId: newPhotographer.id, email: emailToSend } },
+              {
+                onSuccess: () => toast({ title: t("manage.photographer.inviteSentTitle"), description: t("manage.photographer.inviteSentDesc", { email: emailToSend }) }),
+                onError: () => toast({ title: t("common.error"), description: t("manage.photographer.inviteSendError"), variant: "destructive" }),
+              },
+            );
+          }
         },
         onError: () => toast({ title: t("common.error"), description: t("manage.photographer.toastCreateError"), variant: "destructive" }),
       });
+    }
+  };
+
+  const handleSendInviteDialog = async () => {
+    if (!inviteDialog || !inviteDialogEmail.trim()) return;
+    setInviteDialogSending(true);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        sendPhotographerInviteEmailMutation.mutate(
+          { data: { photographerId: inviteDialog.id, email: inviteDialogEmail.trim(), label: `Invite for ${inviteDialog.name}` } },
+          {
+            onSuccess: () => {
+              toast({ title: t("manage.photographer.inviteSentTitle"), description: t("manage.photographer.inviteSentDesc", { email: inviteDialogEmail.trim() }) });
+              setInviteDialog(null);
+              setInviteDialogEmail("");
+              resolve();
+            },
+            onError: () => { toast({ title: t("common.error"), description: t("manage.photographer.inviteSendError"), variant: "destructive" }); reject(); },
+          },
+        );
+      });
+    } finally {
+      setInviteDialogSending(false);
     }
   };
 
@@ -1095,6 +1137,19 @@ export default function Manage() {
                   <FormItem><FormLabel>{t("manage.photographer.biographyLabel")}</FormLabel><FormControl><Textarea {...field} className="bg-background resize-none h-24 font-serif" /></FormControl><FormMessage /></FormItem>
                 )} />
 
+                {editingPhotographerId === null && (
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">{t("manage.photographer.inviteEmailLabel")}</label>
+                    <Input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder={t("manage.photographer.inviteEmailPlaceholder")}
+                      className="bg-background"
+                    />
+                  </div>
+                )}
+
                 <div className="flex gap-3 pt-2">
                   {editingPhotographerId !== null && <Button type="button" variant="outline" onClick={cancelEditingPhotographer} className="flex-1">{t("common.cancel")}</Button>}
                   <Button type="submit" disabled={isPhotographerPending} className="flex-1">
@@ -1121,6 +1176,23 @@ export default function Manage() {
                       {p.clubs && p.clubs.length > 0 && <p className="text-xs text-muted-foreground truncate">{p.clubs.map((c) => c.memberSince ? `${c.name} · ${c.memberSince}` : c.name).join(", ")}</p>}
                     </div>
                     <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} {t("manage.photographer.printsSuffix")}</span>
+                    {!p.claimed && (
+                      <span className="text-[10px] uppercase tracking-wider text-amber-500 border border-amber-400/40 bg-amber-400/10 rounded px-1.5 py-0.5 shrink-0">
+                        {t("manage.photographer.unclaimedBadge")}
+                      </span>
+                    )}
+                    {!p.claimed && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0 gap-1.5 text-primary hover:text-primary"
+                        onClick={() => { setInviteDialog({ id: p.id, name: p.name }); setInviteDialogEmail(""); }}
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        {t("manage.photographer.inviteBtn")}
+                      </Button>
+                    )}
                     <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>
                       <Pencil className="w-3.5 h-3.5" />
                       {editingPhotographerId === p.id ? t("common.editing") : t("common.edit")}
@@ -2066,6 +2138,35 @@ export default function Manage() {
       </Tabs>
 
       {/* ── Photographer removal dialog ─────────────────────── */}
+      {/* ── Invite dialog ─────────────────────────────────────── */}
+      <Dialog open={!!inviteDialog} onOpenChange={(open) => { if (!open) { setInviteDialog(null); setInviteDialogEmail(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("manage.photographer.inviteDialogTitle", { name: inviteDialog?.name ?? "" })}</DialogTitle>
+            <DialogDescription>{t("manage.photographer.inviteDialogDesc")}</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              type="email"
+              value={inviteDialogEmail}
+              onChange={(e) => setInviteDialogEmail(e.target.value)}
+              placeholder={t("manage.photographer.inviteEmailPlaceholder")}
+              className="bg-background"
+              onKeyDown={(e) => { if (e.key === "Enter") handleSendInviteDialog(); }}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => { setInviteDialog(null); setInviteDialogEmail(""); }} disabled={inviteDialogSending}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleSendInviteDialog} disabled={inviteDialogSending || !inviteDialogEmail.trim()}>
+              {inviteDialogSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
+              {t("manage.photographer.inviteDialogSend")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteReason(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

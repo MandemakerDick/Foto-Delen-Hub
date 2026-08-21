@@ -8,3 +8,4 @@
 - [PhotoMatrix app store plans](photomatrix-app-store-plans.md) — remind about in-app feedback widget when native app work begins.
 - [Manage page crash lessons](manage-page-crash-lessons.md) — missing import + undefined state setter caused black screen; how to prevent and debug.
 - [OpenAPI regeneration contract](openapi-regeneration-contract.md) — generated clients are full replacements; keep active API models complete before codegen.
+- [Photographer invite onboarding](photographer-invite-onboarding.md) — admin-creates-profile → auto-sends invite email → photographer redeems → one-click auto-link. invite_token has photographerId FK.

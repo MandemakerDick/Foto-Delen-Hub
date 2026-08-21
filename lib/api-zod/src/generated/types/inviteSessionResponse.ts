@@ -8,4 +8,6 @@
 
 export interface InviteSessionResponse {
   hasAccess: boolean;
+  /** Pre-linked photographer profile to auto-link on sign-in */
+  photographerId?: number | null;
 }

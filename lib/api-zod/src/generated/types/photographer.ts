@@ -18,5 +18,7 @@ export interface Photographer {
   clubs: PhotographerClub[];
   themes?: PhotographerTheme[];
   photoCount?: number;
+  /** Whether this photographer has linked a Clerk account and can log in */
+  claimed?: boolean;
   createdAt: string;
 }

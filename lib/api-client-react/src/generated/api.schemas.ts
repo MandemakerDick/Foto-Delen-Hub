@@ -86,6 +86,8 @@ export interface Photographer {
   clubs: PhotographerClub[];
   themes?: PhotographerTheme[];
   photoCount?: number;
+  /** Whether this photographer has linked a Clerk account and can log in */
+  claimed?: boolean;
   createdAt: string;
 }
 
@@ -265,6 +267,8 @@ export interface InviteToken {
   id: number;
   token: string;
   label: string;
+  /** Pre-linked photographer profile this invite is intended for */
+  photographerId?: number | null;
   maxUses?: number | null;
   useCount: number;
   expiresAt?: string | null;
@@ -274,8 +278,16 @@ export interface InviteToken {
 
 export interface CreateInviteRequest {
   label: string;
+  /** Pre-link this invite to a specific photographer profile */
+  photographerId?: number | null;
   maxUses?: number | null;
   expiresInDays?: number | null;
+}
+
+export interface SendPhotographerInviteRequest {
+  photographerId: number;
+  email: string;
+  label?: string;
 }
 
 export interface RedeemInviteRequest {
@@ -288,6 +300,8 @@ export interface InviteRedeemResult {
 
 export interface InviteSessionResponse {
   hasAccess: boolean;
+  /** Pre-linked photographer profile to auto-link on sign-in */
+  photographerId?: number | null;
 }
 
 export interface ReviewSession {

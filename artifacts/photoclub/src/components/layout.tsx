@@ -6,7 +6,7 @@ import { LanguageSwitcher } from "./language-switcher";
 import { Show, useAuth, useUser, SignInButton } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -19,6 +19,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: adminStatus } = useGetAdminStatus({
     query: { retry: false, queryKey: getGetAdminStatusQueryKey() },
   });
+
+  // When Clerk signs out, force-refetch adminStatus so a stale isAdmin:true
+  // from the cache doesn't leave the admin badge showing after sign-out.
+  const prevIsSignedIn = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (prevIsSignedIn.current === true && !isSignedIn) {
+      queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
+    }
+    prevIsSignedIn.current = !!isSignedIn;
+  }, [isSignedIn, queryClient]);
 
   // True when the session admin cookie is the active auth method.
   // This includes the case where a Clerk member also signed in via the admin
