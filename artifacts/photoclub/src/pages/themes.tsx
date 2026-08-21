@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { LayoutDashboard, Search, Image as ImageIcon } from "lucide-react";
-import { useListThemes } from "@workspace/api-client-react";
+import { useListThemes, useGetAdminStatus } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +10,7 @@ export default function Themes() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const { data: themes, isLoading } = useListThemes();
+  const { data: adminStatus } = useGetAdminStatus();
 
   const filteredThemes = themes?.filter(theme => 
     theme.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -69,9 +70,11 @@ export default function Themes() {
           <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="font-serif text-xl font-medium mb-2">{t("themes.empty")}</h3>
           <p className="text-muted-foreground mb-6">{t("themes.emptyCta")}</p>
-          <Link href="/manage">
-            <Button>{t("themes.createButton")}</Button>
-          </Link>
+          {adminStatus?.isAdmin && (
+            <Link href="/manage">
+              <Button>{t("themes.createButton")}</Button>
+            </Link>
+          )}
         </div>
       )}
     </div>
