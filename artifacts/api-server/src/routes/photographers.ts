@@ -40,6 +40,7 @@ function selectFields() {
     id: photographersTable.id,
     name: photographersTable.name,
     bio: photographersTable.bio,
+    email: photographersTable.email,
     avatarUrl: photographersTable.avatarUrl,
     clubs: clubsSubquery,
     themes: themesSubquery,
@@ -67,6 +68,7 @@ export function buildRow(r: {
   id: number;
   name: string;
   bio: string | null;
+  email: string | null;
   avatarUrl: string | null;
   clubs: { id: number; name: string; memberSince: number | null }[];
   themes: { id: number; name: string }[];

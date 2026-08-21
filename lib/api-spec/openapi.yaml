@@ -1603,6 +1603,9 @@ components:
           type: string
         bio:
           type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+          description: Contact email stored by admin (used to pre-fill invite dialogs)
         avatarUrl:
           type: ["string", "null"]
         clubs:
@@ -1649,6 +1652,9 @@ components:
           minLength: 1
         bio:
           type: string
+        email:
+          type: string
+          nullable: true
         avatarUrl:
           type: string
         clubs:

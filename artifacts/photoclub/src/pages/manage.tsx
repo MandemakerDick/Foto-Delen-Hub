@@ -1229,7 +1229,7 @@ export default function Manage() {
                         variant="ghost"
                         size="sm"
                         className="shrink-0 gap-1.5 text-primary hover:text-primary"
-                        onClick={() => { setInviteDialog({ id: p.id, name: p.name }); setInviteDialogEmail(""); }}
+                        onClick={() => { setInviteDialog({ id: p.id, name: p.name }); setInviteDialogEmail(p.email ?? ""); }}
                       >
                         <Mail className="w-3.5 h-3.5" />
                         {t("manage.photographer.inviteBtn")}

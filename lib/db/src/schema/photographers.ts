@@ -6,6 +6,7 @@ export const photographersTable = pgTable("photographer", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   bio: text("bio"),
+  email: text("email"),
   avatarUrl: text("avatar_url"),
   clerkUserId: text("clerk_user_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

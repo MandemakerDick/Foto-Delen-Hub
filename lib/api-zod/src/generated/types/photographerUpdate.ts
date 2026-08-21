@@ -11,6 +11,7 @@ export interface PhotographerUpdate {
   /** @minLength 1 */
   name?: string;
   bio?: string;
+  email?: string | null;
   avatarUrl?: string;
   clubs?: ClubMembershipInput[];
   themeIds?: number[];

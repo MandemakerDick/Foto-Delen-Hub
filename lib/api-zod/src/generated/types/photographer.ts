@@ -13,6 +13,11 @@ export interface Photographer {
   name: string;
   /** @nullable */
   bio?: string | null;
+  /**
+     * Contact email stored by admin (used to pre-fill invite dialogs)
+     * @nullable
+     */
+  email?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
   clubs: PhotographerClub[];

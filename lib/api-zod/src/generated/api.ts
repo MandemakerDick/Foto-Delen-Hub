@@ -263,6 +263,7 @@ export const ListPhotographersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "bio": zod.string().nullish(),
+  "email": zod.string().nullish().describe('Contact email stored by admin (used to pre-fill invite dialogs)'),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
   "id": zod.number(),
@@ -309,6 +310,7 @@ export const GetPhotographerResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "bio": zod.string().nullish(),
+  "email": zod.string().nullish().describe('Contact email stored by admin (used to pre-fill invite dialogs)'),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
   "id": zod.number(),
@@ -338,6 +340,7 @@ export const UpdatePhotographerParams = zod.object({
 export const UpdatePhotographerBody = zod.object({
   "name": zod.string().min(1).optional(),
   "bio": zod.string().optional(),
+  "email": zod.string().nullish(),
   "avatarUrl": zod.string().optional(),
   "clubs": zod.array(zod.object({
   "id": zod.number(),
@@ -350,6 +353,7 @@ export const UpdatePhotographerResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "bio": zod.string().nullish(),
+  "email": zod.string().nullish().describe('Contact email stored by admin (used to pre-fill invite dialogs)'),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
   "id": zod.number(),
@@ -650,6 +654,7 @@ export const ListFollowingPhotographersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "bio": zod.string().nullish(),
+  "email": zod.string().nullish().describe('Contact email stored by admin (used to pre-fill invite dialogs)'),
   "avatarUrl": zod.string().nullish(),
   "clubs": zod.array(zod.object({
   "id": zod.number(),

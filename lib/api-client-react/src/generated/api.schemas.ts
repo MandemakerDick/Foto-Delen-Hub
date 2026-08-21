@@ -81,6 +81,11 @@ export interface Photographer {
   name: string;
   /** @nullable */
   bio?: string | null;
+  /**
+     * Contact email stored by admin (used to pre-fill invite dialogs)
+     * @nullable
+     */
+  email?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
   clubs: PhotographerClub[];
@@ -104,6 +109,7 @@ export interface PhotographerUpdate {
   /** @minLength 1 */
   name?: string;
   bio?: string;
+  email?: string | null;
   avatarUrl?: string;
   clubs?: ClubMembershipInput[];
   themeIds?: number[];

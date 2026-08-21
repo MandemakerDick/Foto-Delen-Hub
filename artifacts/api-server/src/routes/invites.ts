@@ -85,7 +85,7 @@ router.post("/invites/send-email", requireAdmin, async (req: any, res) => {
 
   // Verify the photographer exists.
   const [photographer] = await db
-    .select({ id: photographersTable.id, name: photographersTable.name })
+    .select({ id: photographersTable.id, name: photographersTable.name, email: photographersTable.email })
     .from(photographersTable)
     .where(eq(photographersTable.id, photographerId));
 
@@ -108,6 +108,11 @@ router.post("/invites/send-email", requireAdmin, async (req: any, res) => {
       createdByAdminId: req.adminId ?? null,
     })
     .returning();
+
+  // Persist email on photographer so future invites can be pre-filled.
+  if (!photographer.email || photographer.email.trim().toLowerCase() !== email.trim().toLowerCase()) {
+    await db.update(photographersTable).set({ email: email.trim() }).where(eq(photographersTable.id, photographerId));
+  }
 
   // Send the invite email.
   const joinUrl = `${process.env.APP_ORIGIN ?? "https://photomatrix.repl.co"}/join/${token}`;
