@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X, Heart, UserPlus } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
-import { Show, useAuth, useUser, SignInButton } from "@clerk/react";
+import { Show, useAuth, SignInButton, SignOutButton, UserButton } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
@@ -12,7 +12,6 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user } = useUser();
   const { isSignedIn } = useAuth();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -104,20 +103,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </Link>
               ))}
-              <Link href="/my-photos">
-                <Button
-                  variant={location.startsWith("/my-photos") ? "default" : "outline"}
-                  size="sm"
-                  className="gap-2 border-border/50"
-                >
-                  {user?.imageUrl ? (
-                    <img src={user.imageUrl} alt={user.fullName || ""} className="w-5 h-5 rounded-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-4 h-4" />
-                  )}
-                  <span className="hidden sm:inline">{t("nav.myPhotos")}</span>
+              <UserButton afterSignOutUrl={basePath + "/"}>
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label={t("nav.myPhotos")}
+                    labelIcon={<ImageIcon className="w-4 h-4" />}
+                    href={basePath + "/my-photos"}
+                  />
+                </UserButton.MenuItems>
+              </UserButton>
+              <SignOutButton redirectUrl={basePath + "/"}>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" title={t("nav.signOut")}>
+                  <LogOut className="w-4 h-4" />
                 </Button>
-              </Link>
+              </SignOutButton>
             </Show>
 
             {/* Session-based admin indicator */}
