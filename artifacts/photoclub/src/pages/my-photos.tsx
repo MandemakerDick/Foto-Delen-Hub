@@ -52,6 +52,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const homePath = `${basePath}/`;
 
 type PhotographerProfile = {
   id: number;
@@ -873,6 +874,11 @@ function MyPhotosDashboard({
   const { signOut } = useClerk();
   const { user } = useUser();
 
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.assign(homePath);
+  };
+
   const { data: photos = [], isLoading } = useListPhotos(
     { photographerId: profile.id },
     { query: { queryKey: getListPhotosQueryKey({ photographerId: profile.id }) } },
@@ -1003,7 +1009,7 @@ function MyPhotosDashboard({
             variant="ghost"
             size="sm"
             className="col-span-2 w-full justify-center gap-2 text-muted-foreground sm:col-auto sm:w-auto"
-            onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            onClick={handleSignOut}
           >
             <LogOut className="w-4 h-4" />
             {t("nav.signOut")}

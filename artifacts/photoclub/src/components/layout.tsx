@@ -3,16 +3,27 @@ import { useTranslation } from "react-i18next";
 import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X, Heart, UserPlus, KeyRound } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
-import { Show, useAuth, SignInButton, SignOutButton, UserButton } from "@clerk/react";
+import { Show, useAuth, useClerk, SignInButton, UserButton } from "@clerk/react";
 import { useGetAdminStatus, getGetAdminStatusQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const homePath = `${basePath}/`;
+
+// Clerk reuses cardBox for sign-in forms and the avatar's account profile.
+// The profile needs room for its navigation column plus page content, while
+// sign-in should remain compact, so scope the wider card to UserButton only.
+const accountProfileAppearance = {
+  elements: {
+    cardBox: "!w-[min(760px,calc(100vw-1rem))] sm:!w-[min(760px,calc(100vw-3rem))]",
+  },
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { isSignedIn } = useAuth();
+  const { signOut } = useClerk();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: adminStatus } = useGetAdminStatus({
@@ -36,8 +47,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isSessionAdmin = !!adminStatus?.isAdmin && (!isSignedIn || !!adminStatus?.sessionAdminActive);
 
   const handleSessionSignOut = async () => {
-    await fetch(`${basePath}/api/admins/logout`, { method: "POST", credentials: "include" });
-    await queryClient.invalidateQueries({ queryKey: getGetAdminStatusQueryKey() });
+    try {
+      await fetch(`${basePath}/api/admins/logout`, { method: "POST", credentials: "include" });
+    } finally {
+      window.location.assign(homePath);
+    }
+  };
+
+  const handleClerkSignOut = async () => {
+    await signOut();
+    window.location.assign(homePath);
   };
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -116,7 +135,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </Link>
               ))}
-              <UserButton>
+              <UserButton userProfileProps={{ appearance: accountProfileAppearance }}>
                 <UserButton.MenuItems>
                   <UserButton.Link
                     label={t("nav.myPhotos")}
@@ -251,12 +270,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <p className="px-3 pb-2 text-xs leading-relaxed text-muted-foreground">
                     {t("nav.accountSettingsHint")}
                   </p>
-                  <SignOutButton redirectUrl={basePath + "/"}>
-                    <button className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium tracking-wide text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground">
-                      <LogOut className="h-4 w-4 shrink-0" />
-                      {t("nav.signOut")}
-                    </button>
-                  </SignOutButton>
+                  <button
+                    type="button"
+                    onClick={handleClerkSignOut}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium tracking-wide text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+                  >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    {t("nav.signOut")}
+                  </button>
                 </>
               )}
             </nav>
