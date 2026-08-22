@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,9 +18,9 @@ export default function Join() {
   const [manualToken, setManualToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [autoAttempted, setAutoAttempted] = useState(false);
+  const autoRedeemedToken = useRef<string | null>(null);
 
-  const redeem = async (token: string) => {
+  const redeem = useCallback(async (token: string) => {
     if (!token.trim()) return;
     setLoading(true);
     try {
@@ -46,15 +46,15 @@ export default function Join() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [queryClient, t, toast]);
 
   // Auto-redeem from URL token on mount
   useEffect(() => {
-    if (tokenParam && !autoAttempted) {
-      setAutoAttempted(true);
-      redeem(tokenParam);
+    if (tokenParam && autoRedeemedToken.current !== tokenParam) {
+      autoRedeemedToken.current = tokenParam;
+      void redeem(tokenParam);
     }
-  }, [tokenParam]);
+  }, [tokenParam, redeem]);
 
   if (success) {
     return (

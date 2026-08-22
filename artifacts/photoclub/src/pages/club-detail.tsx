@@ -44,6 +44,7 @@ export default function ClubDetail() {
   const { data: club, isLoading: clubLoading } = useGetClub(clubId, {
     query: { enabled: !!clubId, queryKey: getGetClubQueryKey(clubId) },
   });
+  const clubName = club?.name;
 
   const { data: members } = useListPhotographers(
     { clubId },
@@ -100,11 +101,11 @@ export default function ClubDetail() {
   // array of strings by React 19's document-metadata hoisting path, which
   // yields an empty <title>.  Set document.title imperatively instead.
   useEffect(() => {
-    if (!club) return;
+    if (!clubName) return;
     const prev = document.title;
-    document.title = `${club.name} — PhotoMatrix`;
+    document.title = `${clubName} — PhotoMatrix`;
     return () => { document.title = prev; };
-  }, [club?.name]);
+  }, [clubName]);
 
   const selectedMember = members?.find((m) => m.id === selectedPhotographerId) ?? null;
 

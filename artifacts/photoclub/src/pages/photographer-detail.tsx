@@ -41,6 +41,7 @@ export default function PhotographerDetail() {
   const { data: photographer, isLoading: photographerLoading } = useGetPhotographer(photographerId, {
     query: { enabled: !!photographerId, queryKey: getGetPhotographerQueryKey(photographerId) },
   });
+  const photographerName = photographer?.name;
   const { data: photos, isLoading: photosLoading } = useListPhotos({ photographerId });
   const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
   const { data: themes } = useListThemes();
@@ -83,11 +84,11 @@ export default function PhotographerDetail() {
   // array of strings by React 19's document-metadata hoisting path, which
   // yields an empty <title>.  Set document.title imperatively instead.
   useEffect(() => {
-    if (!photographer) return;
+    if (!photographerName) return;
     const prev = document.title;
-    document.title = `${photographer.name} — PhotoMatrix`;
+    document.title = `${photographerName} — PhotoMatrix`;
     return () => { document.title = prev; };
-  }, [photographer?.name]);
+  }, [photographerName]);
 
   // Derive unique themes present in this photographer's photos (for filter buttons)
   const portfolioThemes = useMemo(() => {
