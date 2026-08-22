@@ -62,8 +62,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotoMatrix</span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-6">
+          {/* Full desktop nav — use the labeled menu below 2xl so compact
+              desktop/tablet widths do not clip the navigation or account actions. */}
+          <nav className="hidden 2xl:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -78,20 +79,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            {/* Hamburger — visible below md */}
+            {/* Labeled navigation menu — visible until the full desktop layout fits. */}
             <Button
               variant="ghost"
-              size="icon"
-              className="md:hidden h-9 w-9 text-muted-foreground"
+              size="sm"
+              className="2xl:hidden h-9 gap-1.5 px-2 text-muted-foreground"
               onClick={() => setMobileMenuOpen((o) => !o)}
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <span className="hidden sm:inline">{t("nav.menu")}</span>
             </Button>
             {/* Clerk signed-in user — keep the narrow header focused on menu + avatar. */}
             <Show when="signed-in">
+              <Link href="/my-photos" className="hidden xl:inline-block" data-testid="desktop-my-photos">
+                <Button
+                  variant={location.startsWith("/my-photos") ? "default" : "ghost"}
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground"
+                  title={t("nav.myPhotos")}
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span>{t("nav.myPhotos")}</span>
+                </Button>
+              </Link>
               {personalItems.map((item) => (
-                <Link key={item.href} href={item.href} className="hidden md:block">
+                <Link key={item.href} href={item.href} className="hidden 2xl:block">
                   <Button
                     variant={location.startsWith(item.href) ? "default" : "ghost"}
                     size="sm"
@@ -178,9 +191,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Mobile nav dropdown — slides in below the bar, hidden on md+ */}
+        {/* Labeled nav dropdown — slides in below the bar until full desktop width. */}
         {mobileMenuOpen && (
-          <div data-testid="mobile-nav" className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
+          <div data-testid="mobile-nav" className="2xl:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
               <p className="px-3 pb-1 pt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 {t("nav.explore")}

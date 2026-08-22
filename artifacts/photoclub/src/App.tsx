@@ -111,8 +111,10 @@ const clerkAppearance = {
     otpCodeFieldInput: "bg-[#1c1c1b] border-[#2e2d2c] text-[#e8e3dc]",
     formFieldRow: "",
     main: "",
-    modalBackdrop: "p-3 sm:p-6",
-    modalContent: "w-[calc(100vw-1.5rem)] max-w-[440px] max-h-[calc(100dvh-1.5rem)] overflow-x-hidden overflow-y-auto",
+    modalBackdrop: "p-2 sm:p-6",
+    // Account management uses a two-column Clerk view. It needs more room than
+    // the sign-in card, while still staying entirely inside the viewport.
+    modalContent: "!w-[calc(100vw-1rem)] !max-w-[760px] max-h-[calc(100dvh-1rem)] overflow-auto sm:!w-[calc(100vw-3rem)] sm:max-h-[calc(100dvh-3rem)]",
     modalCloseButton: "m-1",
     userButtonPopoverCard: "bg-[#111110] border border-[#2e2d2c] rounded-lg shadow-xl",
     userButtonPopoverMain: "bg-[#111110]",

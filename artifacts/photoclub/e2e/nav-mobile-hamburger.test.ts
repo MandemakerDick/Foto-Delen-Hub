@@ -1,12 +1,12 @@
 /**
  * Navigation menu — narrow desktop / mobile hamburger smoke test
  *
- * Regression guard: at viewports below the `md` breakpoint (768 px) the
- * desktop nav links are hidden and a hamburger button takes their place.
+ * Regression guard: at viewports below the `2xl` breakpoint (1536 px) the
+ * full desktop nav links are hidden and a hamburger button takes their place.
  * This test pins that behaviour so a future breakpoint or layout change
  * cannot silently remove access to navigation without failing CI.
  *
- * Checks at 600 × 800 px (below md, above typical phone):
+ * Checks at 600 × 800 px (a compact viewport above typical phone):
  *   1. Desktop nav links are NOT visible.
  *   2. Hamburger button IS visible.
  *   3. Clicking the hamburger reveals at least one nav link (Gallery).
@@ -237,14 +237,13 @@ test("hamburger menu stays closed after tapping a link on a 320 px phone", async
   await context.close();
 });
 
-test("hamburger is absent and desktop nav is visible at the md breakpoint (768 × 1024)", async ({
+test("hamburger stays available at a compact desktop width (960 × 800)", async ({
   browser,
 }) => {
-  // 768 × 1024 px — exactly at Tailwind's md breakpoint boundary.
-  // At this width `md:hidden` kicks in so the hamburger must not be shown,
-  // and `hidden md:flex` makes the desktop nav visible.
+  // 960 × 800 px — wide enough for a desktop browser, but below the 2xl
+  // breakpoint where the full nav would crowd signed-in account actions.
   const context = await browser.newContext({
-    viewport: { width: 768, height: 1024 },
+    viewport: { width: 960, height: 800 },
   });
   const page = await context.newPage();
 
@@ -255,14 +254,17 @@ test("hamburger is absent and desktop nav is visible at the md breakpoint (768 �
   await page.keyboard.press("Escape");
   await page.waitForTimeout(300);
 
-  // 1. Hamburger button must NOT be visible at 768 px+.
+  // 1. The compact desktop menu keeps navigation discoverable.
   const hamburger = page.getByRole("button", { name: /toggle menu/i });
-  await expect(hamburger).toBeHidden();
+  await expect(hamburger).toBeVisible();
 
-  // 2. Desktop nav links must be visible.
-  //    The desktop <nav> has class "hidden md:flex" — at 768 px it becomes visible.
+  // 2. The full desktop nav must stay hidden until there is enough room.
   const desktopNav = page.locator("header nav.hidden");
-  await expect(desktopNav).toBeVisible();
+  await expect(desktopNav).toBeHidden();
+
+  // 3. Opening the compact menu still exposes the site navigation.
+  await hamburger.click();
+  await expect(page.getByRole("link", { name: /gallery/i }).last()).toBeVisible();
 
   await context.close();
 });
