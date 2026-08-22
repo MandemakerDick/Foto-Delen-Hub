@@ -12,6 +12,7 @@
     "myPhotoMatrix": "My PhotoMatrix",
     "account": "Account",
     "accountSettingsHint": "Use the profile icon in the top bar for account settings and security.",
+    "securityPasskeys": "Security & passkeys",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "adminLogin": "Admin"

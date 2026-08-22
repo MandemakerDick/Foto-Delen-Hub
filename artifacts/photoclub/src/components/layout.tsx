@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X, Heart, UserPlus } from "lucide-react";
+import { Camera, Users, LayoutDashboard, User, Settings, LogIn, ImageIcon, ShieldCheck, LogOut, Menu, X, Heart, UserPlus, KeyRound } from "lucide-react";
 import { Button } from "./ui/button";
 import { LanguageSwitcher } from "./language-switcher";
 import { Show, useAuth, SignInButton, SignOutButton, UserButton } from "@clerk/react";
@@ -103,12 +103,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </Link>
               ))}
-              <UserButton afterSignOutUrl={basePath + "/"}>
+              <UserButton>
                 <UserButton.MenuItems>
                   <UserButton.Link
                     label={t("nav.myPhotos")}
                     labelIcon={<ImageIcon className="w-4 h-4" />}
                     href={basePath + "/my-photos"}
+                  />
+                  <UserButton.Action
+                    label={t("nav.securityPasskeys")}
+                    labelIcon={<KeyRound className="w-4 h-4" />}
+                    open="security"
                   />
                 </UserButton.MenuItems>
               </UserButton>

@@ -114,6 +114,14 @@ const clerkAppearance = {
     modalBackdrop: "p-3 sm:p-6",
     modalContent: "w-[calc(100vw-1.5rem)] max-w-[440px] max-h-[calc(100dvh-1.5rem)] overflow-x-hidden overflow-y-auto",
     modalCloseButton: "m-1",
+    userButtonPopoverCard: "bg-[#111110] border border-[#2e2d2c] rounded-lg shadow-xl",
+    userButtonPopoverMain: "bg-[#111110]",
+    userButtonPopoverActionButton: "!text-[#e8e3dc] hover:bg-[#2e2d2c]",
+    userButtonPopoverActionButtonText: "!text-[#e8e3dc]",
+    userButtonPopoverActionButtonIcon: "!text-[#8a8480]",
+    userButtonPopoverFooter: "border-t border-[#2e2d2c]",
+    userPreviewMainIdentifier: "!text-[#e8e3dc]",
+    userPreviewSecondaryIdentifier: "!text-[#8a8480]",
   },
 };
 
@@ -207,6 +215,7 @@ function ClerkProviderWithRoutes() {
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
+      afterSignOutUrl={basePath + "/"}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       localization={{
