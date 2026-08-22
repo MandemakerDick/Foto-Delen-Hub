@@ -237,6 +237,42 @@ test("hamburger menu stays closed after tapping a link on a 320 px phone", async
   await context.close();
 });
 
+test("hamburger menu fits the Samsung Fold cover viewport (360 × 800)", async ({
+  browser,
+}) => {
+  // 360 × 800 px — representative of the narrow Samsung Galaxy Z Fold cover
+  // screen. The dropdown must remain fully inside this viewport.
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  await page.goto("/photos", { waitUntil: "networkidle" });
+
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  const hamburger = page.getByRole("button", { name: /toggle menu/i });
+  await expect(hamburger).toBeVisible();
+  await hamburger.click();
+
+  const mobileNav = page.getByTestId("mobile-nav");
+  await expect(mobileNav).toBeVisible();
+
+  const menuBox = await mobileNav.boundingBox();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.x).toBeGreaterThanOrEqual(0);
+  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(360);
+
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+
+  await context.close();
+});
+
 test("hamburger stays available at a compact desktop width (960 × 800)", async ({
   browser,
 }) => {

@@ -195,11 +195,11 @@ export default function Gallery() {
               <Shuffle className="w-4 h-4" />
             </Button>
           )}
-          <div className="flex items-center gap-2 rounded-md border border-border/50 bg-background px-3 py-1.5">
+          <div className="flex max-w-full items-center gap-1.5 rounded-md border border-border/50 bg-background px-2 py-1.5 sm:gap-2 sm:px-3">
             <CalendarDays className="w-4 h-4 shrink-0 text-muted-foreground" />
-            <Input data-testid="gallery-date-from" aria-label={t("gallery.dateFrom")} type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-7 w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
-            <span className="text-xs text-muted-foreground shrink-0">{t("gallery.dateTo")}</span>
-            <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
+            <Input data-testid="gallery-date-from" aria-label={t("gallery.dateFrom")} type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-7 w-24 sm:w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
+            <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{t("gallery.dateTo")}</span>
+            <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-24 sm:w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
           </div>
 
           {activeFiltersCount > 0 && (

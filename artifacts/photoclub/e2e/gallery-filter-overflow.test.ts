@@ -134,3 +134,35 @@ test("gallery search input does not extend past the viewport width on mobile (39
 
   await context.close();
 });
+
+test("gallery date filters fit the Samsung Fold cover viewport (360 × 800)", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+  });
+  const page = await context.newPage();
+
+  await stubApiCalls(page);
+  await page.goto("/photos", { waitUntil: "networkidle" });
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
+  const dateTo = page.getByTestId("gallery-date-to");
+  await expect(dateTo).toBeVisible();
+
+  const { clientWidth, scrollWidth, dateToRight } = await page.evaluate(() => {
+    const dateToInput = document.querySelector("[data-testid='gallery-date-to']");
+    const dateToRect = dateToInput?.getBoundingClientRect();
+    return {
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      dateToRight: dateToRect?.right ?? 0,
+    };
+  });
+
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+  expect(dateToRight).toBeLessThanOrEqual(clientWidth);
+
+  await context.close();
+});
