@@ -17,9 +17,11 @@ A public-facing portfolio platform where photographers can share their work, org
 - Theme-based collections with contributor counts
 - Photo upload with URL import support
 - Likes and comments on photos
+- Members can follow photographers and view liked photos
 - Theme proposal workflow (photographer proposes → admin approves or rejects → email notification sent)
 - Photographers can withdraw their own pending proposals
-- Invite-token based registration
+- Invite-token based registration with pre-linked photographer profiles
+- Club-based review sessions with photo submissions and peer reviews
 - Dutch / English i18n
 - Admin panel for managing photographers, clubs, themes, and invites
 - Installable as a PWA (Add to Home Screen on Android and iOS)
@@ -60,7 +62,7 @@ PhotoMatrix-monorepo/
 - **Database:** PostgreSQL (Replit managed)
 - **Auth:** Clerk (photographers) + session-based (admins)
 - **Storage:** Replit Object Storage (photo uploads and URL imports)
-- **Email:** Resend (proposal approval/rejection notifications)
+- **Email:** Resend (proposal approval/rejection and photographer invitation emails)
 - **Package manager:** pnpm workspaces
 
 ---
@@ -73,6 +75,7 @@ PhotoMatrix-monorepo/
 | `id` | serial PK | |
 | `name` | text | |
 | `bio` | text | |
+| `email` | text | Admin-maintained contact email, used to pre-fill invitations |
 | `avatar_url` | text | |
 | `clerk_user_id` | text | Links to Clerk account |
 | `created_at` | timestamp | |
@@ -137,7 +140,7 @@ PhotoMatrix-monorepo/
 |---|---|---|
 | `id` | serial PK | |
 | `photo_id` | integer | FK → photo |
-| `photographer_id` | integer | FK → photographer |
+| `photographer_id` | integer, nullable | FK → photographer; author when linked |
 | `body` | text | |
 | `created_at` | timestamp | |
 
@@ -152,6 +155,24 @@ PhotoMatrix-monorepo/
 | `created_at` | timestamp | |
 
 > When approved, a new `theme` row is created and the proposer receives an email notification. Pending proposals can be withdrawn by the proposer.
+
+### `photo_like` *(member reactions)*
+| Column | Type | Notes |
+|---|---|---|
+| `photo_id` | integer | Part of composite PK; references photo |
+| `clerk_user_id` | text | Part of composite PK; the member who liked the photo |
+| `created_at` | timestamp | |
+
+> The composite primary key prevents one member from liking the same photo more than once. `photo.like_count` remains the public aggregate total.
+
+### `photographer_follow` *(member follows)*
+| Column | Type | Notes |
+|---|---|---|
+| `photographer_id` | integer | Part of composite PK; references photographer |
+| `clerk_user_id` | text | Part of composite PK; the member who follows |
+| `created_at` | timestamp | |
+
+> Follows are private member-to-photographer relationships. The member is identified by Clerk rather than by a separate local user table.
 
 ### `admin`
 | Column | Type | Notes |
@@ -171,11 +192,60 @@ PhotoMatrix-monorepo/
 | `token` | text | Unique registration token |
 | `label` | text | Human-readable description |
 | `created_by_admin_id` | integer | FK → admin |
+| `photographer_id` | integer, nullable | FK → photographer; profile to claim |
 | `max_uses` | integer | Null = unlimited |
 | `use_count` | integer | |
 | `expires_at` | timestamp | |
 | `revoked` | boolean | |
 | `created_at` | timestamp | |
+
+> Photographer invitations use a single-use token that is normally valid for 30 days. The linked photographer profile lets the recipient claim the correct profile automatically after signing in.
+
+### `review_session`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `club_id` | integer | FK → club |
+| `title` | text | |
+| `description` | text | |
+| `status` | text | `open` / `reviewing` / `closed`; defaults to `open` |
+| `created_by_admin_id` | integer | FK → admin |
+| `scheduled_for` | timestamp | Optional scheduled review date |
+| `submission_deadline` | timestamp | Optional deadline for submissions |
+| `max_photos_per_member` | integer | Optional submission limit |
+| `created_at` | timestamp | |
+| `closed_at` | timestamp | Set when the session is closed |
+
+> A review session belongs to one club. Photographers submit photos while it is open; reviewing locks submissions; closed sessions are archived.
+
+### `session_photo`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `session_id` | integer | FK → review_session |
+| `photo_id` | integer | FK → photo |
+| `photographer_id` | integer | FK → photographer who submitted it |
+| `sort_order` | integer | Presentation order; defaults to 0 |
+| `submitted_at` | timestamp | |
+
+### `session_reviewer`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `session_id` | integer | FK → review_session |
+| `photographer_id` | integer | FK → photographer designated as reviewer |
+| `added_at` | timestamp | |
+
+### `photo_review`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | serial PK | |
+| `session_photo_id` | integer | FK → session_photo |
+| `reviewer_photographer_id` | integer | FK → photographer who submitted the review |
+| `rating` | integer | Rating from 1 to 5 |
+| `comment` | text | Optional review comment |
+| `created_at` | timestamp | |
+| `updated_at` | timestamp | |
 
 ---
 
@@ -191,6 +261,14 @@ club ◄──── photographer_club ────► photographer ◄───
                                 photo (──► photographer, ──► club, ──► theme)
                                     ▲
                                 comment (──► photo, ──► photographer)
+
+photo ◄──── photo_like ────► Clerk member
+photographer ◄──── photographer_follow ────► Clerk member
+
+club ◄──── review_session
+review_session ◄──── session_photo ────► photo
+review_session ◄──── session_reviewer ────► photographer
+session_photo ◄──── photo_review ────► photographer (reviewer)
 ```
 
 Arrow direction: `A ──► B` means A holds a FK to B (A references B).
