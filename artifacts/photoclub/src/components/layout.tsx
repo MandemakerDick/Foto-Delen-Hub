@@ -55,7 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30">
-      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md relative">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             <Camera className="w-6 h-6" />
@@ -130,11 +130,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   />
                 </UserButton.MenuItems>
               </UserButton>
-              <SignOutButton redirectUrl={basePath + "/"}>
-                <Button variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground md:inline-flex" title={t("nav.signOut")}>
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </SignOutButton>
             </Show>
 
             {/* Session-based admin indicator */}
@@ -191,10 +186,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Labeled nav dropdown — slides in below the bar until full desktop width. */}
+        {/* Compact nav dropdown — anchored to the right side of the header. */}
         {mobileMenuOpen && (
-          <div data-testid="mobile-nav" className="2xl:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
-            <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
+          <div
+            data-testid="mobile-nav"
+            className="2xl:hidden absolute right-4 top-full z-50 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5rem)] overflow-y-auto rounded-b-lg border-x border-b border-border/50 bg-background/95 shadow-xl backdrop-blur-md"
+          >
+            <nav className="px-4 py-3 flex flex-col gap-1">
               <p className="px-3 pb-1 pt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 {t("nav.explore")}
               </p>

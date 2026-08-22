@@ -82,7 +82,7 @@ test("hamburger menu is present and functional below the md breakpoint (600 × 8
   await page.waitForTimeout(300);
 
   // 1. Desktop nav links must NOT be visible at this width.
-  //    The desktop <nav> has class "hidden md:flex" — all its links are hidden.
+  //    The desktop <nav> has class "hidden 2xl:flex" — all its links are hidden.
   const desktopNav = page.locator("header nav.hidden");
   await expect(desktopNav).toBeHidden();
 
@@ -93,7 +93,7 @@ test("hamburger menu is present and functional below the md breakpoint (600 × 8
   // 3. Clicking the hamburger must reveal at least the Gallery nav link.
   await hamburger.click();
 
-  // The mobile dropdown contains links inside "md:hidden" panel.
+  // The compact dropdown contains links inside the "2xl:hidden" panel.
   // We look for the Gallery link that becomes visible in the dropdown.
   const galleryLink = page.getByRole("link", { name: /gallery/i }).last();
   await expect(galleryLink).toBeVisible();
@@ -264,7 +264,13 @@ test("hamburger stays available at a compact desktop width (960 × 800)", async 
 
   // 3. Opening the compact menu still exposes the site navigation.
   await hamburger.click();
+  const mobileNav = page.getByTestId("mobile-nav");
+  await expect(mobileNav).toBeVisible();
   await expect(page.getByRole("link", { name: /gallery/i }).last()).toBeVisible();
+  const menuBox = await mobileNav.boundingBox();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.width).toBeLessThan(500);
+  expect(menuBox!.x).toBeGreaterThan(400);
 
   await context.close();
 });
