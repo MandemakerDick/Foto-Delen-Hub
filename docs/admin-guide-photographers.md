@@ -1,8 +1,8 @@
-# PhotoMatrix — Admin Guide: Managing Photographers
+# PhotoMatrix — Admin Guide: Managing Photographers and Importing Photos
 
-This guide covers the full lifecycle of a photographer in PhotoMatrix: creating their profile, sending an invite so they can claim the profile and sign in, editing existing profiles, and removing members.
+This guide covers the full lifecycle of a photographer in PhotoMatrix: creating their profile, sending an invite so they can claim the profile and sign in, editing existing profiles, removing members, and importing photos from a public portfolio URL.
 
-All photographer management is done from the **Manage** page (`/manage`) → **Photographer** tab.
+Photographer management and URL imports are done from the **Manage** page (`/manage`). Photographer profiles use the **Photographer** tab; portfolio imports use the **Import** tab.
 
 ---
 
@@ -15,6 +15,7 @@ All photographer management is done from the **Manage** page (`/manage`) → **P
 5. [Re-sending an Invite](#5-re-sending-an-invite)
 6. [Editing a Photographer Profile](#6-editing-a-photographer-profile)
 7. [Removing a Photographer](#7-removing-a-photographer)
+8. [Importing Photos from a URL](#8-importing-photos-from-a-url)
 
 ---
 
@@ -131,6 +132,112 @@ Click the **Delete** (bin) button next to a photographer in the list.
 - All photos uploaded by that photographer are deleted first.
 - If the photographer has a linked account and a removal reason is provided, a notification email is sent to them automatically before deletion.
 - The action is **permanent** and cannot be undone.
+
+---
+
+## 8. Importing Photos from a URL
+
+The **Import** tab lets you pull photos from any public photographer portfolio page and add them to PhotoMatrix in four steps — without ever leaving the browser.
+
+### 8.1 Opening the Import Tab
+
+1. Sign in as an admin and navigate to **Manage** (`/manage`).
+2. Select the **Import** tab in the top navigation row.
+
+### 8.2 Step 1 — Enter a URL and Choose Storage Mode
+
+| Field | What to do |
+|---|---|
+| **Portfolio URL** | Paste the full URL of the photographer's portfolio or gallery page (e.g. `https://janedoe.photography/gallery`). |
+| **Storage mode** | Choose how images are stored (see below). |
+
+#### Storage modes
+
+**Download & store** *(recommended)*
+
+The server downloads each selected image and saves it in PhotoMatrix's own object storage. Photos remain available even if the original website changes or disappears.
+
+**Link only**
+
+Records are created that point back to the original image URL. No storage is used, but photos will break if the source removes them.
+
+Click **Scan for Photos** when ready. The server fetches the page and extracts every `<img>` element. Large pages may take a few seconds.
+
+> **Note:** Password-protected pages, pages that require JavaScript rendering, or sites that block bots may not scan successfully. If the scan returns no photos, check that the URL is publicly accessible.
+
+### 8.3 Step 2 — Select Photos
+
+After a successful scan, a thumbnail grid appears showing every image found on the page.
+
+- Click a thumbnail (or its checkbox) to **select / deselect** it.
+- Use **Select All / Deselect All** to toggle the whole set.
+- The counter in the top-right shows how many photos are currently selected.
+- The original `alt` text appears below each thumbnail as a preview of the title that will be used.
+
+Click **Next: Assign & Import** to continue. You must select at least one photo.
+
+### 8.4 Step 3 — Assign Photographer, Club, and Titles
+
+This is where you tell PhotoMatrix who took the photos and optionally group them.
+
+#### Photographer
+
+| Option | When to use |
+|---|---|
+| **+ Add new photographer** | The photographer does not yet exist in PhotoMatrix. Fill in their name and (optionally) a short bio — the bio is pre-filled from text the scanner found on the page; edit it as needed. |
+| Select an existing name | The photographer already has a profile. Their photos will be added to their existing portfolio. |
+
+> The **Import** button stays disabled until a photographer name is provided when **Add new** is selected.
+
+#### Club
+
+A club is **required** before you can import. Select an existing club from the list, or choose **+ Add new club** and type the club name. The Import button stays disabled until a club is chosen.
+
+#### Per-photo Title and Theme
+
+Every selected photo appears in a scrollable list with two editable fields:
+
+| Field | Notes |
+|---|---|
+| **Title** | **Required.** The scanner pre-fills this from the image's `alt` text. Titles that look like camera filenames (e.g. `IMG_20240315_123456.jpg`, `DSC_0042`, `PXL_20230901`) are automatically cleared and shown with a **red border** — you must type a real title before importing. |
+| **Theme** | Optional. Assign the photo to one of the site's themes. Defaults to **No theme**. |
+
+> You can scroll through the list and edit titles/themes before clicking **Import**. All red-bordered fields must be filled in — if you click Import with any title still empty, a toast message will tell you which photo needs a title.
+
+Click **Import *N* photos** to start. A spinner shows progress; do not close the tab while importing.
+
+### 8.5 Step 4 — Import Complete
+
+A confirmation screen shows:
+
+- How many photos were **imported successfully**.
+- How many **failed** (network errors, unsupported formats, etc.).
+
+Click **Import More** to return to Step 1 and start a new import session.
+
+> Photos that fail do not create partial records. You can safely re-scan the same URL and import only the failed ones.
+
+### 8.6 Tips and Edge Cases
+
+#### Photographer already exists but their name is slightly different
+
+Choose their existing entry from the dropdown rather than creating a duplicate. You can always edit the photographer's name and bio later from the **Photographers** tab.
+
+#### Some photos scanned but are showing as broken thumbnails
+
+The proxy preview in Step 2 fetches images through the server to bypass CORS restrictions. A broken thumbnail usually means the source URL requires a session cookie or referrer header. Those photos will most likely fail to download — deselect them.
+
+#### File-slug titles were cleared but the scanner found no `alt` text
+
+This happens on sites that use filenames as `alt` attributes or that omit `alt` entirely. Simply type a descriptive title in the red field.
+
+#### “Download & store” vs “Link only” — which to choose?
+
+Use **Download & store** unless you are running a storage-constrained pilot or the photographer explicitly wants to keep photos on their own server. Link-only imports are fragile and can leave broken images in the gallery if the source disappears.
+
+#### Importing the same photo twice
+
+The import does not deduplicate by image URL. If you re-scan and re-import the same URL, you will create duplicate records. Always check whether the photos are already in the gallery before re-importing.
 
 ---
 
