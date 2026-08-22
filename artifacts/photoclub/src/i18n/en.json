@@ -8,6 +8,10 @@
     "myPhotos": "My Photos",
     "likedPhotos": "Liked Photos",
     "following": "Following",
+    "explore": "Explore",
+    "myPhotoMatrix": "My PhotoMatrix",
+    "account": "Account",
+    "accountSettingsHint": "Use the profile icon in the top bar for account settings and security.",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "adminLogin": "Admin"

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle, GripVertical, ArrowUpDown, Clock } from "lucide-react";
+import { Camera, LogOut, Link2, PlusCircle, Trash2, User, ExternalLink, Pencil, Check, X, Heart, MessageCircle, GripVertical, ArrowUpDown, Clock, ChevronDown } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -365,25 +365,25 @@ function EditProfilePanel({
   if (!open) {
     return (
       <div>
-        <div className="flex items-center gap-2">
-          <h1 className="font-serif text-3xl font-bold">{profile.name}</h1>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h1 className="min-w-0 break-words font-serif text-2xl font-bold leading-tight sm:text-3xl">{profile.name}</h1>
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+            className="h-7 shrink-0 px-1.5 text-xs gap-1 text-muted-foreground hover:text-foreground sm:px-2"
             onClick={() => setOpen(true)}
           >
             <Pencil className="w-3 h-3" />
-            {t("common.edit")}
+            <span className="hidden sm:inline">{t("common.edit")}</span>
           </Button>
         </div>
-        {profile.bio && <p className="text-sm text-muted-foreground mt-1 max-w-sm">{profile.bio}</p>}
+        {profile.bio && <p className="mt-1 max-w-sm break-words text-sm text-muted-foreground">{profile.bio}</p>}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2 min-w-[260px] max-w-sm">
+    <div className="flex w-full min-w-0 max-w-sm flex-col gap-2">
       <Input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -686,12 +686,12 @@ function EditThemesPanel({
           {t("myPhotos.proposeTheme")}
         </Button>
       ) : (
-        <div className="flex items-center gap-2 mt-1">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <Input
             value={proposeName}
             onChange={(e) => setProposeName(e.target.value)}
             placeholder={t("myPhotos.proposeThemePlaceholder")}
-            className="h-8 text-sm w-48 bg-background border-border/50"
+            className="h-8 w-full text-sm sm:w-48 bg-background border-border/50"
             onKeyDown={(e) => {
               if (e.key === "Escape") { setShowPropose(false); setProposeName(""); }
             }}
@@ -743,6 +743,7 @@ function MyProposalsSection({ photographerId }: { photographerId: number }) {
   const { toast } = useToast();
   const [proposals, setProposals] = useState<ThemeProposal[] | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const fetchProposals = () => {
     fetch("/api/themes/my-proposals", { credentials: "include" })
@@ -775,47 +776,58 @@ function MyProposalsSection({ photographerId }: { photographerId: number }) {
 
   return (
     <div className="mb-8 pb-6 border-b border-border/40">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">
-        {t("myPhotos.myProposals")}
-      </p>
-      <div className="flex flex-col gap-2">
-        {proposals.map((p) => (
-          <div key={p.id} className="flex items-center justify-between gap-3 py-1.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm font-medium truncate">{p.name}</span>
-              <span className="text-xs text-muted-foreground font-mono shrink-0">
-                {format(new Date(p.createdAt), "MMM d, yyyy")}
-              </span>
-            </div>
-            {p.status === "pending" && (
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge variant="secondary" className="gap-1 text-amber-600 bg-amber-500/10 border-amber-500/20">
-                  <Clock className="w-3 h-3" />
-                  {t("myPhotos.proposalStatusPending")}
-                </Badge>
-                <button
-                  onClick={() => handleWithdraw(p.id)}
-                  disabled={withdrawingId === p.id}
-                  className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                >
-                  {t("myPhotos.withdrawProposal")}
-                </button>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between py-1 text-left sm:hidden"
+        onClick={() => setMobileOpen((open) => !open)}
+        aria-expanded={mobileOpen}
+      >
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">{t("myPhotos.myProposals")}</span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${mobileOpen ? "rotate-180" : ""}`} />
+      </button>
+      <div className={`${mobileOpen ? "block pt-3" : "hidden"} sm:block`}>
+        <p className="hidden text-xs text-muted-foreground uppercase tracking-widest mb-3 sm:block">
+          {t("myPhotos.myProposals")}
+        </p>
+        <div className="flex flex-col gap-2">
+          {proposals.map((p) => (
+            <div key={p.id} className="flex flex-wrap items-start justify-between gap-3 py-1.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-sm font-medium">{p.name}</span>
+                <span className="shrink-0 text-xs font-mono text-muted-foreground">
+                  {format(new Date(p.createdAt), "MMM d, yyyy")}
+                </span>
               </div>
-            )}
-            {p.status === "approved" && (
-              <Badge variant="secondary" className="gap-1 shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
-                <Check className="w-3 h-3" />
-                {t("myPhotos.proposalStatusApproved")}
-              </Badge>
-            )}
-            {p.status === "rejected" && (
-              <Badge variant="secondary" className="gap-1 shrink-0 text-destructive bg-destructive/10 border-destructive/20">
-                <X className="w-3 h-3" />
-                {t("myPhotos.proposalStatusRejected")}
-              </Badge>
-            )}
-          </div>
-        ))}
+              {p.status === "pending" && (
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge variant="secondary" className="gap-1 text-amber-600 bg-amber-500/10 border-amber-500/20">
+                    <Clock className="w-3 h-3" />
+                    {t("myPhotos.proposalStatusPending")}
+                  </Badge>
+                  <button
+                    onClick={() => handleWithdraw(p.id)}
+                    disabled={withdrawingId === p.id}
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                  >
+                    {t("myPhotos.withdrawProposal")}
+                  </button>
+                </div>
+              )}
+              {p.status === "approved" && (
+                <Badge variant="secondary" className="gap-1 shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
+                  <Check className="w-3 h-3" />
+                  {t("myPhotos.proposalStatusApproved")}
+                </Badge>
+              )}
+              {p.status === "rejected" && (
+                <Badge variant="secondary" className="gap-1 shrink-0 text-destructive bg-destructive/10 border-destructive/20">
+                  <X className="w-3 h-3" />
+                  {t("myPhotos.proposalStatusRejected")}
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -918,6 +930,10 @@ function MyPhotosDashboard({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
   );
+  const [mobileSections, setMobileSections] = useState({ clubs: false, themes: false });
+  const toggleMobileSection = (section: "clubs" | "themes") => {
+    setMobileSections((current) => ({ ...current, [section]: !current[section] }));
+  };
 
   const startReordering = () => {
     setLocalOrder(photos.map((p) => ({ id: p.id, title: p.title, imageUrl: p.imageUrl })));
@@ -956,29 +972,29 @@ function MyPhotosDashboard({
   };
 
   return (
-    <div className="container mx-auto px-4 py-10">
+    <div className="container mx-auto px-4 py-6 sm:py-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <AvatarUploader profile={profile} onSaved={onProfileUpdated} />
-          <div>
+          <div className="min-w-0 flex-1">
             <EditProfilePanel profile={profile} onSaved={onProfileUpdated} />
             {user?.primaryEmailAddress && (
-              <p className="text-xs text-muted-foreground font-mono mt-1">
+              <p className="mt-1 truncate text-xs font-mono text-muted-foreground">
                 {user.primaryEmailAddress.emailAddress}
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/photographers/${profile.id}`}>
-            <Button variant="outline" size="sm" className="gap-2 border-border/50">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+          <Link href={`/photographers/${profile.id}`} className="min-w-0">
+            <Button variant="outline" size="sm" className="w-full gap-2 border-border/50 sm:w-auto">
               <ExternalLink className="w-3.5 h-3.5" />
               {t("myPhotos.publicProfile")}
             </Button>
           </Link>
-          <Link href="/upload">
-            <Button size="sm" className="gap-2">
+          <Link href="/upload" className="min-w-0">
+            <Button size="sm" className="w-full gap-2 sm:w-auto">
               <PlusCircle className="w-4 h-4" />
               {t("myPhotos.uploadPhoto")}
             </Button>
@@ -986,7 +1002,7 @@ function MyPhotosDashboard({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2 text-muted-foreground"
+            className="col-span-2 w-full justify-center gap-2 text-muted-foreground sm:col-auto sm:w-auto"
             onClick={() => signOut({ redirectUrl: basePath || "/" })}
           >
             <LogOut className="w-4 h-4" />
@@ -997,36 +1013,58 @@ function MyPhotosDashboard({
 
       {/* Club membership row */}
       <div className="mb-6 pb-6 border-b border-border/40">
-        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.clubMembership")}</p>
-        <EditClubPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
+        <button
+          type="button"
+          className="flex w-full items-center justify-between py-1 text-left sm:hidden"
+          onClick={() => toggleMobileSection("clubs")}
+          aria-expanded={mobileSections.clubs}
+        >
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">{t("myPhotos.clubMembership")}</span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${mobileSections.clubs ? "rotate-180" : ""}`} />
+        </button>
+        <div className={`${mobileSections.clubs ? "block pt-3" : "hidden"} sm:block`}>
+          <p className="hidden text-xs text-muted-foreground uppercase tracking-widest mb-2 sm:block">{t("myPhotos.clubMembership")}</p>
+          <EditClubPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
+        </div>
       </div>
 
       {/* Specialty themes row */}
       <div className="mb-8 pb-6 border-b border-border/40">
-        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t("myPhotos.specialtyThemes")}</p>
-        <EditThemesPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
+        <button
+          type="button"
+          className="flex w-full items-center justify-between py-1 text-left sm:hidden"
+          onClick={() => toggleMobileSection("themes")}
+          aria-expanded={mobileSections.themes}
+        >
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">{t("myPhotos.specialtyThemes")}</span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${mobileSections.themes ? "rotate-180" : ""}`} />
+        </button>
+        <div className={`${mobileSections.themes ? "block pt-3" : "hidden"} sm:block`}>
+          <p className="hidden text-xs text-muted-foreground uppercase tracking-widest mb-2 sm:block">{t("myPhotos.specialtyThemes")}</p>
+          <EditThemesPanel profile={profile} onSaved={onProfileUpdated} onProfilePartialUpdate={onProfilePartialUpdate} />
+        </div>
       </div>
 
       {/* My theme proposals */}
       <MyProposalsSection photographerId={profile.id} />
 
       {/* Stats bar */}
-      <div className="flex gap-8 mb-10 pb-8 border-b border-border/40">
+      <div className="mb-10 grid grid-cols-3 gap-3 border-b border-border/40 pb-8 sm:flex sm:gap-8">
         <div>
-          <div className="text-3xl font-serif font-bold">{photos.length}</div>
-          <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("search.photosSection")}</div>
+          <div className="text-2xl font-serif font-bold sm:text-3xl">{photos.length}</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">{t("search.photosSection")}</div>
         </div>
         <div>
-          <div className="text-3xl font-serif font-bold">
+          <div className="text-2xl font-serif font-bold sm:text-3xl">
             {photos.reduce((sum, p) => sum + Number(p.likeCount || 0), 0)}
           </div>
-          <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("myPhotos.totalLikes")}</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">{t("myPhotos.totalLikes")}</div>
         </div>
         <div>
-          <div className="text-3xl font-serif font-bold">
+          <div className="text-2xl font-serif font-bold sm:text-3xl">
             {photos.reduce((sum, p) => sum + Number(p.commentCount ?? 0), 0)}
           </div>
-          <div className="text-xs text-muted-foreground uppercase tracking-widest">{t("myPhotos.commentsReceived")}</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">{t("myPhotos.commentsReceived")}</div>
         </div>
       </div>
 

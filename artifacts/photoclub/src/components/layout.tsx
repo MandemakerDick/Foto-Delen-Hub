@@ -54,7 +54,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30 overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30">
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
@@ -88,10 +88,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            {/* Clerk signed-in user */}
+            {/* Clerk signed-in user — keep the narrow header focused on menu + avatar. */}
             <Show when="signed-in">
               {personalItems.map((item) => (
-                <Link key={item.href} href={item.href}>
+                <Link key={item.href} href={item.href} className="hidden md:block">
                   <Button
                     variant={location.startsWith(item.href) ? "default" : "ghost"}
                     size="sm"
@@ -113,7 +113,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </UserButton.MenuItems>
               </UserButton>
               <SignOutButton redirectUrl={basePath + "/"}>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" title={t("nav.signOut")}>
+                <Button variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground md:inline-flex" title={t("nav.signOut")}>
                   <LogOut className="w-4 h-4" />
                 </Button>
               </SignOutButton>
@@ -155,7 +155,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Show>
             )}
 
-            <LanguageSwitcher />
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
 
             {(adminStatus?.isAdmin || (isSignedIn && adminStatus?.totalAdmins === 0)) && (
               <Link href="/manage">
@@ -175,6 +177,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {mobileMenuOpen && (
           <div data-testid="mobile-nav" className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
             <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
+              <p className="px-3 pb-1 pt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                {t("nav.explore")}
+              </p>
               {navItems.map((item) => (
                 <Link
                   key={item.href}
@@ -190,21 +195,54 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </Link>
               ))}
-              {isSignedIn && personalItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium tracking-wide transition-colors ${
-                    location.startsWith(item.href)
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  }`}
-                >
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  {item.label}
-                </Link>
-              ))}
+              {isSignedIn && (
+                <>
+                  <div className="my-2 border-t border-border/50" />
+                  <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    {t("nav.myPhotoMatrix")}
+                  </p>
+                  <Link
+                    href="/my-photos"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium tracking-wide transition-colors ${
+                      location.startsWith("/my-photos")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    }`}
+                  >
+                    <ImageIcon className="w-4 h-4 shrink-0" />
+                    {t("nav.myPhotos")}
+                  </Link>
+                  {personalItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium tracking-wide transition-colors ${
+                        location.startsWith(item.href)
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      {item.label}
+                    </Link>
+                  ))}
+                  <div className="my-2 border-t border-border/50" />
+                  <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    {t("nav.account")}
+                  </p>
+                  <p className="px-3 pb-2 text-xs leading-relaxed text-muted-foreground">
+                    {t("nav.accountSettingsHint")}
+                  </p>
+                  <SignOutButton redirectUrl={basePath + "/"}>
+                    <button className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-medium tracking-wide text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground">
+                      <LogOut className="h-4 w-4 shrink-0" />
+                      {t("nav.signOut")}
+                    </button>
+                  </SignOutButton>
+                </>
+              )}
             </nav>
           </div>
         )}
