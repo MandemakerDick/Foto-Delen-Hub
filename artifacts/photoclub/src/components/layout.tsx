@@ -81,9 +81,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <span className="font-serif font-bold text-xl tracking-wider uppercase">PhotoMatrix</span>
           </Link>
 
-          {/* Full desktop nav — use the labeled menu below 2xl so compact
-              desktop/tablet widths do not clip the navigation or account actions. */}
-          <nav className="hidden 2xl:flex items-center gap-6">
+          {/* Full desktop nav — show inline from lg (1024 px) upward; the
+              hamburger covers phones, the Fold, and small tablets below that. */}
+          <nav className="hidden lg:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -102,7 +102,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="sm"
-              className="2xl:hidden h-9 gap-1.5 px-2 text-muted-foreground"
+              className="lg:hidden h-9 gap-1.5 px-2 text-muted-foreground"
               onClick={() => setMobileMenuOpen((o) => !o)}
               aria-label="Toggle menu"
             >
@@ -111,7 +111,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Button>
             {/* Clerk signed-in user — keep the narrow header focused on menu + avatar. */}
             <Show when="signed-in">
-              <Link href="/my-photos" className="hidden xl:inline-block" data-testid="desktop-my-photos">
+              <Link href="/my-photos" className="hidden lg:inline-block" data-testid="desktop-my-photos">
                 <Button
                   variant={location.startsWith("/my-photos") ? "default" : "ghost"}
                   size="sm"
@@ -123,7 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Button>
               </Link>
               {personalItems.map((item) => (
-                <Link key={item.href} href={item.href} className="hidden 2xl:block">
+                <Link key={item.href} href={item.href} className="hidden lg:block">
                   <Button
                     variant={location.startsWith(item.href) ? "default" : "ghost"}
                     size="sm"
@@ -209,7 +209,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {mobileMenuOpen && (
           <div
             data-testid="mobile-nav"
-            className="2xl:hidden absolute right-4 top-full z-50 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5rem)] overflow-y-auto rounded-b-lg border-x border-b border-border/50 bg-background/95 shadow-xl backdrop-blur-md"
+            className="lg:hidden absolute right-4 top-full z-50 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5rem)] overflow-y-auto rounded-b-lg border-x border-b border-border/50 bg-background/95 shadow-xl backdrop-blur-md"
           >
             <nav className="px-4 py-3 flex flex-col gap-1">
               <p className="px-3 pb-1 pt-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
