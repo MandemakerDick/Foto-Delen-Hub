@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
           aria-label={t("languageSwitcher.label")}
         >
           <Languages className="w-4 h-4" />
-          <span className="font-mono text-xs">{currentLabel}</span>
+          <span className="hidden min-[381px]:inline font-mono text-xs">{currentLabel}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[140px]">

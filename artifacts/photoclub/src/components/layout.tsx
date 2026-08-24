@@ -187,7 +187,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Show>
             )}
 
-            <div className="hidden sm:block">
+            <div className="shrink-0">
               <LanguageSwitcher />
             </div>
 
