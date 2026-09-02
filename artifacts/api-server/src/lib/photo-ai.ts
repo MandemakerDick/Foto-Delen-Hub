@@ -28,7 +28,7 @@ const scheduledPhotoIds = new Set<number>();
 const analysisQueue: number[] = [];
 let activeAnalyses = 0;
 
-function normalizeTags(value: unknown): string[] {
+export function normalizeTags(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
 
   return Array.from(
@@ -41,7 +41,7 @@ function normalizeTags(value: unknown): string[] {
   ).slice(0, 12);
 }
 
-function parseAiAnalysis(content: string): AiAnalysis {
+export function parseAiAnalysis(content: string): AiAnalysis {
   const parsed = JSON.parse(content) as {
     tags?: unknown;
     description?: unknown;

@@ -12,3 +12,4 @@
 - [Photographer invite onboarding](photographer-invite-onboarding.md) — admin-creates-profile → auto-sends invite email → photographer redeems → one-click auto-link. invite_token has photographerId FK.
 - [Workspace dependency pruning](workspace-dependency-pruning.md) — verify removals in the artifact manifest and lockfile; root-level removal may not affect a workspace package.
 - [Managed OpenAI without SDK](managed-openai-http.md) — package installation can reject the OpenAI SDK; use the managed OpenAI-compatible HTTP endpoint instead.
+- [API Vitest mock boundary](api-vitest-mock-boundary.md) — tests importing API code must run with the API artifact as Vitest root or workspace package mocks may be bypassed.
