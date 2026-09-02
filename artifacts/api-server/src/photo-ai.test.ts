@@ -65,6 +65,7 @@ vi.mock("drizzle-orm", () => ({
 
 const {
   enqueuePhotoAiAnalysis,
+  expandPhotoSearchQuery,
   normalizeTags,
   parseAiAnalysis,
   resumePendingPhotoAiAnalyses,
@@ -163,6 +164,31 @@ describe("photo AI queue", () => {
     );
   });
 
+  it("expands a Dutch query into English and Dutch photo-search concepts", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      aiResponse(
+        JSON.stringify({
+          terms: ["vliegtuig", "aircraft", "airplane", "jet", "luchtvaart"],
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const terms = await expandPhotoSearchQuery("Vliegtuig");
+
+    expect(terms).toEqual([
+      "vliegtuig",
+      "aircraft",
+      "airplane",
+      "jet",
+      "luchtvaart",
+    ]);
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body));
+    expect(body.model).toBe("gpt-5.4-mini");
+    expect(body.messages[1].content).toBe("vliegtuig");
+  });
+
   it("marks a failed analysis when the model response is unusable", async () => {
     vi.stubGlobal(
       "fetch",
@@ -185,7 +211,7 @@ describe("photo AI queue", () => {
   it("never runs more than two analyses concurrently", async () => {
     let activeRequests = 0;
     let maxActiveRequests = 0;
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (_input: Request | string | URL, init?: RequestInit) => {
       if (init?.method !== "POST") return imageResponse();
       activeRequests++;
       maxActiveRequests = Math.max(maxActiveRequests, activeRequests);
@@ -258,5 +284,8 @@ describe("photo route wiring", () => {
 
     expect(photoRoutes).toContain("ilike(photoAiAnalysesTable.description, pattern)");
     expect(photoRoutes).toContain("photoAiAnalysesTable.tags}::text ILIKE");
+    expect(photoRoutes).toContain("expandPhotoSearchQuery(search)");
+    expect(photoRoutes).toContain("expandedTermConditions");
+    expect(photoRoutes).toContain("relevanceScore");
   });
 });

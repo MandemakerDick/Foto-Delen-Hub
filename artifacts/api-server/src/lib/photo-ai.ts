@@ -10,7 +10,28 @@ import { logger } from "./logger";
 const AI_MODEL = "gpt-5.4-mini";
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_CONCURRENT_ANALYSES = 2;
+const SEARCH_EXPANSION_TTL_MS = 10 * 60 * 1000;
+const SEARCH_STOP_WORDS = new Set([
+  "and",
+  "bij",
+  "de",
+  "een",
+  "en",
+  "het",
+  "in",
+  "met",
+  "of",
+  "on",
+  "the",
+  "van",
+  "voor",
+  "with",
+]);
 const objectStorageService = new ObjectStorageService();
+const searchExpansionCache = new Map<
+  string,
+  { terms: string[]; expiresAt: number }
+>();
 
 type AiAnalysis = {
   tags: string[];
@@ -165,6 +186,86 @@ async function requestAiAnalysis(photo: PhotoForAnalysis): Promise<AiAnalysis> {
   const content = completion.choices?.[0]?.message?.content;
   if (!content) throw new Error("AI analysis returned no content");
   return parseAiAnalysis(content);
+}
+
+export async function expandPhotoSearchQuery(query: string): Promise<string[]> {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
+
+  const cached = searchExpansionCache.get(normalizedQuery);
+  if (cached && cached.expiresAt > Date.now()) return cached.terms;
+
+  const baseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.replace(/\/$/, "");
+  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  if (!baseUrl || !apiKey) {
+    throw new Error("Managed OpenAI integration is not configured");
+  }
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: AI_MODEL,
+      max_completion_tokens: 250,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Expand photo-search queries for bilingual English/Dutch retrieval. Return only JSON as {\"terms\":[...]}. Include the original concept plus concise English and Dutch translations, synonyms, and directly related visible concepts. Return 6-14 terms, each under 60 characters. Do not add unrelated broad concepts.",
+        },
+        {
+          role: "user",
+          content: normalizedQuery,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Search expansion failed with HTTP ${response.status}: ${body.slice(0, 200)}`,
+    );
+  }
+
+  const result = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string | null } }>;
+  };
+  const content = result.choices?.[0]?.message?.content;
+  if (!content) throw new Error("Search expansion returned no content");
+
+  const parsed = JSON.parse(content) as { terms?: unknown };
+  const generatedTerms = Array.isArray(parsed.terms) ? parsed.terms : [];
+  const rawTerms = [
+    normalizedQuery,
+    ...generatedTerms
+      .filter((term): term is string => typeof term === "string")
+      .map((term) => term.trim().toLowerCase())
+      .filter((term) => term.length >= 2 && term.length <= 60),
+  ];
+  const individualWords = rawTerms.flatMap((term) =>
+    term
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length >= 3 && !SEARCH_STOP_WORDS.has(word)),
+  );
+  const terms = Array.from(
+    new Set([...rawTerms, ...individualWords]),
+  ).slice(0, 20);
+
+  if (terms.length === 0) {
+    throw new Error("Search expansion returned no usable terms");
+  }
+
+  searchExpansionCache.set(normalizedQuery, {
+    terms,
+    expiresAt: Date.now() + SEARCH_EXPANSION_TTL_MS,
+  });
+  return terms;
 }
 
 async function analyzePhoto(photoId: number): Promise<void> {

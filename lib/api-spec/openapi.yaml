@@ -482,7 +482,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Search by title, photographer description, or AI-generated visual metadata
+          description: Semantic English/Dutch search across titles, photographer descriptions, and AI-generated visual metadata
         - name: clubId
           in: query
           schema:

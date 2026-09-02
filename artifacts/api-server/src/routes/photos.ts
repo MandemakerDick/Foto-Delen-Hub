@@ -17,6 +17,7 @@ import { sendPhotoUploadConfirmation } from "../lib/notifications";
 import { requireAdmin } from "./admins";
 import {
   enqueuePhotoAiAnalysis,
+  expandPhotoSearchQuery,
   enqueuePhotosMissingAiAnalysis,
 } from "../lib/photo-ai";
 
@@ -106,14 +107,51 @@ router.get("/photos", async (req, res) => {
   let q = buildPhotoSelect();
   if (search) {
     const pattern = `%${search}%`;
-    q = q.where(
-      or(
-        ilike(photosTable.title, pattern),
-        ilike(photosTable.description, pattern),
-        ilike(photoAiAnalysesTable.description, pattern),
-        sql`${photoAiAnalysesTable.tags}::text ILIKE ${pattern}`,
+    const exactSearchCondition = or(
+      ilike(photosTable.title, pattern),
+      ilike(photosTable.description, pattern),
+      ilike(photoAiAnalysesTable.description, pattern),
+      sql`${photoAiAnalysesTable.tags}::text ILIKE ${pattern}`,
+    );
+
+    let expandedTerms = [search];
+    try {
+      expandedTerms = await expandPhotoSearchQuery(search);
+    } catch (error) {
+      req.log.warn({ err: error }, "Semantic photo search unavailable; using exact search");
+    }
+
+    const expandedTermConditions = expandedTerms.map((term) => {
+      const expandedPattern = `%${term}%`;
+      return or(
+        ilike(photosTable.title, expandedPattern),
+        ilike(photosTable.description, expandedPattern),
+        ilike(photoAiAnalysesTable.description, expandedPattern),
+        sql`${photoAiAnalysesTable.tags}::text ILIKE ${expandedPattern}`,
+      );
+    });
+    q = q.where(or(...expandedTermConditions)) as typeof q;
+    const relevanceScore = sql<number>`${sql.join(
+      expandedTermConditions.map(
+        (condition) => sql`CASE WHEN ${condition} THEN 1 ELSE 0 END`,
       ),
-    ) as typeof q;
+      sql` + `,
+    )}`;
+
+    const photos = photographerId
+      ? await q.orderBy(
+          sql`CASE WHEN ${exactSearchCondition} THEN 0 ELSE 1 END`,
+          desc(relevanceScore),
+          sql`${photosTable.sortOrder} ASC NULLS LAST`,
+          desc(photosTable.createdAt),
+        )
+      : await q.orderBy(
+          sql`CASE WHEN ${exactSearchCondition} THEN 0 ELSE 1 END`,
+          desc(relevanceScore),
+          desc(photosTable.createdAt),
+        );
+    res.json(photos.map(mapPhoto));
+    return;
   } else if (clubId) {
     q = q.where(eq(photosTable.clubId, clubId)) as typeof q;
   } else if (themeId) {

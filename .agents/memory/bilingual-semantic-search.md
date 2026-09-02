@@ -1,10 +1,12 @@
 ---
 name: Bilingual semantic photo search
-description: Future direction for PhotoMatrix search across English and Dutch visual concepts.
+description: Supported approach for PhotoMatrix search across English and Dutch visual concepts.
 ---
 
-PhotoMatrix should eventually support semantic search where English and Dutch queries can find the same relevant photos even when stored descriptions and generated tags use only one language.
+Use managed-LLM query expansion to turn each search into a compact set of English and Dutch concepts, synonyms, and individual meaningful words. Match those terms against titles, photographer descriptions, AI descriptions, and AI tags. Rank exact-phrase matches first, then rank by the number of expanded concepts matched.
 
 **Why:** Literal matching is useful for exact terms, but members should be able to search by concept and language rather than knowing the wording used in a photo's metadata.
 
-**How to apply:** Use multilingual text embeddings over the existing AI description, generated tags, title, and relevant metadata; combine vector ranking with existing exact search and preserve photographer-entered text as a separate source.
+The managed OpenAI-compatible endpoint supports chat/vision but rejects `POST /embeddings` as an unsupported endpoint. A vector implementation therefore cannot use the existing managed integration without adding another provider.
+
+**How to apply:** Keep exact matching as a no-AI fallback, cache successful expansions briefly, preserve photographer-entered text as a separate search source, and split generated phrases into words so useful multi-word concepts cannot silently miss exact tags.

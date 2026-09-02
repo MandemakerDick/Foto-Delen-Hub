@@ -406,7 +406,7 @@ export const TogglePhotographerFollowResponse = zod.object({
  * @summary List photos with optional filters
  */
 export const ListPhotosQueryParams = zod.object({
-  "search": zod.coerce.string().optional().describe('Search by title, photographer description, or AI-generated visual metadata'),
+  "search": zod.coerce.string().optional().describe('Semantic English\/Dutch search across titles, photographer descriptions, and AI-generated visual metadata'),
   "clubId": zod.coerce.number().optional(),
   "themeId": zod.coerce.number().optional(),
   "photographerId": zod.coerce.number().optional()
