@@ -406,7 +406,7 @@ export const TogglePhotographerFollowResponse = zod.object({
  * @summary List photos with optional filters
  */
 export const ListPhotosQueryParams = zod.object({
-  "search": zod.coerce.string().optional().describe('Search by title or description'),
+  "search": zod.coerce.string().optional().describe('Search by title, photographer description, or AI-generated visual metadata'),
   "clubId": zod.coerce.number().optional(),
   "themeId": zod.coerce.number().optional(),
   "photographerId": zod.coerce.number().optional()
@@ -424,6 +424,9 @@ export const ListPhotosResponseItem = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -466,11 +469,35 @@ export const ListRecentPhotosResponseItem = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 export const ListRecentPhotosResponse = zod.array(ListRecentPhotosResponseItem)
+
+
+/**
+ * @summary Queue AI analysis for unprocessed or failed photos (admin only)
+ */
+export const backfillPhotoAiAnalysisBodyLimitDefault = 25;
+export const backfillPhotoAiAnalysisBodyLimitMax = 100;
+
+
+
+export const BackfillPhotoAiAnalysisBody = zod.object({
+  "limit": zod.number().min(1).max(backfillPhotoAiAnalysisBodyLimitMax).default(backfillPhotoAiAnalysisBodyLimitDefault)
+})
+
+
+/**
+ * @summary Queue AI analysis for one photo (admin only)
+ */
+export const RetryPhotoAiAnalysisParams = zod.object({
+  "id": zod.coerce.number()
+})
 
 
 /**
@@ -492,6 +519,9 @@ export const GetPhotoResponse = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -527,6 +557,9 @@ export const UpdatePhotoResponse = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -573,6 +606,9 @@ export const TogglePhotoLikeResponse = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -640,6 +676,9 @@ export const ListLikedPhotosResponseItem = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -687,6 +726,9 @@ export const ListFollowingPhotosResponseItem = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -905,6 +947,9 @@ export const ImportPhotosFromUrlResponse = zod.object({
   "clubName": zod.string().nullish(),
   "themeId": zod.number().nullish(),
   "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()

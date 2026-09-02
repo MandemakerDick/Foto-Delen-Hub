@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable, photoLikesTable } from "@workspace/db";
-import { eq, ilike, desc, sql, count, and } from "drizzle-orm";
+import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable, photoLikesTable, photoAiAnalysesTable } from "@workspace/db";
+import { eq, ilike, desc, sql, count, and, or } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,
@@ -14,6 +14,11 @@ import {
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { sendPhotoUploadConfirmation } from "../lib/notifications";
+import { requireAdmin } from "./admins";
+import {
+  enqueuePhotoAiAnalysis,
+  enqueuePhotosMissingAiAnalysis,
+} from "../lib/photo-ai";
 
 const router = Router();
 
@@ -48,6 +53,9 @@ export function buildPhotoSelect() {
       clubName: clubsTable.name,
       themeId: photosTable.themeId,
       themeName: themesTable.name,
+      aiTags: photoAiAnalysesTable.tags,
+      aiDescription: photoAiAnalysesTable.description,
+      aiStatus: photoAiAnalysesTable.status,
       likeCount: photosTable.likeCount,
       commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)::int`,
       createdAt: photosTable.createdAt,
@@ -56,6 +64,7 @@ export function buildPhotoSelect() {
     .leftJoin(photographersTable, eq(photosTable.photographerId, photographersTable.id))
     .leftJoin(clubsTable, eq(photosTable.clubId, clubsTable.id))
     .leftJoin(themesTable, eq(photosTable.themeId, themesTable.id))
+    .leftJoin(photoAiAnalysesTable, eq(photoAiAnalysesTable.photoId, photosTable.id))
     .leftJoin(commentCountSq, eq(photosTable.id, commentCountSq.photoId));
 }
 
@@ -96,7 +105,15 @@ router.get("/photos", async (req, res) => {
 
   let q = buildPhotoSelect();
   if (search) {
-    q = q.where(ilike(photosTable.title, `%${search}%`)) as typeof q;
+    const pattern = `%${search}%`;
+    q = q.where(
+      or(
+        ilike(photosTable.title, pattern),
+        ilike(photosTable.description, pattern),
+        ilike(photoAiAnalysesTable.description, pattern),
+        sql`${photoAiAnalysesTable.tags}::text ILIKE ${pattern}`,
+      ),
+    ) as typeof q;
   } else if (clubId) {
     q = q.where(eq(photosTable.clubId, clubId)) as typeof q;
   } else if (themeId) {
@@ -167,8 +184,41 @@ router.post("/photos", async (req: any, res) => {
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
   res.status(201).json(mapPhoto(rows[0]));
 
+  void enqueuePhotoAiAnalysis(photo.id).catch((error) => {
+    req.log.warn({ err: error, photoId: photo.id }, "Could not queue AI photo analysis");
+  });
+
   // Email delivery must never make a successful upload fail.
   void sendPhotoUploadConfirmation(photographerId!, photo.title);
+});
+
+// POST /api/photos/ai/backfill — queue unprocessed or failed photos (admin only).
+router.post("/photos/ai/backfill", requireAdmin, async (req, res) => {
+  const requestedLimit = Number(req.body?.limit ?? 25);
+  const limit = Number.isFinite(requestedLimit) ? requestedLimit : 25;
+  const photoIds = await enqueuePhotosMissingAiAnalysis(limit);
+  res.status(202).json({ queued: photoIds.length, photoIds });
+});
+
+// POST /api/photos/:id/ai/retry — re-run AI analysis for one photo (admin only).
+router.post("/photos/:id/ai/retry", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid photo id" });
+    return;
+  }
+
+  const [photo] = await db
+    .select({ id: photosTable.id })
+    .from(photosTable)
+    .where(eq(photosTable.id, id));
+  if (!photo) {
+    res.status(404).json({ error: "Photo not found" });
+    return;
+  }
+
+  await enqueuePhotoAiAnalysis(id);
+  res.status(202).json({ queued: true, photoId: id });
 });
 
 // GET /api/photos/:id — fetch a single photo by id

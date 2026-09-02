@@ -12,6 +12,7 @@ import { eq, count, sql } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { setObjectAclPolicy, ObjectAclPolicy, ObjectPermission } from "../lib/objectAcl";
 import { requireAdmin } from "./admins";
+import { enqueuePhotoAiAnalysis } from "../lib/photo-ai";
 
 const router = Router();
 const objectStorageService = new ObjectStorageService();
@@ -400,6 +401,9 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
       // Re-fetch with full joins
       const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
       if (rows[0]) importedPhotos.push(mapPhoto(rows[0]));
+      void enqueuePhotoAiAnalysis(photo.id).catch((error) => {
+        req.log?.warn({ err: error, photoId: photo.id }, "Could not queue AI photo analysis");
+      });
     } catch (err: any) {
       req.log?.warn({ err, src: img.src }, "Failed to import image");
       failed++;

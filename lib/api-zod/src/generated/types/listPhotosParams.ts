@@ -8,7 +8,7 @@
 
 export type ListPhotosParams = {
 /**
- * Search by title or description
+ * Search by title, photographer description, or AI-generated visual metadata
  */
 search?: string;
 clubId?: number;

@@ -38,6 +38,7 @@ import {
   useScanUrlForPhotos,
   useImportPhotosFromUrl,
   useListPhotos,
+  useBackfillPhotoAiAnalysis,
   getListPhotosQueryKey,
 } from "@workspace/api-client-react";
 import type { UrlScanResult } from "@workspace/api-client-react";
@@ -63,7 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { isFileSlugTitle, isImportButtonDisabled } from "@/lib/import-utils";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon, Mail } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon, Mail, Sparkles } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -694,6 +695,30 @@ export default function Manage() {
   const [bulkAssigning, setBulkAssigning] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const aiBackfillMutation = useBackfillPhotoAiAnalysis();
+
+  const handleAiBackfill = () => {
+    aiBackfillMutation.mutate(
+      { data: { limit: 100 } },
+      {
+        onSuccess: ({ queued }) => {
+          toast({
+            title: t("manage.photos.aiQueuedTitle"),
+            description: queued > 0
+              ? t("manage.photos.aiQueuedDesc", { count: queued })
+              : t("manage.photos.aiNothingToQueue"),
+          });
+        },
+        onError: () => {
+          toast({
+            title: t("common.error"),
+            description: t("manage.photos.aiQueueError"),
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
 
   const filteredBulkPhotos = (allPhotos ?? []).filter((p) => {
     if (bulkFilterClubId === "none" && p.clubId != null) return false;
@@ -1633,6 +1658,27 @@ export default function Manage() {
             <div className="bg-secondary/20 p-6 rounded-lg border border-border/50">
               <h2 className="font-serif text-2xl font-medium mb-2">{t("manage.photos.modePickerTitle")}</h2>
               <p className="text-sm text-muted-foreground mb-6">{t("manage.photos.modePickerSubtitle")}</p>
+              <div className="mb-6 flex flex-col gap-4 rounded-lg border border-primary/20 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="mb-1 flex items-center gap-2 font-medium">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    {t("manage.photos.aiIndexTitle")}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t("manage.photos.aiIndexDesc")}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0 border-primary/30"
+                  onClick={handleAiBackfill}
+                  disabled={aiBackfillMutation.isPending}
+                >
+                  {aiBackfillMutation.isPending
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Sparkles className="mr-2 h-4 w-4" />}
+                  {t("manage.photos.aiIndexButton")}
+                </Button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"

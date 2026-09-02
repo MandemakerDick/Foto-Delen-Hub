@@ -5,6 +5,7 @@
  * PhotoMatrix API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PhotoAiStatus } from './photoAiStatus';
 
 export interface Photo {
   id: number;
@@ -26,6 +27,18 @@ export interface Photo {
   themeId?: number | null;
   /** @nullable */
   themeName?: string | null;
+  /**
+     * Search-only tags generated from visible photo content
+     * @nullable
+     */
+  aiTags?: string[] | null;
+  /**
+     * Search-only description generated from visible photo content
+     * @nullable
+     */
+  aiDescription?: string | null;
+  /** @nullable */
+  aiStatus?: PhotoAiStatus;
   likeCount?: number;
   commentCount?: number;
   createdAt: string;

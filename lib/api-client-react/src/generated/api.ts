@@ -46,6 +46,9 @@ import type {
   ListThemesParams,
   MembershipStatus,
   Photo,
+  PhotoAiBackfillRequest,
+  PhotoAiBackfillResponse,
+  PhotoAiRetryResponse,
   PhotoInput,
   PhotoReview,
   PhotoReviewInput,
@@ -2040,6 +2043,147 @@ export function useListRecentPhotos<TData = Awaited<ReturnType<typeof listRecent
 
 
 
+
+export const getBackfillPhotoAiAnalysisUrl = () => {
+
+
+
+
+  return `/api/photos/ai/backfill`
+}
+
+/**
+ * @summary Queue AI analysis for unprocessed or failed photos (admin only)
+ */
+export const backfillPhotoAiAnalysis = async (photoAiBackfillRequest?: PhotoAiBackfillRequest, options?: RequestInit): Promise<PhotoAiBackfillResponse> => {
+
+  return customFetch<PhotoAiBackfillResponse>(getBackfillPhotoAiAnalysisUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      photoAiBackfillRequest,)
+  }
+);}
+
+
+
+
+export const getBackfillPhotoAiAnalysisMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillPhotoAiAnalysis>>, TError,{data?: BodyType<PhotoAiBackfillRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof backfillPhotoAiAnalysis>>, TError,{data?: BodyType<PhotoAiBackfillRequest>}, TContext> => {
+
+const mutationKey = ['backfillPhotoAiAnalysis'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof backfillPhotoAiAnalysis>>, {data?: BodyType<PhotoAiBackfillRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  backfillPhotoAiAnalysis(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BackfillPhotoAiAnalysisMutationResult = NonNullable<Awaited<ReturnType<typeof backfillPhotoAiAnalysis>>>
+    export type BackfillPhotoAiAnalysisMutationBody = BodyType<PhotoAiBackfillRequest> | undefined
+    export type BackfillPhotoAiAnalysisMutationError = ErrorType<void>
+
+    /**
+ * @summary Queue AI analysis for unprocessed or failed photos (admin only)
+ */
+export const useBackfillPhotoAiAnalysis = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillPhotoAiAnalysis>>, TError,{data?: BodyType<PhotoAiBackfillRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof backfillPhotoAiAnalysis>>,
+        TError,
+        {data?: BodyType<PhotoAiBackfillRequest>},
+        TContext
+      > => {
+      return useMutation(getBackfillPhotoAiAnalysisMutationOptions(options));
+    }
+
+export const getRetryPhotoAiAnalysisUrl = (id: number,) => {
+
+
+
+
+  return `/api/photos/${id}/ai/retry`
+}
+
+/**
+ * @summary Queue AI analysis for one photo (admin only)
+ */
+export const retryPhotoAiAnalysis = async (id: number, options?: RequestInit): Promise<PhotoAiRetryResponse> => {
+
+  return customFetch<PhotoAiRetryResponse>(getRetryPhotoAiAnalysisUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRetryPhotoAiAnalysisMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryPhotoAiAnalysis>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retryPhotoAiAnalysis>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['retryPhotoAiAnalysis'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retryPhotoAiAnalysis>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  retryPhotoAiAnalysis(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetryPhotoAiAnalysisMutationResult = NonNullable<Awaited<ReturnType<typeof retryPhotoAiAnalysis>>>
+
+    export type RetryPhotoAiAnalysisMutationError = ErrorType<void>
+
+    /**
+ * @summary Queue AI analysis for one photo (admin only)
+ */
+export const useRetryPhotoAiAnalysis = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryPhotoAiAnalysis>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retryPhotoAiAnalysis>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRetryPhotoAiAnalysisMutationOptions(options));
+    }
 
 export const getGetPhotoUrl = (id: number,) => {
 

@@ -57,6 +57,13 @@
     "photos": {
       "modePickerTitle": "Foto's in bulk beheren",
       "modePickerSubtitle": "Kies wat je wilt doen met een selectie foto's.",
+      "aiIndexTitle": "Visueel zoeken met AI",
+      "aiIndexDesc": "Genereer zoekbare tags en een visuele beschrijving voor foto's die nog niet zijn geanalyseerd.",
+      "aiIndexButton": "Bestaande foto's analyseren",
+      "aiQueuedTitle": "AI-analyse ingepland",
+      "aiQueuedDesc": "{{count}} foto('s) worden op de achtergrond geanalyseerd.",
+      "aiNothingToQueue": "Alle foto's zijn al geanalyseerd.",
+      "aiQueueError": "Kon foto's niet inplannen voor AI-analyse.",
       "modeAssign": "Club in bulk toewijzen",
       "modeAssignDesc": "Wijs meerdere foto's tegelijk aan een club toe.",
       "modeDelete": "Foto's in bulk verwijderen",

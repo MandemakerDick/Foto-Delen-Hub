@@ -60,6 +60,13 @@
     "photos": {
       "modePickerTitle": "Bulk photo management",
       "modePickerSubtitle": "Choose what you'd like to do with a selection of photos.",
+      "aiIndexTitle": "AI visual search",
+      "aiIndexDesc": "Generate searchable tags and a visual description for photos that have not been analyzed yet.",
+      "aiIndexButton": "Analyze existing photos",
+      "aiQueuedTitle": "AI analysis queued",
+      "aiQueuedDesc": "{{count}} photo(s) will be analyzed in the background.",
+      "aiNothingToQueue": "Every photo has already been analyzed.",
+      "aiQueueError": "Could not queue photos for AI analysis.",
       "modeAssign": "Bulk Club Assignment",
       "modeAssignDesc": "Assign multiple photos to a club at once.",
       "modeDelete": "Bulk Delete Photos",

@@ -482,7 +482,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Search by title or description
+          description: Search by title, photographer description, or AI-generated visual metadata
         - name: clubId
           in: query
           schema:
@@ -541,6 +541,50 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Photo"
+
+  /photos/ai/backfill:
+    post:
+      operationId: backfillPhotoAiAnalysis
+      tags: [photos]
+      summary: Queue AI analysis for unprocessed or failed photos (admin only)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoAiBackfillRequest"
+      responses:
+        "202":
+          description: Photos queued for asynchronous analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoAiBackfillResponse"
+        "403":
+          description: Admin access required
+
+  /photos/{id}/ai/retry:
+    post:
+      operationId: retryPhotoAiAnalysis
+      tags: [photos]
+      summary: Queue AI analysis for one photo (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "202":
+          description: Photo queued for asynchronous analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoAiRetryResponse"
+        "403":
+          description: Admin access required
+        "404":
+          description: Photo not found
 
   /photos/{id}:
     get:
@@ -1692,6 +1736,17 @@ components:
           type: ["integer", "null"]
         themeName:
           type: ["string", "null"]
+        aiTags:
+          type: ["array", "null"]
+          items:
+            type: string
+          description: Search-only tags generated from visible photo content
+        aiDescription:
+          type: ["string", "null"]
+          description: Search-only description generated from visible photo content
+        aiStatus:
+          type: ["string", "null"]
+          enum: [pending, processing, complete, failed, null]
         likeCount:
           type: integer
         commentCount:
@@ -1715,6 +1770,35 @@ components:
         clubId:
           type: integer
         themeId:
+          type: integer
+
+    PhotoAiBackfillRequest:
+      type: object
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+
+    PhotoAiBackfillResponse:
+      type: object
+      required: [queued, photoIds]
+      properties:
+        queued:
+          type: integer
+        photoIds:
+          type: array
+          items:
+            type: integer
+
+    PhotoAiRetryResponse:
+      type: object
+      required: [queued, photoId]
+      properties:
+        queued:
+          type: boolean
+        photoId:
           type: integer
 
     PhotoUpdate:

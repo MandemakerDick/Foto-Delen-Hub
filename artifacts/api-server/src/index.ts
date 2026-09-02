@@ -1,5 +1,6 @@
 import app, { ensureSessionTable } from "./app";
 import { logger } from "./lib/logger";
+import { resumePendingPhotoAiAnalyses } from "./lib/photo-ai";
 
 // PORT is injected by the Replit workflow config — fail fast if it is missing
 // so the error is obvious rather than silently binding to port NaN.
@@ -24,6 +25,13 @@ ensureSessionTable()
         process.exit(1);
       }
       logger.info({ port }, "Server listening");
+      void resumePendingPhotoAiAnalyses().then((photoIds) => {
+        if (photoIds.length > 0) {
+          logger.info({ queued: photoIds.length }, "Resumed pending AI photo analyses");
+        }
+      }).catch((error) => {
+        logger.warn({ err: error }, "Could not resume pending AI photo analyses");
+      });
     });
   })
   .catch((err) => {

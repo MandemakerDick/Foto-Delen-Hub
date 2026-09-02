@@ -115,6 +115,19 @@ export interface PhotographerUpdate {
   themeIds?: number[];
 }
 
+/**
+ * @nullable
+ */
+export type PhotoAiStatus = typeof PhotoAiStatus[keyof typeof PhotoAiStatus] | null;
+
+
+export const PhotoAiStatus = {
+  pending: 'pending',
+  processing: 'processing',
+  complete: 'complete',
+  failed: 'failed',
+} as const;
+
 export interface Photo {
   id: number;
   title: string;
@@ -135,6 +148,18 @@ export interface Photo {
   themeId?: number | null;
   /** @nullable */
   themeName?: string | null;
+  /**
+     * Search-only tags generated from visible photo content
+     * @nullable
+     */
+  aiTags?: string[] | null;
+  /**
+     * Search-only description generated from visible photo content
+     * @nullable
+     */
+  aiDescription?: string | null;
+  /** @nullable */
+  aiStatus?: PhotoAiStatus;
   likeCount?: number;
   commentCount?: number;
   createdAt: string;
@@ -148,6 +173,24 @@ export interface PhotoInput {
   photographerId?: number;
   clubId?: number;
   themeId?: number;
+}
+
+export interface PhotoAiBackfillRequest {
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  limit?: number;
+}
+
+export interface PhotoAiBackfillResponse {
+  queued: number;
+  photoIds: number[];
+}
+
+export interface PhotoAiRetryResponse {
+  queued: boolean;
+  photoId: number;
 }
 
 export interface PhotoUpdate {
@@ -531,7 +574,7 @@ themeId?: number;
 
 export type ListPhotosParams = {
 /**
- * Search by title or description
+ * Search by title, photographer description, or AI-generated visual metadata
  */
 search?: string;
 clubId?: number;
