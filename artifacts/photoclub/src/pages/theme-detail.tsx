@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Camera, Image as ImageIcon, User, ArrowLeft } from "lucide-react";
@@ -9,6 +10,12 @@ export default function ThemeDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const themeId = Number(id);
+
+  // Open each theme page at its header instead of restoring the previous
+  // page's scroll position.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [themeId]);
 
   const { data: theme, isLoading: themeLoading } = useGetTheme(themeId, {
     query: { enabled: !!themeId, queryKey: getGetThemeQueryKey(themeId) },

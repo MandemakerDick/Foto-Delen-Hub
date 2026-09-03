@@ -107,6 +107,12 @@ export default function ClubDetail() {
     return () => { document.title = prev; };
   }, [clubName]);
 
+  // Each club route should open at its header, not at the previous page's
+  // scroll position (for example after returning from a photo gallery).
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [clubId]);
+
   const selectedMember = members?.find((m) => m.id === selectedPhotographerId) ?? null;
 
   // The gallery shown in view mode (all club photos, or filtered by member)

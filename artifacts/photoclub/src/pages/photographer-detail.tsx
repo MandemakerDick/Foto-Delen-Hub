@@ -90,6 +90,12 @@ export default function PhotographerDetail() {
     return () => { document.title = prev; };
   }, [photographerName]);
 
+  // Open each photographer page at its header instead of restoring the
+  // previous page's scroll position.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [photographerId]);
+
   // Derive unique themes present in this photographer's photos (for filter buttons)
   const portfolioThemes = useMemo(() => {
     if (!photos) return [];
