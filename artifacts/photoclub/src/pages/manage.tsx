@@ -1668,8 +1668,8 @@ export default function Manage() {
                   const noThemeCount = importPhotoEdits.filter(e => e.themeId === "none").length;
                   if (noThemeCount === 0) return null;
                   return (
-                    <div className="rounded-md border border-sky-300/50 bg-sky-50/40 dark:bg-sky-950/10 px-4 py-2.5">
-                      <p className="text-sm text-sky-800 dark:text-sky-300">
+                    <div className="rounded-md border border-primary/30 bg-primary/10 px-4 py-2.5">
+                      <p className="text-sm font-medium text-foreground/90">
                         {noThemeCount === 1
                           ? "1 photo has no theme assigned."
                           : `${noThemeCount} photos have no theme assigned.`}
