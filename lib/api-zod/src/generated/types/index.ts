@@ -38,6 +38,8 @@ export * from './photoAiBackfillRequest';
 export * from './photoAiBackfillResponse';
 export * from './photoAiRetryResponse';
 export * from './photoAiStatus';
+export * from './photoAiThemeRejectResponse';
+export * from './photoAiThemeSuggestionStatus';
 export * from './photographer';
 export * from './photographerClub';
 export * from './photographerInput';

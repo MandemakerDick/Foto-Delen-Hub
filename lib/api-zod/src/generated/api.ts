@@ -427,6 +427,10 @@ export const ListPhotosResponseItem = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -472,6 +476,10 @@ export const ListRecentPhotosResponseItem = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -501,6 +509,51 @@ export const RetryPhotoAiAnalysisParams = zod.object({
 
 
 /**
+ * @summary Accept a pending AI theme suggestion (admin only)
+ */
+export const AcceptPhotoAiThemeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AcceptPhotoAiThemeResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "themeId": zod.number().nullish(),
+  "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
+  "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Reject a pending AI theme suggestion (admin only)
+ */
+export const RejectPhotoAiThemeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RejectPhotoAiThemeResponse = zod.object({
+  "rejected": zod.boolean(),
+  "photoId": zod.number()
+})
+
+
+/**
  * @summary Get a photo by ID
  */
 export const GetPhotoParams = zod.object({
@@ -522,6 +575,10 @@ export const GetPhotoResponse = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -560,6 +617,10 @@ export const UpdatePhotoResponse = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -609,6 +670,10 @@ export const TogglePhotoLikeResponse = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -679,6 +744,10 @@ export const ListLikedPhotosResponseItem = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -729,6 +798,10 @@ export const ListFollowingPhotosResponseItem = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()
@@ -950,6 +1023,10 @@ export const ImportPhotosFromUrlResponse = zod.object({
   "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
   "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
   "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
   "createdAt": zod.string()

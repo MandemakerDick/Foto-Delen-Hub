@@ -103,7 +103,13 @@ export default function Manage() {
   const { data: photographers } = useListPhotographers();
   const { data: adminStatus } = useGetAdminStatus({ query: { retry: false, queryKey: getGetAdminStatusQueryKey() } });
   const { data: adminList } = useListAdmins({ query: { enabled: !!adminStatus?.isAdmin, retry: false, queryKey: getListAdminsQueryKey() } });
-  const { data: allPhotos } = useListPhotos({}, { query: { enabled: !!adminStatus?.isAdmin, queryKey: getListPhotosQueryKey() } });
+  const { data: allPhotos } = useListPhotos({}, {
+    query: {
+      enabled: !!adminStatus?.isAdmin,
+      queryKey: getListPhotosQueryKey(),
+      refetchInterval: adminStatus?.isAdmin ? 5_000 : false,
+    },
+  });
 
   // ── Import tab state ──────────────────────────────────────
   const [importStep, setImportStep] = useState<1 | 2 | 3 | 4>(1);
@@ -695,6 +701,7 @@ export default function Manage() {
   const [bulkAssigning, setBulkAssigning] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [reviewingThemePhotoId, setReviewingThemePhotoId] = useState<number | null>(null);
   const aiBackfillMutation = useBackfillPhotoAiAnalysis();
 
   const handleAiBackfill = () => {
@@ -726,6 +733,42 @@ export default function Manage() {
     if (bulkPhotographerId !== "all" && String(p.photographerId ?? "") !== bulkPhotographerId) return false;
     return true;
   });
+  const pendingThemeSuggestions = (allPhotos ?? []).filter(
+    (photo) =>
+      photo.aiThemeSuggestionStatus === "pending" &&
+      photo.aiSuggestedThemeId != null,
+  );
+
+  const handleThemeSuggestionReview = async (
+    photoId: number,
+    action: "accept" | "reject",
+  ) => {
+    setReviewingThemePhotoId(photoId);
+    try {
+      const response = await fetch(`/api/photos/${photoId}/ai-theme/${action}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Theme suggestion review failed");
+      toast({
+        title: action === "accept"
+          ? t("manage.photos.aiThemeAcceptedTitle")
+          : t("manage.photos.aiThemeRejectedTitle"),
+        description: action === "accept"
+          ? t("manage.photos.aiThemeAcceptedDesc")
+          : t("manage.photos.aiThemeRejectedDesc"),
+      });
+      await queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+    } catch {
+      toast({
+        title: t("common.error"),
+        description: t("manage.photos.aiThemeReviewError"),
+        variant: "destructive",
+      });
+    } finally {
+      setReviewingThemePhotoId(null);
+    }
+  };
 
   const handleBulkAssignClub = async () => {
     if (bulkSelectedPhotoIds.size === 0 || bulkClubId === "none") return;
@@ -1592,7 +1635,7 @@ export default function Manage() {
                         {noThemeCount === 1
                           ? "1 photo has no theme assigned."
                           : `${noThemeCount} photos have no theme assigned.`}
-                        {" "}You can assign themes above, or categorise them later.
+                        {" "}{t("manage.photos.aiThemeImportNotice")}
                       </p>
                     </div>
                   );
@@ -1678,6 +1721,82 @@ export default function Manage() {
                     : <Sparkles className="mr-2 h-4 w-4" />}
                   {t("manage.photos.aiIndexButton")}
                 </Button>
+              </div>
+              <div className="mb-6 rounded-lg border border-border/60 bg-background p-5">
+                <div className="mb-1 flex items-center gap-2 font-medium">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  {t("manage.photos.aiThemeReviewTitle")}
+                </div>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  {t("manage.photos.aiThemeReviewDesc")}
+                </p>
+                {pendingThemeSuggestions.length > 0 ? (
+                  <div className="max-h-72 divide-y divide-border/50 overflow-y-auto rounded-md border border-border/50">
+                    {pendingThemeSuggestions.map((photo) => {
+                      const suggestedTheme = themes?.find(
+                        (theme) => theme.id === photo.aiSuggestedThemeId,
+                      );
+                      return (
+                        <div
+                          key={photo.id}
+                          className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center"
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <img
+                              src={photo.imageUrl}
+                              alt={photo.title}
+                              className="h-12 w-12 shrink-0 rounded object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{photo.title}</p>
+                              <p className="text-sm text-primary">
+                                {suggestedTheme?.name ?? t("manage.photos.aiThemeUnavailable")}
+                                {photo.aiSuggestedThemeConfidence != null
+                                  ? ` · ${Math.round(photo.aiSuggestedThemeConfidence * 100)}%`
+                                  : ""}
+                              </p>
+                              {photo.aiSuggestedThemeReason && (
+                                <p className="line-clamp-2 text-xs text-muted-foreground">
+                                  {photo.aiSuggestedThemeReason}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleThemeSuggestionReview(photo.id, "accept")}
+                              disabled={
+                                reviewingThemePhotoId === photo.id ||
+                                suggestedTheme == null
+                              }
+                            >
+                              {reviewingThemePhotoId === photo.id
+                                ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
+                              {t("manage.photos.aiThemeAccept")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleThemeSuggestionReview(photo.id, "reject")}
+                              disabled={reviewingThemePhotoId === photo.id}
+                            >
+                              <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                              {t("manage.photos.aiThemeReject")}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded-md border border-dashed border-border/60 px-4 py-5 text-center text-sm text-muted-foreground">
+                    {t("manage.photos.aiThemeNothingToReview")}
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button

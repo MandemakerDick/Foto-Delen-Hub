@@ -14,3 +14,4 @@
 - [Managed OpenAI without SDK](managed-openai-http.md) — package installation can reject the OpenAI SDK; use the managed OpenAI-compatible HTTP endpoint instead.
 - [API Vitest mock boundary](api-vitest-mock-boundary.md) — tests importing API code must run with the API artifact as Vitest root or workspace package mocks may be bypassed.
 - [Bilingual semantic photo search](bilingual-semantic-search.md) — use cached LLM query expansion; the managed OpenAI proxy rejects embeddings.
+- [AI theme assignment policy](ai-theme-assignment.md) — auto-apply only high-confidence suggestions to new unthemed photos; keep existing-library changes review-first.

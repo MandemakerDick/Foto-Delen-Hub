@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable, photoLikesTable, photoAiAnalysesTable } from "@workspace/db";
-import { eq, ilike, desc, sql, count, and, or } from "drizzle-orm";
+import { eq, ilike, desc, sql, count, and, isNull, or } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,
@@ -57,6 +57,10 @@ export function buildPhotoSelect() {
       aiTags: photoAiAnalysesTable.tags,
       aiDescription: photoAiAnalysesTable.description,
       aiStatus: photoAiAnalysesTable.status,
+       aiSuggestedThemeId: photoAiAnalysesTable.themeSuggestionId,
+       aiSuggestedThemeConfidence: photoAiAnalysesTable.themeSuggestionConfidence,
+       aiSuggestedThemeReason: photoAiAnalysesTable.themeSuggestionReason,
+       aiThemeSuggestionStatus: photoAiAnalysesTable.themeSuggestionStatus,
       likeCount: photosTable.likeCount,
       commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)::int`,
       createdAt: photosTable.createdAt,
@@ -222,7 +226,7 @@ router.post("/photos", async (req: any, res) => {
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
   res.status(201).json(mapPhoto(rows[0]));
 
-  void enqueuePhotoAiAnalysis(photo.id).catch((error) => {
+  void enqueuePhotoAiAnalysis(photo.id, { autoApplyTheme: true }).catch((error) => {
     req.log.warn({ err: error, photoId: photo.id }, "Could not queue AI photo analysis");
   });
 
@@ -236,6 +240,88 @@ router.post("/photos/ai/backfill", requireAdmin, async (req, res) => {
   const limit = Number.isFinite(requestedLimit) ? requestedLimit : 25;
   const photoIds = await enqueuePhotosMissingAiAnalysis(limit);
   res.status(202).json({ queued: photoIds.length, photoIds });
+});
+
+// POST /api/photos/:id/ai-theme/accept — apply a pending AI theme suggestion (admin only).
+router.post("/photos/:id/ai-theme/accept", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid photo id" });
+    return;
+  }
+
+  const [row] = await db
+    .select({
+      photoId: photosTable.id,
+      themeId: photosTable.themeId,
+      suggestedThemeId: photoAiAnalysesTable.themeSuggestionId,
+      suggestionStatus: photoAiAnalysesTable.themeSuggestionStatus,
+    })
+    .from(photosTable)
+    .leftJoin(photoAiAnalysesTable, eq(photoAiAnalysesTable.photoId, photosTable.id))
+    .where(eq(photosTable.id, id));
+
+  if (!row) {
+    res.status(404).json({ error: "Photo not found" });
+    return;
+  }
+  if (row.themeId != null) {
+    res.status(409).json({ error: "Photo already has a theme" });
+    return;
+  }
+  if (
+    row.suggestedThemeId == null ||
+    row.suggestionStatus !== "pending"
+  ) {
+    res.status(409).json({ error: "No pending theme suggestion" });
+    return;
+  }
+
+  const updatedPhotos = await db
+    .update(photosTable)
+    .set({ themeId: row.suggestedThemeId })
+    .where(and(eq(photosTable.id, id), isNull(photosTable.themeId)))
+    .returning({ id: photosTable.id });
+  if (updatedPhotos.length === 0) {
+    res.status(409).json({ error: "Photo already has a theme" });
+    return;
+  }
+  await db
+    .update(photoAiAnalysesTable)
+    .set({ themeSuggestionStatus: "accepted" })
+    .where(eq(photoAiAnalysesTable.photoId, id));
+
+  const rows = await buildPhotoSelect().where(eq(photosTable.id, id));
+  res.json(mapPhoto(rows[0]));
+});
+
+// POST /api/photos/:id/ai-theme/reject — dismiss a pending AI theme suggestion (admin only).
+router.post("/photos/:id/ai-theme/reject", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid photo id" });
+    return;
+  }
+
+  const [photo] = await db
+    .select({ id: photosTable.id })
+    .from(photosTable)
+    .where(eq(photosTable.id, id));
+  if (!photo) {
+    res.status(404).json({ error: "Photo not found" });
+    return;
+  }
+
+  await db
+    .update(photoAiAnalysesTable)
+    .set({ themeSuggestionStatus: "rejected" })
+    .where(
+      and(
+        eq(photoAiAnalysesTable.photoId, id),
+        eq(photoAiAnalysesTable.themeSuggestionStatus, "pending"),
+      ),
+    );
+  res.json({ rejected: true, photoId: id });
 });
 
 // POST /api/photos/:id/ai/retry — re-run AI analysis for one photo (admin only).

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PhotoAiStatus } from './photoAiStatus';
+import type { PhotoAiThemeSuggestionStatus } from './photoAiThemeSuggestionStatus';
 
 export interface Photo {
   id: number;
@@ -39,6 +40,23 @@ export interface Photo {
   aiDescription?: string | null;
   /** @nullable */
   aiStatus?: PhotoAiStatus;
+  /**
+     * Theme suggested by AI from the existing theme library
+     * @nullable
+     */
+  aiSuggestedThemeId?: number | null;
+  /**
+     * AI confidence for the suggested theme, from 0 to 1
+     * @nullable
+     */
+  aiSuggestedThemeConfidence?: number | null;
+  /**
+     * Short explanation for the suggested theme
+     * @nullable
+     */
+  aiSuggestedThemeReason?: string | null;
+  /** @nullable */
+  aiThemeSuggestionStatus?: PhotoAiThemeSuggestionStatus;
   likeCount?: number;
   commentCount?: number;
   createdAt: string;

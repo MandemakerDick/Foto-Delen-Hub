@@ -12,12 +12,20 @@ const dbTables = {
     id: "ai.id",
     photoId: "ai.photoId",
     status: "ai.status",
+    themeAutoApply: "ai.themeAutoApply",
+    themeSuggestionStatus: "ai.themeSuggestionStatus",
   },
   photosTable: {
     id: "photo.id",
     title: "photo.title",
     description: "photo.description",
     imageUrl: "photo.imageUrl",
+    themeId: "photo.themeId",
+  },
+  themesTable: {
+    id: "theme.id",
+    name: "theme.name",
+    description: "theme.description",
   },
 };
 
@@ -58,6 +66,7 @@ vi.mock("@workspace/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((left: unknown, right: unknown) => ({ left, right })),
+  and: vi.fn((...conditions: unknown[]) => conditions),
   inArray: vi.fn((left: unknown, right: unknown) => ({ left, right })),
   isNull: vi.fn((value: unknown) => ({ value })),
   or: vi.fn((...conditions: unknown[]) => conditions),
@@ -127,6 +136,39 @@ describe("AI response validation", () => {
     expect(() => parseAiAnalysis(JSON.stringify({ tags: [], description: "" }))).toThrow(
       "usable tags",
     );
+  });
+
+  it("accepts only confidence-scored suggestions from the supplied theme library", () => {
+    const themes = [
+      { id: 7, name: "Architecture", description: "Buildings and structures" },
+    ];
+    const valid = parseAiAnalysis(
+      JSON.stringify({
+        tags: ["building", "geometry"],
+        description: "A geometric building facade fills the frame.",
+        themeId: 7,
+        themeConfidence: 0.91,
+        themeReason: "The image prominently features architectural geometry.",
+      }),
+      themes,
+    );
+    const invented = parseAiAnalysis(
+      JSON.stringify({
+        tags: ["building", "geometry"],
+        description: "A geometric building facade fills the frame.",
+        themeId: 999,
+        themeConfidence: 0.99,
+        themeReason: "Invented theme",
+      }),
+      themes,
+    );
+
+    expect(valid.themeSuggestion).toEqual({
+      themeId: 7,
+      confidence: 0.91,
+      reason: "The image prominently features architectural geometry.",
+    });
+    expect(invented.themeSuggestion).toBeNull();
   });
 });
 
@@ -257,7 +299,9 @@ describe("photo AI queue", () => {
     await expect(resumePendingPhotoAiAnalyses()).resolves.toEqual([40]);
     await waitForUpdate("complete");
 
-    expect(state.inserts).toContainEqual({ photoId: 40, status: "pending" });
+    expect(state.inserts).toContainEqual(
+      expect.objectContaining({ photoId: 40, status: "pending" }),
+    );
   });
 });
 
@@ -269,10 +313,10 @@ describe("photo route wiring", () => {
     ]);
 
     expect(photoRoutes).toMatch(
-      /insert\(photosTable\)[\s\S]*enqueuePhotoAiAnalysis\(photo\.id\)/,
+      /insert\(photosTable\)[\s\S]*enqueuePhotoAiAnalysis\(photo\.id,\s*\{\s*autoApplyTheme:\s*true\s*\}\)/,
     );
     expect(importRoutes).toMatch(
-      /insert\(photosTable\)[\s\S]*enqueuePhotoAiAnalysis\(photo\.id\)/,
+      /insert\(photosTable\)[\s\S]*enqueuePhotoAiAnalysis\(photo\.id,\s*\{\s*autoApplyTheme:\s*true\s*\}\)/,
     );
   });
 

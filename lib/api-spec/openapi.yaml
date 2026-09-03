@@ -586,6 +586,54 @@ paths:
         "404":
           description: Photo not found
 
+  /photos/{id}/ai-theme/accept:
+    post:
+      operationId: acceptPhotoAiTheme
+      tags: [photos]
+      summary: Accept a pending AI theme suggestion (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Photo with the accepted theme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+        "403":
+          description: Admin access required
+        "404":
+          description: Photo not found
+        "409":
+          description: The photo has no pending suggestion or already has a theme
+
+  /photos/{id}/ai-theme/reject:
+    post:
+      operationId: rejectPhotoAiTheme
+      tags: [photos]
+      summary: Reject a pending AI theme suggestion (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Suggestion rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoAiThemeRejectResponse"
+        "403":
+          description: Admin access required
+        "404":
+          description: Photo not found
+
   /photos/{id}:
     get:
       operationId: getPhoto
@@ -1747,6 +1795,19 @@ components:
         aiStatus:
           type: ["string", "null"]
           enum: [pending, processing, complete, failed, null]
+        aiSuggestedThemeId:
+          type: ["integer", "null"]
+          description: Theme suggested by AI from the existing theme library
+        aiSuggestedThemeConfidence:
+          type: ["number", "null"]
+          format: float
+          description: AI confidence for the suggested theme, from 0 to 1
+        aiSuggestedThemeReason:
+          type: ["string", "null"]
+          description: Short explanation for the suggested theme
+        aiThemeSuggestionStatus:
+          type: ["string", "null"]
+          enum: [pending, auto_applied, accepted, rejected, null]
         likeCount:
           type: integer
         commentCount:
@@ -1797,6 +1858,15 @@ components:
       required: [queued, photoId]
       properties:
         queued:
+          type: boolean
+        photoId:
+          type: integer
+
+    PhotoAiThemeRejectResponse:
+      type: object
+      required: [rejected, photoId]
+      properties:
+        rejected:
           type: boolean
         photoId:
           type: integer

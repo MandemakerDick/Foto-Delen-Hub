@@ -49,6 +49,7 @@ import type {
   PhotoAiBackfillRequest,
   PhotoAiBackfillResponse,
   PhotoAiRetryResponse,
+  PhotoAiThemeRejectResponse,
   PhotoInput,
   PhotoReview,
   PhotoReviewInput,
@@ -2183,6 +2184,146 @@ export const useRetryPhotoAiAnalysis = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRetryPhotoAiAnalysisMutationOptions(options));
+    }
+
+export const getAcceptPhotoAiThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/photos/${id}/ai-theme/accept`
+}
+
+/**
+ * @summary Accept a pending AI theme suggestion (admin only)
+ */
+export const acceptPhotoAiTheme = async (id: number, options?: RequestInit): Promise<Photo> => {
+
+  return customFetch<Photo>(getAcceptPhotoAiThemeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptPhotoAiThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPhotoAiTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptPhotoAiTheme>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['acceptPhotoAiTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptPhotoAiTheme>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptPhotoAiTheme(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptPhotoAiThemeMutationResult = NonNullable<Awaited<ReturnType<typeof acceptPhotoAiTheme>>>
+
+    export type AcceptPhotoAiThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Accept a pending AI theme suggestion (admin only)
+ */
+export const useAcceptPhotoAiTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptPhotoAiTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptPhotoAiTheme>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAcceptPhotoAiThemeMutationOptions(options));
+    }
+
+export const getRejectPhotoAiThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/photos/${id}/ai-theme/reject`
+}
+
+/**
+ * @summary Reject a pending AI theme suggestion (admin only)
+ */
+export const rejectPhotoAiTheme = async (id: number, options?: RequestInit): Promise<PhotoAiThemeRejectResponse> => {
+
+  return customFetch<PhotoAiThemeRejectResponse>(getRejectPhotoAiThemeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectPhotoAiThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectPhotoAiTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectPhotoAiTheme>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rejectPhotoAiTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectPhotoAiTheme>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectPhotoAiTheme(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectPhotoAiThemeMutationResult = NonNullable<Awaited<ReturnType<typeof rejectPhotoAiTheme>>>
+
+    export type RejectPhotoAiThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Reject a pending AI theme suggestion (admin only)
+ */
+export const useRejectPhotoAiTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectPhotoAiTheme>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectPhotoAiTheme>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRejectPhotoAiThemeMutationOptions(options));
     }
 
 export const getGetPhotoUrl = (id: number,) => {

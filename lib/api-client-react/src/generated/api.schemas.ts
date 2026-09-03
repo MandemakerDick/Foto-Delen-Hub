@@ -128,6 +128,19 @@ export const PhotoAiStatus = {
   failed: 'failed',
 } as const;
 
+/**
+ * @nullable
+ */
+export type PhotoAiThemeSuggestionStatus = typeof PhotoAiThemeSuggestionStatus[keyof typeof PhotoAiThemeSuggestionStatus] | null;
+
+
+export const PhotoAiThemeSuggestionStatus = {
+  pending: 'pending',
+  auto_applied: 'auto_applied',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
+
 export interface Photo {
   id: number;
   title: string;
@@ -160,6 +173,23 @@ export interface Photo {
   aiDescription?: string | null;
   /** @nullable */
   aiStatus?: PhotoAiStatus;
+  /**
+     * Theme suggested by AI from the existing theme library
+     * @nullable
+     */
+  aiSuggestedThemeId?: number | null;
+  /**
+     * AI confidence for the suggested theme, from 0 to 1
+     * @nullable
+     */
+  aiSuggestedThemeConfidence?: number | null;
+  /**
+     * Short explanation for the suggested theme
+     * @nullable
+     */
+  aiSuggestedThemeReason?: string | null;
+  /** @nullable */
+  aiThemeSuggestionStatus?: PhotoAiThemeSuggestionStatus;
   likeCount?: number;
   commentCount?: number;
   createdAt: string;
@@ -190,6 +220,11 @@ export interface PhotoAiBackfillResponse {
 
 export interface PhotoAiRetryResponse {
   queued: boolean;
+  photoId: number;
+}
+
+export interface PhotoAiThemeRejectResponse {
+  rejected: boolean;
   photoId: number;
 }
 

@@ -2,14 +2,16 @@ import {
   db,
   photoAiAnalysesTable,
   photosTable,
+  themesTable,
 } from "@workspace/db";
-import { eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { ObjectStorageService } from "./objectStorage";
 import { logger } from "./logger";
 
 const AI_MODEL = "gpt-5.4-mini";
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_CONCURRENT_ANALYSES = 2;
+export const HIGH_THEME_CONFIDENCE = 0.85;
 const SEARCH_EXPANSION_TTL_MS = 10 * 60 * 1000;
 const SEARCH_STOP_WORDS = new Set([
   "and",
@@ -36,6 +38,19 @@ const searchExpansionCache = new Map<
 type AiAnalysis = {
   tags: string[];
   description: string;
+  themeSuggestion: ThemeSuggestion | null;
+};
+
+type ThemeCandidate = {
+  id: number;
+  name: string;
+  description: string | null;
+};
+
+export type ThemeSuggestion = {
+  themeId: number;
+  confidence: number;
+  reason: string;
 };
 
 type PhotoForAnalysis = {
@@ -43,6 +58,8 @@ type PhotoForAnalysis = {
   title: string;
   description: string | null;
   imageUrl: string;
+  themeId: number | null;
+  themeAutoApply?: boolean | null;
 };
 
 const scheduledPhotoIds = new Set<number>();
@@ -62,10 +79,16 @@ export function normalizeTags(value: unknown): string[] {
   ).slice(0, 12);
 }
 
-export function parseAiAnalysis(content: string): AiAnalysis {
+export function parseAiAnalysis(
+  content: string,
+  themes: ThemeCandidate[] = [],
+): AiAnalysis {
   const parsed = JSON.parse(content) as {
     tags?: unknown;
     description?: unknown;
+    themeId?: unknown;
+    themeConfidence?: unknown;
+    themeReason?: unknown;
   };
   const tags = normalizeTags(parsed.tags);
   const description =
@@ -77,7 +100,24 @@ export function parseAiAnalysis(content: string): AiAnalysis {
     throw new Error("AI response did not contain usable tags and a description");
   }
 
-  return { tags, description };
+  const themeId = Number(parsed.themeId);
+  const confidence = Number(parsed.themeConfidence);
+  const candidate = themes.find((theme) => theme.id === themeId);
+  const reason =
+    typeof parsed.themeReason === "string"
+      ? parsed.themeReason.trim().slice(0, 240)
+      : "";
+  const themeSuggestion =
+    candidate &&
+    Number.isInteger(themeId) &&
+    Number.isFinite(confidence) &&
+    confidence >= 0 &&
+    confidence <= 1 &&
+    reason.length > 0
+      ? { themeId, confidence, reason }
+      : null;
+
+  return { tags, description, themeSuggestion };
 }
 
 async function responseToImageDataUrl(response: Response): Promise<string> {
@@ -131,7 +171,10 @@ async function loadPhotoAsDataUrl(imageUrl: string): Promise<string> {
   return responseToImageDataUrl(response);
 }
 
-async function requestAiAnalysis(photo: PhotoForAnalysis): Promise<AiAnalysis> {
+async function requestAiAnalysis(
+  photo: PhotoForAnalysis,
+  themes: ThemeCandidate[],
+): Promise<AiAnalysis> {
   const baseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.replace(/\/$/, "");
   const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
   if (!baseUrl || !apiKey) {
@@ -139,6 +182,11 @@ async function requestAiAnalysis(photo: PhotoForAnalysis): Promise<AiAnalysis> {
   }
 
   const imageDataUrl = await loadPhotoAsDataUrl(photo.imageUrl);
+  const themeList = themes.map(({ id, name, description }) => ({
+    id,
+    name,
+    description: description ?? "",
+  }));
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -153,14 +201,14 @@ async function requestAiAnalysis(photo: PhotoForAnalysis): Promise<AiAnalysis> {
         {
           role: "system",
           content:
-            "You index photographs for search. Return only valid JSON with a concise English description and 5-12 concise lowercase English tags. Describe only visible content. Do not identify people or infer sensitive traits such as ethnicity, religion, health, politics, or sexuality.",
+            "You index photographs for search and classify them into an existing theme when appropriate. Return only valid JSON with a concise English description, 5-12 concise lowercase English tags, and a theme suggestion. Describe only visible content. Do not identify people or infer sensitive traits such as ethnicity, religion, health, politics, or sexuality. Only use a theme ID from the supplied list; if none fits, use themeId null, themeConfidence 0, and themeReason ''. Confidence must be a number from 0 to 1 and should reflect how clearly the photo fits the selected theme.",
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this photo for search. Existing title: ${photo.title}. Existing photographer statement: ${photo.description ?? "none"}. Return {"description":"one factual sentence","tags":["tag"]}.`,
+              text: `Analyze this photo for search. Existing title: ${photo.title}. Existing photographer statement: ${photo.description ?? "none"}. Available themes: ${JSON.stringify(themeList)}. Return {"description":"one factual sentence","tags":["tag"],"themeId":123,"themeConfidence":0.91,"themeReason":"short factual reason"} or use null/0/'' when no theme is a good fit.`,
             },
             {
               type: "image_url",
@@ -185,7 +233,7 @@ async function requestAiAnalysis(photo: PhotoForAnalysis): Promise<AiAnalysis> {
   };
   const content = completion.choices?.[0]?.message?.content;
   if (!content) throw new Error("AI analysis returned no content");
-  return parseAiAnalysis(content);
+   return parseAiAnalysis(content, themes);
 }
 
 export async function expandPhotoSearchQuery(query: string): Promise<string[]> {
@@ -275,8 +323,14 @@ async function analyzePhoto(photoId: number): Promise<void> {
       title: photosTable.title,
       description: photosTable.description,
       imageUrl: photosTable.imageUrl,
+      themeId: photosTable.themeId,
+      themeAutoApply: photoAiAnalysesTable.themeAutoApply,
     })
     .from(photosTable)
+    .leftJoin(
+      photoAiAnalysesTable,
+      eq(photoAiAnalysesTable.photoId, photosTable.id),
+    )
     .where(eq(photosTable.id, photoId));
 
   if (!photo) {
@@ -290,7 +344,36 @@ async function analyzePhoto(photoId: number): Promise<void> {
     .where(eq(photoAiAnalysesTable.photoId, photoId));
 
   try {
-    const analysis = await requestAiAnalysis(photo);
+    const themes = await db
+      .select({
+        id: themesTable.id,
+        name: themesTable.name,
+        description: themesTable.description,
+      })
+      .from(themesTable);
+    const analysis = await requestAiAnalysis(photo, themes);
+    const themeSuggestion = analysis.themeSuggestion;
+    const shouldAutoApplyTheme =
+      photo.themeId == null &&
+      photo.themeAutoApply !== false &&
+      themeSuggestion !== null &&
+      themeSuggestion.confidence >= HIGH_THEME_CONFIDENCE;
+
+    let didAutoApplyTheme = false;
+    if (shouldAutoApplyTheme && themeSuggestion) {
+      const updatedPhotos = await db
+        .update(photosTable)
+        .set({ themeId: themeSuggestion.themeId })
+        .where(
+          and(
+            eq(photosTable.id, photoId),
+            isNull(photosTable.themeId),
+          ),
+        )
+        .returning({ id: photosTable.id });
+      didAutoApplyTheme = updatedPhotos.length > 0;
+    }
+
     await db
       .update(photoAiAnalysesTable)
       .set({
@@ -300,6 +383,14 @@ async function analyzePhoto(photoId: number): Promise<void> {
         error: null,
         model: AI_MODEL,
         processedAt: new Date(),
+        themeSuggestionId: themeSuggestion?.themeId ?? null,
+        themeSuggestionConfidence: themeSuggestion?.confidence ?? null,
+        themeSuggestionReason: themeSuggestion?.reason ?? null,
+        themeSuggestionStatus: didAutoApplyTheme
+          ? "auto_applied"
+          : themeSuggestion
+            ? "pending"
+            : null,
       })
       .where(eq(photoAiAnalysesTable.photoId, photoId));
     logger.info({ photoId, tagCount: analysis.tags.length }, "AI photo analysis completed");
@@ -332,13 +423,22 @@ function drainAnalysisQueue(): void {
   }
 }
 
-export async function enqueuePhotoAiAnalysis(photoId: number): Promise<void> {
+export async function enqueuePhotoAiAnalysis(
+  photoId: number,
+  options: { autoApplyTheme?: boolean } = {},
+): Promise<void> {
+  const autoApplyTheme = options.autoApplyTheme ?? true;
   await db
     .insert(photoAiAnalysesTable)
-    .values({ photoId, status: "pending" })
+    .values({ photoId, status: "pending", themeAutoApply: autoApplyTheme })
     .onConflictDoUpdate({
       target: photoAiAnalysesTable.photoId,
-      set: { status: "pending", error: null },
+      set: {
+        status: "pending",
+        error: null,
+        themeAutoApply: autoApplyTheme,
+        themeSuggestionStatus: null,
+      },
     });
 
   if (scheduledPhotoIds.has(photoId)) return;
@@ -365,7 +465,7 @@ export async function enqueuePhotosMissingAiAnalysis(limit = 25): Promise<number
     .limit(safeLimit);
 
   for (const photo of photos) {
-    await enqueuePhotoAiAnalysis(photo.id);
+    await enqueuePhotoAiAnalysis(photo.id, { autoApplyTheme: false });
   }
   return photos.map((photo) => photo.id);
 }
@@ -373,13 +473,18 @@ export async function enqueuePhotosMissingAiAnalysis(limit = 25): Promise<number
 export async function resumePendingPhotoAiAnalyses(limit = 25): Promise<number[]> {
   const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
   const analyses = await db
-    .select({ photoId: photoAiAnalysesTable.photoId })
+    .select({
+      photoId: photoAiAnalysesTable.photoId,
+      themeAutoApply: photoAiAnalysesTable.themeAutoApply,
+    })
     .from(photoAiAnalysesTable)
     .where(inArray(photoAiAnalysesTable.status, ["pending", "processing"]))
     .limit(safeLimit);
 
   for (const analysis of analyses) {
-    await enqueuePhotoAiAnalysis(analysis.photoId);
+    await enqueuePhotoAiAnalysis(analysis.photoId, {
+      autoApplyTheme: analysis.themeAutoApply,
+    });
   }
   return analyses.map((analysis) => analysis.photoId);
 }

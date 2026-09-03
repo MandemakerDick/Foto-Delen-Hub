@@ -1,4 +1,4 @@
-import { integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, real, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { photosTable } from "./photos";
 
 export const photoAiAnalysesTable = pgTable(
@@ -16,6 +16,13 @@ export const photoAiAnalysesTable = pgTable(
     error: text("error"),
     model: text("model"),
     processedAt: timestamp("processed_at"),
+    themeAutoApply: boolean("theme_auto_apply").notNull().default(true),
+    themeSuggestionId: integer("theme_suggestion_id"),
+    themeSuggestionConfidence: real("theme_suggestion_confidence"),
+    themeSuggestionReason: text("theme_suggestion_reason"),
+    themeSuggestionStatus: text("theme_suggestion_status", {
+      enum: ["pending", "auto_applied", "accepted", "rejected"],
+    }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({

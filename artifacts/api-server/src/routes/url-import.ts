@@ -401,7 +401,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
       // Re-fetch with full joins
       const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
       if (rows[0]) importedPhotos.push(mapPhoto(rows[0]));
-      void enqueuePhotoAiAnalysis(photo.id).catch((error) => {
+      void enqueuePhotoAiAnalysis(photo.id, { autoApplyTheme: true }).catch((error) => {
         req.log?.warn({ err: error, photoId: photo.id }, "Could not queue AI photo analysis");
       });
     } catch (err: any) {
