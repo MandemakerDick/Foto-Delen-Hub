@@ -344,7 +344,7 @@
     "stats": {
       "photographs": "Foto's",
       "clubs": "Clubs",
-      "photographers": "Fotografen",
+    "photographers": "Fotografen",
       "themes": "Thema's"
     },
     "photographers": {
@@ -432,6 +432,7 @@
     "collection": "Collectie",
     "noPhotos": "Nog geen foto's",
     "noPhotosBody": "Deze fotoclub heeft nog geen foto's gedeeld.",
+      "photographers": "Fotografen",
     "membersHeading": "Leden",
     "allPhotos": "Alle foto's",
     "filteringBy": "Foto's van {{name}}",

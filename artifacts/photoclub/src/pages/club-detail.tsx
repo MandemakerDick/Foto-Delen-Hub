@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { useAuth, SignInButton } from "@clerk/react";
-import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, X, Pencil, Loader2 } from "lucide-react";
+import { Users, MapPin, Calendar, ArrowLeft, Image as ImageIcon, Globe, X, Pencil, Loader2, User } from "lucide-react";
 import { format } from "date-fns";
 import {
   useGetClub, getGetClubQueryKey,
@@ -48,7 +48,7 @@ export default function ClubDetail() {
 
   const { data: members } = useListPhotographers(
     { clubId },
-    { query: { enabled: showMembers, queryKey: getListPhotographersQueryKey({ clubId }) } },
+    { query: { enabled: !!clubId, queryKey: getListPhotographersQueryKey({ clubId }) } },
   );
 
   const { data: photos, isLoading: photosLoading } = useListPhotos(
@@ -355,7 +355,55 @@ export default function ClubDetail() {
         </div>
       </section>
 
-      {/* Members panel */}
+      {/* Photographers in this club */}
+      {(members === undefined || members.length > 0) && (
+        <section className="py-12 border-b border-border/50">
+          <div className="container mx-auto px-4">
+            <h2 className="font-serif text-2xl font-bold mb-6 flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              {t("clubDetail.photographers")}
+            </h2>
+            {!members ? (
+              <div className="flex gap-6">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
+                    <div className="w-16 h-16 rounded-full bg-muted" />
+                    <div className="h-3 w-14 bg-muted rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : members.length === 0 ? (
+              <p className="text-muted-foreground text-sm">{t("clubDetail.noMembersYet")}</p>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                {members.map((member) => {
+                  return (
+                    <Link
+                      key={member.id}
+                      href={`/photographers/${member.id}?ctx=${encodeURIComponent(`club:${clubId}`)}`}
+                    >
+                      <div className="flex flex-col items-center text-center gap-2 group">
+                        <div className="w-16 h-16 rounded-full bg-secondary border-2 border-border/50 group-hover:border-primary/60 transition-colors overflow-hidden flex items-center justify-center shrink-0">
+                          {member.avatarUrl ? (
+                            <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-7 h-7 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="text-xs font-medium leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                          {member.name}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Optional member filter */}
       {showMembers && (
         <section className="border-b border-border/50 bg-secondary/20 py-8">
           <div className="container mx-auto px-4">
@@ -414,7 +462,7 @@ export default function ClubDetail() {
                 ? t("clubDetail.filteringBy", { name: selectedMember.name })
                 : t("clubDetail.collection")}
             </h2>
-            {isAdmin && !photosLoading && !editMode && (visiblePhotos.length > 0) && !selectedPhotographerId && (
+            {isAdmin && !photosLoading && !editMode && visiblePhotos.length > 0 && !selectedPhotographerId && (
               <Button
                 variant="ghost"
                 size="sm"

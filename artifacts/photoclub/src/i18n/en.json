@@ -344,7 +344,7 @@
     "stats": {
       "photographs": "Photographs",
       "clubs": "Clubs",
-      "photographers": "Photographers",
+    "photographers": "Photographers",
       "themes": "Themes"
     },
     "photographers": {
@@ -432,6 +432,7 @@
     "collection": "Collection",
     "noPhotos": "No photographs yet",
     "noPhotosBody": "This club hasn't shared any photos.",
+      "photographers": "Photographers",
     "membersHeading": "Members",
     "allPhotos": "All photos",
     "filteringBy": "Photos by {{name}}",
