@@ -65,6 +65,7 @@ export function buildPhotoSelect() {
        aiThemeReviewedAt: photoAiAnalysesTable.themeReviewedAt,
       likeCount: photosTable.likeCount,
       commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)::int`,
+       sortOrder: photosTable.sortOrder,
       createdAt: photosTable.createdAt,
     })
     .from(photosTable)

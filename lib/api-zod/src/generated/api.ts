@@ -435,6 +435,7 @@ export const ListPhotosResponseItem = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 export const ListPhotosResponse = zod.array(ListPhotosResponseItem)
@@ -486,6 +487,7 @@ export const ListRecentPhotosResponseItem = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 export const ListRecentPhotosResponse = zod.array(ListRecentPhotosResponseItem)
@@ -542,6 +544,7 @@ export const AcceptPhotoAiThemeResponse = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 
@@ -607,6 +610,7 @@ export const GetPhotoResponse = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 
@@ -651,6 +655,7 @@ export const UpdatePhotoResponse = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 
@@ -706,6 +711,7 @@ export const TogglePhotoLikeResponse = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 }),
   "liked": zod.boolean()
@@ -782,6 +788,7 @@ export const ListLikedPhotosResponseItem = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 export const ListLikedPhotosResponse = zod.array(ListLikedPhotosResponseItem)
@@ -838,6 +845,7 @@ export const ListFollowingPhotosResponseItem = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })
 export const ListFollowingPhotosResponse = zod.array(ListFollowingPhotosResponseItem)
@@ -1065,6 +1073,7 @@ export const ImportPhotosFromUrlResponse = zod.object({
   "aiThemeReviewedAt": zod.coerce.date().nullish(),
   "likeCount": zod.number().optional(),
   "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
   "createdAt": zod.string()
 })).optional()
 })

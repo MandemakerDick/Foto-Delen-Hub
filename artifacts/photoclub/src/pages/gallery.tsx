@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SearchBar } from "@/components/search-bar";
 
-type SortOption = "newest" | "oldest" | "likes" | "comments" | "random";
+type SortOption = "newest" | "oldest" | "photographer" | "likes" | "comments" | "random";
 type GroupOption = "club" | "photographer" | "theme" | "latest" | "random";
 
 function randomRank(id: number, seed: number) {
@@ -71,6 +71,19 @@ export default function Gallery() {
 
     if (groupBy === "random" || sortBy === "random") {
       return result.sort((a, b) => randomRank(a.id, randomSeed) - randomRank(b.id, randomSeed));
+    }
+    if (sortBy === "photographer") {
+      return result.sort((a, b) => {
+        const photographerCompare = (a.photographerName ?? "").localeCompare(
+          b.photographerName ?? "",
+          undefined,
+          { sensitivity: "base" },
+        );
+        if (photographerCompare !== 0) return photographerCompare;
+        const aOrder = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder || newestFirst(a, b);
+      });
     }
     if (sortBy === "oldest") return result.sort((a, b) => -newestFirst(a, b));
     if (sortBy === "likes") return result.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || newestFirst(a, b));
@@ -240,6 +253,7 @@ export default function Gallery() {
             <SelectContent>
               <SelectItem value="newest">{t("gallery.sortNewest")}</SelectItem>
               <SelectItem value="oldest">{t("gallery.sortOldest")}</SelectItem>
+              <SelectItem value="photographer">{t("gallery.sortPhotographer")}</SelectItem>
               <SelectItem value="likes">{t("gallery.sortLikes")}</SelectItem>
               <SelectItem value="comments">{t("gallery.sortComments")}</SelectItem>
               <SelectItem value="random">{t("gallery.sortRandom")}</SelectItem>

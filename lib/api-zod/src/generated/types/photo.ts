@@ -64,5 +64,10 @@ export interface Photo {
   aiThemeReviewedAt?: Date | null;
   likeCount?: number;
   commentCount?: number;
+  /**
+     * Photographer-defined display order for profile and gallery views
+     * @nullable
+     */
+  sortOrder?: number | null;
   createdAt: string;
 }
