@@ -77,6 +77,23 @@ export default function PhotoDetail() {
   // Parse navigation context from ?ctx= query param
   const ctx = new URLSearchParams(search).get("ctx") ?? "gallery";
   const [ctxType, ctxId] = ctx.includes(":") ? ctx.split(":") : [ctx, ""];
+  const contextId = Number(ctxId);
+  const backHref =
+    ctxType === "photographer" && Number.isInteger(contextId) && contextId > 0
+      ? `/photographers/${contextId}`
+      : ctxType === "club" && Number.isInteger(contextId) && contextId > 0
+        ? `/clubs/${contextId}`
+        : ctxType === "theme" && Number.isInteger(contextId) && contextId > 0
+          ? `/themes/${contextId}`
+          : "/photos";
+  const backLabel =
+    ctxType === "photographer"
+      ? t("photoDetail.backToPhotographer")
+      : ctxType === "club"
+        ? t("photoDetail.backToClub")
+        : ctxType === "theme"
+          ? t("photoDetail.backToTheme")
+          : t("photoDetail.back");
   const listParams =
     ctxType === "photographer" ? { photographerId: Number(ctxId) } :
     ctxType === "club"         ? { clubId: Number(ctxId) } :
@@ -532,9 +549,9 @@ export default function PhotoDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Link href="/photos" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
+      <Link href={backHref} className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" />
-        {t("photoDetail.back")}
+        {backLabel}
       </Link>
 
       <div className="flex flex-col lg:flex-row gap-12">

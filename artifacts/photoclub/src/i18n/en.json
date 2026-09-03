@@ -425,6 +425,9 @@
   },
   "photoDetail": {
     "back": "Back to Gallery",
+    "backToPhotographer": "Back to Photographer",
+    "backToClub": "Back to Club",
+    "backToTheme": "Back to Theme",
     "notFound": "Photograph not found",
     "notFoundBody": "This photo may have been removed from the darkroom.",
     "returnLink": "Return to Gallery",

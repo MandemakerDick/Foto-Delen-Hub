@@ -425,6 +425,9 @@
   },
   "photoDetail": {
     "back": "Terug naar galerij",
+    "backToPhotographer": "Terug naar fotograaf",
+    "backToClub": "Terug naar fotoclub",
+    "backToTheme": "Terug naar thema",
     "notFound": "Foto niet gevonden",
     "notFoundBody": "Deze foto is mogelijk uit de donkere kamer verwijderd.",
     "returnLink": "Terug naar galerij",
