@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import { Filter, Shuffle, CalendarDays, ArrowDownUp, X } from "lucide-react";
+import { Filter, Shuffle, CalendarDays, ArrowDownUp, Layers, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SearchBar } from "@/components/search-bar";
 
 type SortOption = "newest" | "oldest" | "likes" | "comments" | "random";
+type GroupOption = "club" | "photographer" | "theme" | "latest" | "random";
 
 function randomRank(id: number, seed: number) {
   let value = (id * 1103515245 + seed) | 0;
@@ -34,6 +35,7 @@ export default function Gallery() {
   const [photographerFilter, setPhotographerFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [groupBy, setGroupBy] = useState<GroupOption>("latest");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
 
@@ -67,12 +69,43 @@ export default function Gallery() {
     const newestFirst = (a: typeof result[number], b: typeof result[number]) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 
+    if (groupBy === "random" || sortBy === "random") {
+      return result.sort((a, b) => randomRank(a.id, randomSeed) - randomRank(b.id, randomSeed));
+    }
     if (sortBy === "oldest") return result.sort((a, b) => -newestFirst(a, b));
     if (sortBy === "likes") return result.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || newestFirst(a, b));
     if (sortBy === "comments") return result.sort((a, b) => (b.commentCount ?? 0) - (a.commentCount ?? 0) || newestFirst(a, b));
-    if (sortBy === "random") return result.sort((a, b) => randomRank(a.id, randomSeed) - randomRank(b.id, randomSeed));
     return result.sort(newestFirst);
-  }, [filteredPhotos, randomSeed, sortBy]);
+  }, [filteredPhotos, groupBy, randomSeed, sortBy]);
+
+  const groupedPhotos = useMemo(() => {
+    if (groupBy === "latest" || groupBy === "random") {
+      return [{ key: "all", label: "", photos: sortedPhotos }];
+    }
+
+    const groups = new Map<string, { key: string; label: string; photos: typeof sortedPhotos }>();
+    for (const photo of sortedPhotos) {
+      const key =
+        groupBy === "club"
+          ? photo.clubId?.toString() ?? "none"
+          : groupBy === "photographer"
+            ? photo.photographerId?.toString() ?? "none"
+            : photo.themeId?.toString() ?? "none";
+      const label =
+        groupBy === "club"
+          ? photo.clubName ?? t("gallery.ungroupedClub")
+          : groupBy === "photographer"
+            ? photo.photographerName ?? t("gallery.ungroupedPhotographer")
+            : photo.themeName ?? t("gallery.ungroupedTheme");
+      const existing = groups.get(key);
+      if (existing) {
+        existing.photos.push(photo);
+      } else {
+        groups.set(key, { key, label, photos: [photo] });
+      }
+    }
+    return Array.from(groups.values());
+  }, [groupBy, sortedPhotos, t]);
 
   const activeFiltersCount = clubFilter.length + themeFilter.length + (photographerFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
@@ -170,6 +203,28 @@ export default function Gallery() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="mt-3 flex min-w-0 flex-wrap gap-3">
+          <Select value={groupBy} onValueChange={(value) => {
+            const next = value as GroupOption;
+            setGroupBy(next);
+            if (next === "random") setRandomSeed(Date.now());
+          }}>
+            <SelectTrigger
+              data-testid="gallery-group-by"
+              icon={<Layers className="h-4 w-4 opacity-60" />}
+              className="flex-1 min-w-[170px] bg-background border-border/50"
+            >
+              <SelectValue placeholder={t("gallery.groupByLabel")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">{t("gallery.groupByLatest")}</SelectItem>
+              <SelectItem value="club">{t("gallery.groupByClub")}</SelectItem>
+              <SelectItem value="photographer">{t("gallery.groupByPhotographer")}</SelectItem>
+              <SelectItem value="theme">{t("gallery.groupByTheme")}</SelectItem>
+              <SelectItem value="random">{t("gallery.groupByRandom")}</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={sortBy} onValueChange={(value) => {
             const next = value as SortOption;
             setSortBy(next);
@@ -190,7 +245,7 @@ export default function Gallery() {
               <SelectItem value="random">{t("gallery.sortRandom")}</SelectItem>
             </SelectContent>
           </Select>
-          {sortBy === "random" && (
+          {(groupBy === "random" || sortBy === "random") && (
             <Button type="button" variant="outline" size="icon" onClick={() => setRandomSeed(Date.now())} aria-label={t("gallery.shuffle")}>
               <Shuffle className="w-4 h-4" />
             </Button>
@@ -235,9 +290,23 @@ export default function Gallery() {
           ))}
         </div>
       ) : sortedPhotos.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
-          {sortedPhotos.map((photo, i) => (
-            <PhotoCard key={photo.id} photo={photo} index={i} context="gallery" />
+        <div className="space-y-12">
+          {groupedPhotos.map((group) => (
+            <section key={group.key} className="space-y-6">
+              {group.label && (
+                <div className="flex items-baseline justify-between gap-4 border-b border-border/50 pb-3">
+                  <h2 className="font-serif text-2xl font-bold">{group.label}</h2>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {group.photos.length} {t("common.prints")}
+                  </span>
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
+                {group.photos.map((photo, i) => (
+                  <PhotoCard key={photo.id} photo={photo} index={i} context="gallery" />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : (
