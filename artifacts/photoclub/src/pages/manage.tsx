@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,7 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { isFileSlugTitle, isImportButtonDisabled } from "@/lib/import-utils";
-import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon, Mail, Sparkles } from "lucide-react";
+import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon, Mail, Sparkles, Bell } from "lucide-react";
 
 const clubSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -110,6 +110,7 @@ export default function Manage() {
       refetchInterval: adminStatus?.isAdmin ? 5_000 : false,
     },
   });
+  const previousPendingThemeCount = useRef<number | null>(null);
 
   // ── Import tab state ──────────────────────────────────────
   const [importStep, setImportStep] = useState<1 | 2 | 3 | 4>(1);
@@ -744,6 +745,19 @@ export default function Manage() {
       photo.aiThemeSuggestionStatus !== "pending",
   );
 
+  useEffect(() => {
+    if (!adminStatus?.isAdmin) return;
+    const pendingCount = pendingThemeSuggestions.length;
+    const previousCount = previousPendingThemeCount.current;
+    previousPendingThemeCount.current = pendingCount;
+    if (previousCount !== null && pendingCount > previousCount) {
+      toast({
+        title: t("manage.photos.aiThemeReviewAvailableTitle"),
+        description: t("manage.photos.aiThemeReviewAvailable", { count: pendingCount }),
+      });
+    }
+  }, [adminStatus?.isAdmin, pendingThemeSuggestions.length, t, toast]);
+
   const handleThemeSuggestionReview = async (
     photoId: number,
     action: "accept" | "reject",
@@ -882,6 +896,11 @@ export default function Manage() {
           </TabsTrigger>
           <TabsTrigger value="photos" data-testid="manage-tab-photos" className="data-[state=active]:bg-background">
             <ImageIcon className="w-4 h-4 mr-2" />{t("manage.tabs.photos")}
+            {pendingThemeSuggestions.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                {pendingThemeSuggestions.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="admins" data-testid="manage-tab-admins" className="data-[state=active]:bg-background">
             <ShieldCheck className="w-4 h-4 mr-2" />{t("manage.tabs.admins")}
@@ -1765,6 +1784,24 @@ export default function Manage() {
                   <Sparkles className="h-4 w-4 text-primary" />
                   {t("manage.photos.aiThemeReviewTitle")}
                 </div>
+                {pendingThemeSuggestions.length > 0 && (
+                  <div
+                    role="status"
+                    className="mb-4 flex items-start gap-3 rounded-md border border-primary/30 bg-primary/10 px-4 py-3"
+                  >
+                    <Bell className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {t("manage.photos.aiThemeReviewAvailable", {
+                          count: pendingThemeSuggestions.length,
+                        })}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("manage.photos.aiThemeReviewAvailableDesc")}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <p className="mb-4 text-sm text-muted-foreground">
                   {t("manage.photos.aiThemeReviewDesc")}
                 </p>
