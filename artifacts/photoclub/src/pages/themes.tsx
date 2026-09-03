@@ -53,7 +53,10 @@ export default function Themes() {
                 
                 <h3 className="font-serif text-2xl font-bold mb-2 group-hover:text-primary transition-colors">{theme.name}</h3>
                 
-                <p className="text-muted-foreground line-clamp-2 text-sm mb-6 flex-1">
+                <p
+                  className="text-muted-foreground line-clamp-2 text-sm mb-6 flex-1"
+                  title={theme.description || undefined}
+                >
                   {theme.description || t("common.noDescription")}
                 </p>
 

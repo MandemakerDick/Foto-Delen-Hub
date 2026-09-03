@@ -129,7 +129,10 @@ export default function Photographers() {
                   </div>
                 )}
 
-                <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
+                <p
+                  className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1"
+                  title={photographer.bio || undefined}
+                >
                   {photographer.bio}
                 </p>
 
