@@ -7,6 +7,6 @@ AI may only select from the existing Theme library. New photos without a manuall
 
 Keep assignment status separate from evaluation outcome. Accepting a pending suggestion records it as correct, rejecting records it as incorrect, and every auto-applied suggestion must remain visible in review history until an administrator marks it correct or incorrect.
 
-**Why:** The user wants imports categorized automatically but prefers a controlled rollout that protects curated metadata and makes uncertain matches visible before broader automation.
+**Why:** The user wants imports categorized automatically but prefers a controlled rollout that protects curated metadata, makes uncertain matches visible, and clearly explains when automatic results are already public. This review-first visibility has been confirmed as working.
 
 **How to apply:** Preserve the candidate allowlist, confidence threshold, review state, outcome history, and conditional unthemed-only update whenever the analysis queue, import flow, or theme-management UI changes.
