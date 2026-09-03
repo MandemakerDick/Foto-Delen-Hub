@@ -880,7 +880,7 @@ export default function Manage() {
         <p className="text-muted-foreground text-lg">{t("manage.subtitle")}</p>
       </div>
 
-      <Tabs defaultValue="club" className="w-full">
+      <Tabs className="w-full">
         <TabsList className="grid w-full grid-cols-6 mb-8 bg-secondary border border-border/50">
           <TabsTrigger value="club" data-testid="manage-tab-club" className="data-[state=active]:bg-background">
             <Users className="w-4 h-4 mr-2" />{t("manage.tabs.club")}
