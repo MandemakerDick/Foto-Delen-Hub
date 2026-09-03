@@ -141,6 +141,17 @@ export const PhotoAiThemeSuggestionStatus = {
   rejected: 'rejected',
 } as const;
 
+/**
+ * @nullable
+ */
+export type PhotoAiThemeReviewOutcome = typeof PhotoAiThemeReviewOutcome[keyof typeof PhotoAiThemeReviewOutcome] | null;
+
+
+export const PhotoAiThemeReviewOutcome = {
+  correct: 'correct',
+  incorrect: 'incorrect',
+} as const;
+
 export interface Photo {
   id: number;
   title: string;
@@ -190,6 +201,10 @@ export interface Photo {
   aiSuggestedThemeReason?: string | null;
   /** @nullable */
   aiThemeSuggestionStatus?: PhotoAiThemeSuggestionStatus;
+  /** @nullable */
+  aiThemeReviewOutcome?: PhotoAiThemeReviewOutcome;
+  /** @nullable */
+  aiThemeReviewedAt?: string | null;
   likeCount?: number;
   commentCount?: number;
   createdAt: string;
@@ -226,6 +241,32 @@ export interface PhotoAiRetryResponse {
 export interface PhotoAiThemeRejectResponse {
   rejected: boolean;
   photoId: number;
+}
+
+export type PhotoAiThemeReviewRequestOutcome = typeof PhotoAiThemeReviewRequestOutcome[keyof typeof PhotoAiThemeReviewRequestOutcome];
+
+
+export const PhotoAiThemeReviewRequestOutcome = {
+  correct: 'correct',
+  incorrect: 'incorrect',
+} as const;
+
+export interface PhotoAiThemeReviewRequest {
+  outcome: PhotoAiThemeReviewRequestOutcome;
+}
+
+export type PhotoAiThemeReviewResponseOutcome = typeof PhotoAiThemeReviewResponseOutcome[keyof typeof PhotoAiThemeReviewResponseOutcome];
+
+
+export const PhotoAiThemeReviewResponseOutcome = {
+  correct: 'correct',
+  incorrect: 'incorrect',
+} as const;
+
+export interface PhotoAiThemeReviewResponse {
+  reviewed: boolean;
+  photoId: number;
+  outcome: PhotoAiThemeReviewResponseOutcome;
 }
 
 export interface PhotoUpdate {

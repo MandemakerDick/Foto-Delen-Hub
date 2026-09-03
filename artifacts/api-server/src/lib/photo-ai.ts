@@ -391,6 +391,8 @@ async function analyzePhoto(photoId: number): Promise<void> {
           : themeSuggestion
             ? "pending"
             : null,
+        themeReviewOutcome: null,
+        themeReviewedAt: null,
       })
       .where(eq(photoAiAnalysesTable.photoId, photoId));
     logger.info({ photoId, tagCount: analysis.tags.length }, "AI photo analysis completed");

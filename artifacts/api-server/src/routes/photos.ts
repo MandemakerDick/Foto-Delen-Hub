@@ -61,6 +61,8 @@ export function buildPhotoSelect() {
        aiSuggestedThemeConfidence: photoAiAnalysesTable.themeSuggestionConfidence,
        aiSuggestedThemeReason: photoAiAnalysesTable.themeSuggestionReason,
        aiThemeSuggestionStatus: photoAiAnalysesTable.themeSuggestionStatus,
+       aiThemeReviewOutcome: photoAiAnalysesTable.themeReviewOutcome,
+       aiThemeReviewedAt: photoAiAnalysesTable.themeReviewedAt,
       likeCount: photosTable.likeCount,
       commentCount: sql<number>`coalesce(${commentCountSq.commentCount}, 0)::int`,
       createdAt: photosTable.createdAt,
@@ -288,7 +290,11 @@ router.post("/photos/:id/ai-theme/accept", requireAdmin, async (req, res) => {
   }
   await db
     .update(photoAiAnalysesTable)
-    .set({ themeSuggestionStatus: "accepted" })
+    .set({
+      themeSuggestionStatus: "accepted",
+      themeReviewOutcome: "correct",
+      themeReviewedAt: new Date(),
+    })
     .where(eq(photoAiAnalysesTable.photoId, id));
 
   const rows = await buildPhotoSelect().where(eq(photosTable.id, id));
@@ -314,7 +320,11 @@ router.post("/photos/:id/ai-theme/reject", requireAdmin, async (req, res) => {
 
   await db
     .update(photoAiAnalysesTable)
-    .set({ themeSuggestionStatus: "rejected" })
+    .set({
+      themeSuggestionStatus: "rejected",
+      themeReviewOutcome: "incorrect",
+      themeReviewedAt: new Date(),
+    })
     .where(
       and(
         eq(photoAiAnalysesTable.photoId, id),
@@ -322,6 +332,49 @@ router.post("/photos/:id/ai-theme/reject", requireAdmin, async (req, res) => {
       ),
     );
   res.json({ rejected: true, photoId: id });
+});
+
+// POST /api/photos/:id/ai-theme/review — record whether an AI-applied theme was correct.
+router.post("/photos/:id/ai-theme/review", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const outcome = req.body?.outcome;
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid photo id" });
+    return;
+  }
+  if (outcome !== "correct" && outcome !== "incorrect") {
+    res.status(400).json({ error: "outcome must be correct or incorrect" });
+    return;
+  }
+
+  const [photo] = await db
+    .select({ id: photosTable.id })
+    .from(photosTable)
+    .where(eq(photosTable.id, id));
+  if (!photo) {
+    res.status(404).json({ error: "Photo not found" });
+    return;
+  }
+
+  const updated = await db
+    .update(photoAiAnalysesTable)
+    .set({
+      themeReviewOutcome: outcome,
+      themeReviewedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(photoAiAnalysesTable.photoId, id),
+        eq(photoAiAnalysesTable.themeSuggestionStatus, "auto_applied"),
+      ),
+    )
+    .returning({ photoId: photoAiAnalysesTable.photoId });
+  if (updated.length === 0) {
+    res.status(409).json({ error: "No auto-applied theme is waiting for review" });
+    return;
+  }
+
+  res.json({ reviewed: true, photoId: id, outcome });
 });
 
 // POST /api/photos/:id/ai/retry — re-run AI analysis for one photo (admin only).

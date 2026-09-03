@@ -23,6 +23,10 @@ export const photoAiAnalysesTable = pgTable(
     themeSuggestionStatus: text("theme_suggestion_status", {
       enum: ["pending", "auto_applied", "accepted", "rejected"],
     }),
+    themeReviewOutcome: text("theme_review_outcome", {
+      enum: ["correct", "incorrect"],
+    }),
+    themeReviewedAt: timestamp("theme_reviewed_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({

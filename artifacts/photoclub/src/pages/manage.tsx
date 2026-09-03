@@ -738,6 +738,11 @@ export default function Manage() {
       photo.aiThemeSuggestionStatus === "pending" &&
       photo.aiSuggestedThemeId != null,
   );
+  const themeSuggestionHistory = (allPhotos ?? []).filter(
+    (photo) =>
+      photo.aiSuggestedThemeId != null &&
+      photo.aiThemeSuggestionStatus !== "pending",
+  );
 
   const handleThemeSuggestionReview = async (
     photoId: number,
@@ -757,6 +762,39 @@ export default function Manage() {
         description: action === "accept"
           ? t("manage.photos.aiThemeAcceptedDesc")
           : t("manage.photos.aiThemeRejectedDesc"),
+      });
+      await queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+    } catch {
+      toast({
+        title: t("common.error"),
+        description: t("manage.photos.aiThemeReviewError"),
+        variant: "destructive",
+      });
+    } finally {
+      setReviewingThemePhotoId(null);
+    }
+  };
+
+  const handleAutoAppliedThemeReview = async (
+    photoId: number,
+    outcome: "correct" | "incorrect",
+  ) => {
+    setReviewingThemePhotoId(photoId);
+    try {
+      const response = await fetch(`/api/photos/${photoId}/ai-theme/review`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outcome }),
+      });
+      if (!response.ok) throw new Error("Theme review failed");
+      toast({
+        title: outcome === "correct"
+          ? t("manage.photos.aiThemeMarkedCorrectTitle")
+          : t("manage.photos.aiThemeMarkedIncorrectTitle"),
+        description: outcome === "correct"
+          ? t("manage.photos.aiThemeMarkedCorrectDesc")
+          : t("manage.photos.aiThemeMarkedIncorrectDesc"),
       });
       await queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
     } catch {
@@ -1795,6 +1833,106 @@ export default function Manage() {
                 ) : (
                   <p className="rounded-md border border-dashed border-border/60 px-4 py-5 text-center text-sm text-muted-foreground">
                     {t("manage.photos.aiThemeNothingToReview")}
+                  </p>
+                )}
+              </div>
+              <div className="mb-6 rounded-lg border border-border/60 bg-background p-5">
+                <div className="mb-1 flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  {t("manage.photos.aiThemeHistoryTitle")}
+                </div>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  {t("manage.photos.aiThemeHistoryDesc")}
+                </p>
+                {themeSuggestionHistory.length > 0 ? (
+                  <div className="max-h-96 divide-y divide-border/50 overflow-y-auto rounded-md border border-border/50">
+                    {themeSuggestionHistory.map((photo) => {
+                      const suggestedTheme = themes?.find(
+                        (theme) => theme.id === photo.aiSuggestedThemeId,
+                      );
+                      const needsReview =
+                        photo.aiThemeSuggestionStatus === "auto_applied" &&
+                        photo.aiThemeReviewOutcome == null;
+                      const reviewLabel = photo.aiThemeReviewOutcome === "correct"
+                        ? t("manage.photos.aiThemeStatusCorrect")
+                        : photo.aiThemeReviewOutcome === "incorrect"
+                          ? t("manage.photos.aiThemeStatusIncorrect")
+                          : photo.aiThemeSuggestionStatus === "auto_applied"
+                            ? t("manage.photos.aiThemeStatusAutoApplied")
+                            : photo.aiThemeSuggestionStatus === "accepted"
+                              ? t("manage.photos.aiThemeStatusAccepted")
+                              : t("manage.photos.aiThemeStatusRejected");
+                      return (
+                        <div
+                          key={photo.id}
+                          className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center"
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <img
+                              src={photo.imageUrl}
+                              alt={photo.title}
+                              className="h-12 w-12 shrink-0 rounded object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{photo.title}</p>
+                              <p className="text-sm text-primary">
+                                {suggestedTheme?.name ?? t("manage.photos.aiThemeUnavailable")}
+                                {photo.aiSuggestedThemeConfidence != null
+                                  ? ` · ${Math.round(photo.aiSuggestedThemeConfidence * 100)}%`
+                                  : ""}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {t("manage.photos.aiThemeCurrentTheme", {
+                                  theme: photo.themeName ?? t("manage.photos.noTheme"),
+                                })}
+                                {photo.aiThemeReviewedAt
+                                  ? ` · ${new Date(photo.aiThemeReviewedAt).toLocaleDateString()}`
+                                  : ""}
+                              </p>
+                              {photo.aiSuggestedThemeReason && (
+                                <p className="line-clamp-2 text-xs text-muted-foreground">
+                                  {photo.aiSuggestedThemeReason}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {reviewLabel}
+                            </span>
+                            {needsReview && suggestedTheme != null && (
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => handleAutoAppliedThemeReview(photo.id, "correct")}
+                                  disabled={reviewingThemePhotoId === photo.id}
+                                >
+                                  {reviewingThemePhotoId === photo.id
+                                    ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                    : <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />}
+                                  {t("manage.photos.aiThemeCorrect")}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAutoAppliedThemeReview(photo.id, "incorrect")}
+                                  disabled={reviewingThemePhotoId === photo.id}
+                                >
+                                  <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                                  {t("manage.photos.aiThemeIncorrect")}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded-md border border-dashed border-border/60 px-4 py-5 text-center text-sm text-muted-foreground">
+                    {t("manage.photos.aiThemeHistoryEmpty")}
                   </p>
                 )}
               </div>

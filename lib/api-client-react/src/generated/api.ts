@@ -50,6 +50,8 @@ import type {
   PhotoAiBackfillResponse,
   PhotoAiRetryResponse,
   PhotoAiThemeRejectResponse,
+  PhotoAiThemeReviewRequest,
+  PhotoAiThemeReviewResponse,
   PhotoInput,
   PhotoReview,
   PhotoReviewInput,
@@ -2324,6 +2326,78 @@ export const useRejectPhotoAiTheme = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRejectPhotoAiThemeMutationOptions(options));
+    }
+
+export const getReviewPhotoAiThemeUrl = (id: number,) => {
+
+
+
+
+  return `/api/photos/${id}/ai-theme/review`
+}
+
+/**
+ * @summary Record whether an auto-applied AI theme was correct (admin only)
+ */
+export const reviewPhotoAiTheme = async (id: number,
+    photoAiThemeReviewRequest: PhotoAiThemeReviewRequest, options?: RequestInit): Promise<PhotoAiThemeReviewResponse> => {
+
+  return customFetch<PhotoAiThemeReviewResponse>(getReviewPhotoAiThemeUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      photoAiThemeReviewRequest,)
+  }
+);}
+
+
+
+
+export const getReviewPhotoAiThemeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPhotoAiTheme>>, TError,{id: number;data: BodyType<PhotoAiThemeReviewRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewPhotoAiTheme>>, TError,{id: number;data: BodyType<PhotoAiThemeReviewRequest>}, TContext> => {
+
+const mutationKey = ['reviewPhotoAiTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewPhotoAiTheme>>, {id: number;data: BodyType<PhotoAiThemeReviewRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewPhotoAiTheme(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewPhotoAiThemeMutationResult = NonNullable<Awaited<ReturnType<typeof reviewPhotoAiTheme>>>
+    export type ReviewPhotoAiThemeMutationBody = BodyType<PhotoAiThemeReviewRequest>
+    export type ReviewPhotoAiThemeMutationError = ErrorType<void>
+
+    /**
+ * @summary Record whether an auto-applied AI theme was correct (admin only)
+ */
+export const useReviewPhotoAiTheme = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPhotoAiTheme>>, TError,{id: number;data: BodyType<PhotoAiThemeReviewRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewPhotoAiTheme>>,
+        TError,
+        {id: number;data: BodyType<PhotoAiThemeReviewRequest>},
+        TContext
+      > => {
+      return useMutation(getReviewPhotoAiThemeMutationOptions(options));
     }
 
 export const getGetPhotoUrl = (id: number,) => {

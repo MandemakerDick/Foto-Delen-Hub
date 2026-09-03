@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PhotoAiStatus } from './photoAiStatus';
+import type { PhotoAiThemeReviewOutcome } from './photoAiThemeReviewOutcome';
 import type { PhotoAiThemeSuggestionStatus } from './photoAiThemeSuggestionStatus';
 
 export interface Photo {
@@ -57,6 +58,10 @@ export interface Photo {
   aiSuggestedThemeReason?: string | null;
   /** @nullable */
   aiThemeSuggestionStatus?: PhotoAiThemeSuggestionStatus;
+  /** @nullable */
+  aiThemeReviewOutcome?: PhotoAiThemeReviewOutcome;
+  /** @nullable */
+  aiThemeReviewedAt?: Date | null;
   likeCount?: number;
   commentCount?: number;
   createdAt: string;

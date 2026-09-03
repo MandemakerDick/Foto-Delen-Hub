@@ -634,6 +634,39 @@ paths:
         "404":
           description: Photo not found
 
+  /photos/{id}/ai-theme/review:
+    post:
+      operationId: reviewPhotoAiTheme
+      tags: [photos]
+      summary: Record whether an auto-applied AI theme was correct (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoAiThemeReviewRequest"
+      responses:
+        "200":
+          description: Review recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoAiThemeReviewResponse"
+        "400":
+          description: Invalid review
+        "403":
+          description: Admin access required
+        "404":
+          description: Photo not found
+        "409":
+          description: No auto-applied suggestion is waiting for review
+
   /photos/{id}:
     get:
       operationId: getPhoto
@@ -1808,6 +1841,12 @@ components:
         aiThemeSuggestionStatus:
           type: ["string", "null"]
           enum: [pending, auto_applied, accepted, rejected, null]
+        aiThemeReviewOutcome:
+          type: ["string", "null"]
+          enum: [correct, incorrect, null]
+        aiThemeReviewedAt:
+          type: ["string", "null"]
+          format: date-time
         likeCount:
           type: integer
         commentCount:
@@ -1870,6 +1909,26 @@ components:
           type: boolean
         photoId:
           type: integer
+
+    PhotoAiThemeReviewRequest:
+      type: object
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [correct, incorrect]
+
+    PhotoAiThemeReviewResponse:
+      type: object
+      required: [reviewed, photoId, outcome]
+      properties:
+        reviewed:
+          type: boolean
+        photoId:
+          type: integer
+        outcome:
+          type: string
+          enum: [correct, incorrect]
 
     PhotoUpdate:
       type: object
