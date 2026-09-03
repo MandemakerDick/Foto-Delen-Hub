@@ -386,6 +386,8 @@
   },
   "photographerDetail": {
     "back": "Back to Photographers",
+    "backToTheme": "Back to Theme",
+    "backToClub": "Back to Club",
     "notFound": "Photographer not found",
     "returnLink": "Return to Directory",
     "joined": "Joined {{date}}",

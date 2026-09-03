@@ -105,7 +105,7 @@ export default function ThemeDetail() {
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
                 {photographers!.map((p) => (
-                  <Link key={p.id} href={`/photographers/${p.id}`}>
+                  <Link key={p.id} href={`/photographers/${p.id}?ctx=${encodeURIComponent(`theme:${themeId}`)}`}>
                     <div className="flex flex-col items-center text-center gap-2 group">
                       <div className="w-16 h-16 rounded-full bg-secondary border-2 border-border/50 group-hover:border-primary/60 transition-colors overflow-hidden flex items-center justify-center shrink-0">
                         {p.avatarUrl ? (

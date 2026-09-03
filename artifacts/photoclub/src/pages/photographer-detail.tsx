@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { User, Users, Calendar, ArrowLeft, Image as ImageIcon, Pencil, Loader2, UserPlus } from "lucide-react";
@@ -32,7 +32,29 @@ type PhotoEdit = { title: string; themeId: string; clubId: string };
 export default function PhotographerDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const [location] = useLocation();
   const photographerId = Number(id);
+  const queryString = location.includes("?")
+    ? location.slice(location.indexOf("?") + 1)
+    : window.location.search.slice(1);
+  const context = new URLSearchParams(queryString).get("ctx") ?? "";
+  const [contextType, contextIdValue] = context.includes(":")
+    ? context.split(":")
+    : [context, ""];
+  const contextId = Number(contextIdValue);
+  const hasValidContextId = Number.isInteger(contextId) && contextId > 0;
+  const backHref =
+    contextType === "theme" && hasValidContextId
+      ? `/themes/${contextId}`
+      : contextType === "club" && hasValidContextId
+        ? `/clubs/${contextId}`
+        : "/photographers";
+  const backLabel =
+    contextType === "theme" && hasValidContextId
+      ? t("photographerDetail.backToTheme")
+      : contextType === "club" && hasValidContextId
+        ? t("photographerDetail.backToClub")
+        : t("photographerDetail.back");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isSignedIn, userId } = useAuth();
@@ -259,11 +281,11 @@ export default function PhotographerDetail() {
       <section className="bg-secondary/30 border-b border-border/50 py-16">
         <div className="container mx-auto px-4">
           <Link
-            href="/photographers"
+            href={backHref}
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            {t("photographerDetail.back")}
+            {backLabel}
           </Link>
 
           <div className="flex flex-col md:flex-row gap-8 items-start">

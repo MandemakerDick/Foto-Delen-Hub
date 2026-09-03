@@ -386,6 +386,8 @@
   },
   "photographerDetail": {
     "back": "Terug naar fotografen",
+    "backToTheme": "Terug naar thema",
+    "backToClub": "Terug naar fotoclub",
     "notFound": "Fotograaf niet gevonden",
     "returnLink": "Terug naar overzicht",
     "joined": "Lid sinds {{date}}",
