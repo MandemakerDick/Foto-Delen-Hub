@@ -83,7 +83,10 @@ export default function Clubs() {
                   </div>
                 )}
                 
-                <p className="text-muted-foreground line-clamp-3 text-sm flex-1 mt-auto">
+                <p
+                  className="text-muted-foreground line-clamp-3 text-sm flex-1 mt-auto"
+                  title={club.description || undefined}
+                >
                   {club.description || t("common.noDescription")}
                 </p>
               </div>
