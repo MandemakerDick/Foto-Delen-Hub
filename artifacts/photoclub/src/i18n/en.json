@@ -551,7 +551,11 @@
     "filterThemes": "Filter by themes",
     "filterSelected": "{{count}} {{label}} selected",
     "dateFrom": "From date",
-    "dateTo": "To date"
+    "dateTo": "To date",
+    "shareView": "Copy link to this Gallery view",
+    "shareCopied": "Gallery link copied",
+    "shareFailed": "Could not copy the Gallery link",
+    "shareFailedDescription": "Copy the current address from your browser instead."
   },
   "upload": {
     "linkFirstTitle": "Link your photographer profile first",

@@ -1,7 +1,6 @@
-import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Filter, Shuffle, CalendarDays, ArrowDownUp, Layers, X } from "lucide-react";
+import { Filter, Shuffle, CalendarDays, ArrowDownUp, Layers, Share2, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
@@ -11,9 +10,21 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SearchBar } from "@/components/search-bar";
+import { useToast } from "@/hooks/use-toast";
 
 type SortOption = "newest" | "oldest" | "photographer" | "likes" | "comments" | "random";
 type GroupOption = "club" | "photographer" | "theme" | "latest" | "random";
+
+const sortOptions = new Set<SortOption>(["newest", "oldest", "photographer", "likes", "comments", "random"]);
+const groupOptions = new Set<GroupOption>(["club", "photographer", "theme", "latest", "random"]);
+
+function parseIdList(value: string | null) {
+  return value?.split(",").filter((id) => /^\d+$/.test(id)) ?? [];
+}
+
+function parseDate(value: string | null) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
 
 function randomRank(id: number, seed: number) {
   let value = (id * 1103515245 + seed) | 0;
@@ -25,19 +36,50 @@ function randomRank(id: number, seed: number) {
 
 export default function Gallery() {
   const { t } = useTranslation();
-  const [location, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(location.split('?')[1] || "");
-  const initialSearch = searchParams.get("search") || "";
-  
-  const [search, setSearch] = useState(initialSearch);
-  const [clubFilter, setClubFilter] = useState<string[]>([]);
-  const [themeFilter, setThemeFilter] = useState<string[]>([]);
-  const [photographerFilter, setPhotographerFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [groupBy, setGroupBy] = useState<GroupOption>("latest");
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [randomSeed, setRandomSeed] = useState(() => Date.now());
+  const { toast } = useToast();
+  const initialParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const initialGroup = initialParams.get("group") as GroupOption | null;
+  const initialSort = initialParams.get("sort") as SortOption | null;
+  const initialSeed = Number(initialParams.get("seed"));
+
+  const [search, setSearch] = useState(initialParams.get("search") ?? "");
+  const [clubFilter, setClubFilter] = useState<string[]>(() => parseIdList(initialParams.get("clubs")));
+  const [themeFilter, setThemeFilter] = useState<string[]>(() => parseIdList(initialParams.get("themes")));
+  const [photographerFilter, setPhotographerFilter] = useState<string>(() => {
+    const photographer = initialParams.get("photographer");
+    return photographer && /^\d+$/.test(photographer) ? photographer : "all";
+  });
+  const [dateFrom, setDateFrom] = useState(() => parseDate(initialParams.get("from")));
+  const [dateTo, setDateTo] = useState(() => parseDate(initialParams.get("to")));
+  const [groupBy, setGroupBy] = useState<GroupOption>(
+    initialGroup && groupOptions.has(initialGroup) ? initialGroup : "latest",
+  );
+  const [sortBy, setSortBy] = useState<SortOption>(
+    initialSort && sortOptions.has(initialSort) ? initialSort : "newest",
+  );
+  const [randomSeed, setRandomSeed] = useState(
+    Number.isSafeInteger(initialSeed) && initialSeed > 0 ? initialSeed : Date.now(),
+  );
+
+  const shareablePath = useMemo(() => {
+    const params = new URLSearchParams();
+    const trimmedSearch = search.trim();
+    if (trimmedSearch) params.set("search", trimmedSearch);
+    if (clubFilter.length) params.set("clubs", clubFilter.join(","));
+    if (themeFilter.length) params.set("themes", themeFilter.join(","));
+    if (photographerFilter !== "all") params.set("photographer", photographerFilter);
+    if (dateFrom) params.set("from", dateFrom);
+    if (dateTo) params.set("to", dateTo);
+    if (groupBy !== "latest") params.set("group", groupBy);
+    if (sortBy !== "newest") params.set("sort", sortBy);
+    if (groupBy === "random" || sortBy === "random") params.set("seed", String(randomSeed));
+    const query = params.toString();
+    return `${window.location.pathname}${query ? `?${query}` : ""}`;
+  }, [clubFilter, dateFrom, dateTo, groupBy, photographerFilter, randomSeed, search, sortBy, themeFilter]);
+
+  useEffect(() => {
+    window.history.replaceState(window.history.state, "", shareablePath);
+  }, [shareablePath]);
 
   const { data: photos, isLoading: photosLoading } = useListPhotos();
   const { data: clubs } = useListClubs();
@@ -141,9 +183,20 @@ export default function Gallery() {
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const query = search.trim();
-    setSearch(query);
-    setLocation(query ? `/photos?search=${encodeURIComponent(query)}` : "/photos");
+    setSearch((current) => current.trim());
+  };
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(new URL(shareablePath, window.location.origin).toString());
+      toast({ title: t("gallery.shareCopied") });
+    } catch {
+      toast({
+        title: t("gallery.shareFailed"),
+        description: t("gallery.shareFailedDescription"),
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -206,7 +259,7 @@ export default function Gallery() {
           </Popover>
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
-            <SelectTrigger className="flex-1 min-w-[160px] bg-background border-border/50">
+            <SelectTrigger data-testid="gallery-photographer-filter" className="flex-1 min-w-[160px] bg-background border-border/50">
               <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
             </SelectTrigger>
             <SelectContent>
@@ -270,6 +323,17 @@ export default function Gallery() {
             <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{t("gallery.dateTo")}</span>
             <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-24 sm:w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
           </div>
+          <Button
+            data-testid="gallery-share"
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={copyShareLink}
+            aria-label={t("gallery.shareView")}
+            title={t("gallery.shareView")}
+          >
+            <Share2 className="w-4 h-4" />
+          </Button>
 
           {activeFiltersCount > 0 && (
             <Button variant="ghost" onClick={clearFilters} className="px-3">

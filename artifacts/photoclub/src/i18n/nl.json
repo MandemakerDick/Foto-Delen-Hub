@@ -551,7 +551,11 @@
     "filterThemes": "Filter op thema's",
     "filterSelected": "{{count}} {{label}} geselecteerd",
     "dateFrom": "Vanaf datum",
-    "dateTo": "Tot datum"
+    "dateTo": "Tot datum",
+    "shareView": "Kopieer link naar deze galerijweergave",
+    "shareCopied": "Galerijlink gekopieerd",
+    "shareFailed": "De galerijlink kon niet worden gekopieerd",
+    "shareFailedDescription": "Kopieer in plaats daarvan het huidige adres uit je browser."
   },
   "upload": {
     "linkFirstTitle": "Koppel eerst je fotografenprofiel",
