@@ -541,7 +541,7 @@
     "shuffle": "Show another random selection",
     "groupByLabel": "Group photos by",
     "groupByPrefix": "Group by",
-    "viewControlsHelp": "Grouping creates Gallery sections; sorting sets the photo order within each section.",
+    "viewControlsHelp": "Grouping creates Gallery sections; sorting defines the photo order within each section.",
     "groupByNone": "No grouping",
     "groupByClub": "Club",
     "groupByPhotographer": "Photographer",

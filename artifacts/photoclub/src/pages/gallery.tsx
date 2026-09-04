@@ -291,7 +291,7 @@ export default function Gallery() {
             </SelectContent>
           </Select>
         </div>
-        <p className="mb-2 mt-4 text-xs leading-relaxed text-muted-foreground">
+        <p className="mb-2 mt-4 text-sm leading-relaxed text-muted-foreground">
           {t("gallery.viewControlsHelp")}
         </p>
         <div className="flex min-w-0 flex-wrap gap-3">
