@@ -80,10 +80,21 @@ test("a shared Gallery URL restores and copies the complete view", async ({ brow
 
 test("a shared Random view is reproducible until it is reshuffled", async ({ page }) => {
   await stubGalleryApi(page);
-  await page.goto("/photos?group=random&seed=12345", { waitUntil: "networkidle" });
+  await page.goto("/photos?sort=random&seed=12345", { waitUntil: "networkidle" });
 
-  await expect(page).toHaveURL(/\?group=random&seed=12345$/);
+  await expect(page).toHaveURL(/\?sort=random&seed=12345$/);
   await page.getByRole("button", { name: "Show another random selection" }).click();
-  await expect(page).not.toHaveURL(/\?group=random&seed=12345$/);
-  await expect(page).toHaveURL(/\?group=random&seed=\d+$/);
+  await expect(page).not.toHaveURL(/\?sort=random&seed=12345$/);
+  await expect(page).toHaveURL(/\?sort=random&seed=\d+$/);
+});
+
+test("Photographer's order automatically groups the Gallery by photographer", async ({ page }) => {
+  await stubGalleryApi(page);
+  await page.goto("/photos", { waitUntil: "networkidle" });
+
+  await page.getByTestId("gallery-sort").click();
+  await page.getByRole("option", { name: "Photographer's order" }).click();
+
+  await expect(page.getByTestId("gallery-group-by")).toContainText("Photographer");
+  await expect(page).toHaveURL(/\?group=photographer&sort=photographer$/);
 });

@@ -13,10 +13,10 @@ import { SearchBar } from "@/components/search-bar";
 import { useToast } from "@/hooks/use-toast";
 
 type SortOption = "newest" | "oldest" | "photographer" | "likes" | "comments" | "random";
-type GroupOption = "club" | "photographer" | "theme" | "latest" | "random";
+type GroupOption = "none" | "club" | "photographer" | "theme";
 
 const sortOptions = new Set<SortOption>(["newest", "oldest", "photographer", "likes", "comments", "random"]);
-const groupOptions = new Set<GroupOption>(["club", "photographer", "theme", "latest", "random"]);
+const groupOptions = new Set<GroupOption>(["none", "club", "photographer", "theme"]);
 
 function parseIdList(value: string | null) {
   return value?.split(",").filter((id) => /^\d+$/.test(id)) ?? [];
@@ -38,7 +38,8 @@ export default function Gallery() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const initialParams = useMemo(() => new URLSearchParams(window.location.search), []);
-  const initialGroup = initialParams.get("group") as GroupOption | null;
+  const initialGroupParam = initialParams.get("group");
+  const initialGroup = initialGroupParam as GroupOption | null;
   const initialSort = initialParams.get("sort") as SortOption | null;
   const initialSeed = Number(initialParams.get("seed"));
 
@@ -52,10 +53,18 @@ export default function Gallery() {
   const [dateFrom, setDateFrom] = useState(() => parseDate(initialParams.get("from")));
   const [dateTo, setDateTo] = useState(() => parseDate(initialParams.get("to")));
   const [groupBy, setGroupBy] = useState<GroupOption>(
-    initialGroup && groupOptions.has(initialGroup) ? initialGroup : "latest",
+    initialSort === "photographer"
+      ? "photographer"
+      : initialGroup && groupOptions.has(initialGroup)
+        ? initialGroup
+        : "none",
   );
   const [sortBy, setSortBy] = useState<SortOption>(
-    initialSort && sortOptions.has(initialSort) ? initialSort : "newest",
+    initialSort && sortOptions.has(initialSort)
+      ? initialSort
+      : initialGroupParam === "random"
+        ? "random"
+        : "newest",
   );
   const [randomSeed, setRandomSeed] = useState(
     Number.isSafeInteger(initialSeed) && initialSeed > 0 ? initialSeed : Date.now(),
@@ -70,9 +79,9 @@ export default function Gallery() {
     if (photographerFilter !== "all") params.set("photographer", photographerFilter);
     if (dateFrom) params.set("from", dateFrom);
     if (dateTo) params.set("to", dateTo);
-    if (groupBy !== "latest") params.set("group", groupBy);
+    if (groupBy !== "none") params.set("group", groupBy);
     if (sortBy !== "newest") params.set("sort", sortBy);
-    if (groupBy === "random" || sortBy === "random") params.set("seed", String(randomSeed));
+    if (sortBy === "random") params.set("seed", String(randomSeed));
     const query = params.toString();
     return `${window.location.pathname}${query ? `?${query}` : ""}`;
   }, [clubFilter, dateFrom, dateTo, groupBy, photographerFilter, randomSeed, search, sortBy, themeFilter]);
@@ -111,7 +120,7 @@ export default function Gallery() {
     const newestFirst = (a: typeof result[number], b: typeof result[number]) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 
-    if (groupBy === "random" || sortBy === "random") {
+    if (sortBy === "random") {
       return result.sort((a, b) => randomRank(a.id, randomSeed) - randomRank(b.id, randomSeed));
     }
     if (sortBy === "photographer") {
@@ -131,10 +140,10 @@ export default function Gallery() {
     if (sortBy === "likes") return result.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || newestFirst(a, b));
     if (sortBy === "comments") return result.sort((a, b) => (b.commentCount ?? 0) - (a.commentCount ?? 0) || newestFirst(a, b));
     return result.sort(newestFirst);
-  }, [filteredPhotos, groupBy, randomSeed, sortBy]);
+  }, [filteredPhotos, randomSeed, sortBy]);
 
   const groupedPhotos = useMemo(() => {
-    if (groupBy === "latest" || groupBy === "random") {
+    if (groupBy === "none") {
       return [{ key: "all", label: "", photos: sortedPhotos }];
     }
 
@@ -221,7 +230,7 @@ export default function Gallery() {
           type="button"
           variant="outline"
           onClick={copyShareLink}
-          className="h-11 shrink-0 gap-2 rounded-full px-5 sm:h-14"
+          className="h-9 self-start shrink-0 gap-2 rounded-full px-6 sm:self-auto"
         >
           <Share2 className="w-4 h-4" />
           {t("gallery.shareView")}
@@ -289,7 +298,9 @@ export default function Gallery() {
           <Select value={groupBy} onValueChange={(value) => {
             const next = value as GroupOption;
             setGroupBy(next);
-            if (next === "random") setRandomSeed(Date.now());
+            if (sortBy === "photographer" && next !== "photographer") {
+              setSortBy("newest");
+            }
           }}>
             <SelectTrigger
               data-testid="gallery-group-by"
@@ -302,16 +313,16 @@ export default function Gallery() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="latest">{t("gallery.groupByLatest")}</SelectItem>
+              <SelectItem value="none">{t("gallery.groupByNone")}</SelectItem>
               <SelectItem value="club">{t("gallery.groupByClub")}</SelectItem>
               <SelectItem value="photographer">{t("gallery.groupByPhotographer")}</SelectItem>
               <SelectItem value="theme">{t("gallery.groupByTheme")}</SelectItem>
-              <SelectItem value="random">{t("gallery.groupByRandom")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(value) => {
             const next = value as SortOption;
             setSortBy(next);
+            if (next === "photographer") setGroupBy("photographer");
             if (next === "random") setRandomSeed(Date.now());
           }}>
             <SelectTrigger
@@ -333,7 +344,7 @@ export default function Gallery() {
               <SelectItem value="random">{t("gallery.sortRandom")}</SelectItem>
             </SelectContent>
           </Select>
-          {(groupBy === "random" || sortBy === "random") && (
+          {sortBy === "random" && (
             <Button type="button" variant="outline" size="icon" onClick={() => setRandomSeed(Date.now())} aria-label={t("gallery.shuffle")}>
               <Shuffle className="w-4 h-4" />
             </Button>
