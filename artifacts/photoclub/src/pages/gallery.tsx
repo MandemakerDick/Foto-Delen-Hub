@@ -208,13 +208,25 @@ export default function Gallery() {
         </p>
       </div>
 
-      <SearchBar
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        onSubmit={handleSearchSubmit}
-        placeholder={t("home.searchPlaceholder")}
-        className="mb-4"
-      />
+      <div className="mb-4 flex max-w-2xl flex-col gap-2 sm:flex-row sm:items-center">
+        <SearchBar
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onSubmit={handleSearchSubmit}
+          placeholder={t("home.searchPlaceholder")}
+          className="min-w-0 flex-1"
+        />
+        <Button
+          data-testid="gallery-share"
+          type="button"
+          variant="outline"
+          onClick={copyShareLink}
+          className="h-11 shrink-0 gap-2 rounded-full px-5 sm:h-14"
+        >
+          <Share2 className="w-4 h-4" />
+          {t("gallery.shareView")}
+        </Button>
+      </div>
 
       <div data-testid="gallery-filter-bar" className="mb-10 bg-secondary/50 p-4 rounded-lg border border-border/50">
         <div className="flex min-w-0 flex-wrap gap-3">
@@ -270,7 +282,10 @@ export default function Gallery() {
             </SelectContent>
           </Select>
         </div>
-        <div className="mt-3 flex min-w-0 flex-wrap gap-3">
+        <p className="mb-2 mt-4 text-xs leading-relaxed text-muted-foreground">
+          {t("gallery.viewControlsHelp")}
+        </p>
+        <div className="flex min-w-0 flex-wrap gap-3">
           <Select value={groupBy} onValueChange={(value) => {
             const next = value as GroupOption;
             setGroupBy(next);
@@ -281,7 +296,10 @@ export default function Gallery() {
               icon={<Layers className="h-4 w-4 opacity-60" />}
               className="flex-1 min-w-[170px] bg-background border-border/50"
             >
-              <SelectValue placeholder={t("gallery.groupByLabel")} />
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="shrink-0 text-muted-foreground">{t("gallery.groupByPrefix")}:</span>
+                <SelectValue placeholder={t("gallery.groupByLabel")} />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="latest">{t("gallery.groupByLatest")}</SelectItem>
@@ -301,7 +319,10 @@ export default function Gallery() {
               icon={<ArrowDownUp className="h-4 w-4 opacity-60" />}
               className="flex-1 min-w-[155px] bg-background border-border/50"
             >
-              <SelectValue placeholder={t("gallery.sortLabel")} />
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="shrink-0 text-muted-foreground">{t("gallery.sortByPrefix")}:</span>
+                <SelectValue placeholder={t("gallery.sortLabel")} />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="newest">{t("gallery.sortNewest")}</SelectItem>
@@ -323,18 +344,6 @@ export default function Gallery() {
             <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{t("gallery.dateTo")}</span>
             <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-24 sm:w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
           </div>
-          <Button
-            data-testid="gallery-share"
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={copyShareLink}
-            aria-label={t("gallery.shareView")}
-            title={t("gallery.shareView")}
-          >
-            <Share2 className="w-4 h-4" />
-          </Button>
-
           {activeFiltersCount > 0 && (
             <Button variant="ghost" onClick={clearFilters} className="px-3">
               <X className="w-4 h-4 mr-2" />
