@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { db, photosTable, clubsTable, themesTable, commentsTable, photographersTable, photographerClubsTable, photoLikesTable, photoAiAnalysesTable } from "@workspace/db";
-import { eq, ilike, desc, sql, count, and, isNull, or } from "drizzle-orm";
+import { eq, ilike, desc, asc, sql, count, and, isNull, or, inArray, gte } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   ListPhotosQueryParams,
   CreatePhotoBody,
   ListRecentPhotosQueryParams,
+  ListGalleryPhotosQueryParams,
+  ListGalleryPhotosResponse,
   GetPhotoParams,
   UpdatePhotoParams,
   UpdatePhotoBody,
@@ -80,6 +82,184 @@ export function buildPhotoSelect() {
 export function mapPhoto(p: { createdAt: Date; [key: string]: unknown }) {
   return { ...p, createdAt: p.createdAt.toISOString() };
 }
+
+type GalleryQuery = {
+  search?: string;
+  clubIds?: string;
+  themeIds?: string;
+  photographerId?: number;
+  from?: Date;
+  to?: Date;
+  group: "none" | "club" | "photographer" | "theme";
+  sort: "newest" | "oldest" | "photographer" | "likes" | "comments" | "random";
+  seed?: number;
+  cursor?: string;
+  limit: number;
+};
+
+function parseGalleryDate(value: unknown) {
+  if (typeof value !== "string" || !value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date("") : date;
+}
+
+function parseGalleryIds(value: string | undefined) {
+  if (!value) return [];
+  const ids = value.split(",").map((part) => Number(part.trim()));
+  return ids.every((id) => Number.isSafeInteger(id) && id > 0) ? [...new Set(ids)] : undefined;
+}
+
+function galleryCursor(query: GalleryQuery, offset: number) {
+  const fingerprint = {
+    search: query.search ?? "",
+    clubIds: query.clubIds ?? "",
+    themeIds: query.themeIds ?? "",
+    photographerId: query.photographerId ?? null,
+    from: query.from?.toISOString() ?? null,
+    to: query.to?.toISOString() ?? null,
+    group: query.group,
+    sort: query.sort,
+    seed: query.seed ?? 0,
+  };
+  return Buffer.from(JSON.stringify({ v: 1, offset, fingerprint })).toString("base64url");
+}
+
+function parseGalleryCursor(cursor: string | undefined, query: GalleryQuery) {
+  if (!cursor) return 0;
+  try {
+    // Re-encoding guards against non-canonical base64url input.
+    if (!/^[A-Za-z0-9_-]+$/.test(cursor)) return undefined;
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+    if (
+      parsed?.v !== 1 ||
+      !Number.isSafeInteger(parsed.offset) ||
+      parsed.offset < 0 ||
+      JSON.stringify(parsed.fingerprint) !==
+        JSON.stringify(JSON.parse(Buffer.from(galleryCursor(query, 0), "base64url").toString("utf8")).fingerprint)
+    ) {
+      return undefined;
+    }
+    return parsed.offset;
+  } catch {
+    return undefined;
+  }
+}
+
+// GET /api/photos/gallery — paginated Gallery contract.  Keep /photos above as
+// the legacy, single-filter endpoint used by existing clients.
+router.get("/photos/gallery", async (req, res) => {
+  const queryResult = ListGalleryPhotosQueryParams.safeParse({
+    search: req.query.search,
+    clubIds: req.query.clubIds,
+    themeIds: req.query.themeIds,
+    photographerId: req.query.photographerId,
+    from: parseGalleryDate(req.query.from),
+    to: parseGalleryDate(req.query.to),
+    group: req.query.group,
+    sort: req.query.sort,
+    seed: req.query.seed,
+    cursor: req.query.cursor,
+    limit: req.query.limit,
+  });
+  if (!queryResult.success) {
+    res.status(400).json({ error: "Invalid query" });
+    return;
+  }
+  const query: GalleryQuery = queryResult.data;
+  const clubIds = parseGalleryIds(query.clubIds);
+  const themeIds = parseGalleryIds(query.themeIds);
+  const offset = parseGalleryCursor(query.cursor, query);
+  if (!clubIds || !themeIds || offset === undefined) {
+    res.status(400).json({ error: "Invalid query" });
+    return;
+  }
+
+  const conditions = [];
+  if (clubIds.length) conditions.push(inArray(photosTable.clubId, clubIds));
+  if (themeIds.length) conditions.push(inArray(photosTable.themeId, themeIds));
+  if (query.photographerId) conditions.push(eq(photosTable.photographerId, query.photographerId));
+  // Dates are calendar dates in UTC: `to` includes its complete UTC day.
+  if (query.from) {
+    const from = new Date(Date.UTC(query.from.getUTCFullYear(), query.from.getUTCMonth(), query.from.getUTCDate()));
+    conditions.push(gte(photosTable.createdAt, from));
+  }
+  if (query.to) {
+    const to = new Date(Date.UTC(query.to.getUTCFullYear(), query.to.getUTCMonth(), query.to.getUTCDate() + 1));
+    conditions.push(sql`${photosTable.createdAt} < ${to}`);
+  }
+  if (query.search?.trim()) {
+    let terms = [query.search.trim()];
+    try {
+      terms = await expandPhotoSearchQuery(query.search.trim());
+    } catch (error) {
+      req.log.warn({ err: error }, "Semantic photo search unavailable; using exact search");
+    }
+    conditions.push(
+      or(
+        ...terms.map((term) => {
+          const pattern = `%${term}%`;
+          return or(
+            ilike(photosTable.title, pattern),
+            ilike(photosTable.description, pattern),
+            ilike(photographersTable.name, pattern),
+            ilike(themesTable.name, pattern),
+            ilike(photoAiAnalysesTable.description, pattern),
+            sql`${photoAiAnalysesTable.tags}::text ILIKE ${pattern}`,
+          );
+        }),
+      ),
+    );
+  }
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const ordering = [];
+  if (query.group === "club") ordering.push(asc(clubsTable.name));
+  if (query.group === "photographer") ordering.push(asc(photographersTable.name));
+  if (query.group === "theme") ordering.push(asc(themesTable.name));
+  if (query.sort === "newest") ordering.push(desc(photosTable.createdAt));
+  if (query.sort === "oldest") ordering.push(asc(photosTable.createdAt));
+  if (query.sort === "photographer") {
+    ordering.push(
+      asc(photographersTable.name),
+      sql`${photosTable.sortOrder} ASC NULLS LAST`,
+      desc(photosTable.createdAt),
+    );
+  }
+  if (query.sort === "likes") ordering.push(desc(photosTable.likeCount), desc(photosTable.createdAt));
+  if (query.sort === "comments") ordering.push(desc(sql`coalesce(comment_counts.comment_count, 0)`), desc(photosTable.createdAt));
+  if (query.sort === "random") {
+    // md5 gives a stable pseudo-random ordering for a supplied (or zero) seed.
+    ordering.push(sql`md5(${query.seed ?? 0}::text || ${photosTable.id}::text) ASC`);
+  }
+  ordering.push(asc(photosTable.id));
+
+  const totalQuery = db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(photosTable)
+    .leftJoin(photographersTable, eq(photosTable.photographerId, photographersTable.id))
+    .leftJoin(clubsTable, eq(photosTable.clubId, clubsTable.id))
+    .leftJoin(themesTable, eq(photosTable.themeId, themesTable.id))
+    .leftJoin(photoAiAnalysesTable, eq(photoAiAnalysesTable.photoId, photosTable.id));
+  const totalRows = where ? await totalQuery.where(where) : await totalQuery;
+  let photos = buildPhotoSelect();
+  if (where) photos = photos.where(where) as typeof photos;
+  const rows = await photos.orderBy(...ordering).limit(query.limit + 1).offset(offset);
+  const hasMore = rows.length > query.limit;
+  const items = rows.slice(0, query.limit).map(mapPhoto);
+  const response = {
+    items,
+    total: Number(totalRows[0]?.total ?? 0),
+    nextCursor: hasMore ? galleryCursor(query, offset + query.limit) : null,
+    hasMore,
+  };
+  const validated = ListGalleryPhotosResponse.safeParse(response);
+  if (!validated.success) {
+    req.log.error({ err: validated.error }, "Gallery response failed contract validation");
+    res.status(500).json({ error: "Could not build gallery response" });
+    return;
+  }
+  res.json(validated.data);
+});
 
 // GET /api/photos/recent — most recent N photos (default 20)
 router.get("/photos/recent", async (req, res) => {

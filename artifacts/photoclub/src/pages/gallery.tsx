@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Filter, Shuffle, CalendarDays, ArrowDownUp, Check, Layers, Link2, X } from "lucide-react";
-import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
+import {
+  getListGalleryPhotosQueryKey,
+  listGalleryPhotos,
+  type ListGalleryPhotosParams,
+  useListClubs,
+  useListThemes,
+  useListPhotographers,
+} from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,14 +35,6 @@ function parseDate(value: string | null) {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
 }
 
-function randomRank(id: number, seed: number) {
-  let value = (id * 1103515245 + seed) | 0;
-  value ^= value << 13;
-  value ^= value >>> 17;
-  value ^= value << 5;
-  return value >>> 0;
-}
-
 export default function Gallery() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -45,6 +45,7 @@ export default function Gallery() {
   const initialSeed = Number(initialParams.get("seed"));
 
   const [search, setSearch] = useState(initialParams.get("search") ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(initialParams.get("search") ?? "");
   const [clubFilter, setClubFilter] = useState<string[]>(() => parseIdList(initialParams.get("clubs")));
   const [themeFilter, setThemeFilter] = useState<string[]>(() => parseIdList(initialParams.get("themes")));
   const [photographerFilter, setPhotographerFilter] = useState<string>(() => {
@@ -92,65 +93,54 @@ export default function Gallery() {
     window.history.replaceState(window.history.state, "", shareablePath);
   }, [shareablePath]);
 
-  const { data: photos, isLoading: photosLoading } = useListPhotos();
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+
   const { data: clubs } = useListClubs();
   const { data: themes } = useListThemes();
   const { data: photographers } = useListPhotographers();
 
-  const filteredPhotos = useMemo(() => {
-    if (!photos) return [];
-    return photos.filter((photo) => {
-      const matchesSearch = search === "" || 
-        photo.title.toLowerCase().includes(search.toLowerCase()) || 
-        (photo.description && photo.description.toLowerCase().includes(search.toLowerCase())) ||
-        (photo.photographerName && photo.photographerName.toLowerCase().includes(search.toLowerCase())) ||
-        (photo.themeName && photo.themeName.toLowerCase().includes(search.toLowerCase()));
-      
-      const matchesClub = clubFilter.length === 0 || clubFilter.includes(photo.clubId?.toString() ?? "");
-      const matchesTheme = themeFilter.length === 0 || themeFilter.includes(photo.themeId?.toString() ?? "");
-      const matchesPhotographer = photographerFilter === "all" || photo.photographerId?.toString() === photographerFilter;
-      const createdAt = new Date(photo.createdAt);
-      const matchesStartDate = !dateFrom || createdAt >= new Date(`${dateFrom}T00:00:00`);
-      const matchesEndDate = !dateTo || createdAt <= new Date(`${dateTo}T23:59:59.999`);
+  const galleryParams = useMemo<ListGalleryPhotosParams>(() => ({
+    search: debouncedSearch || undefined,
+    clubIds: clubFilter.length ? clubFilter.join(",") : undefined,
+    themeIds: themeFilter.length ? themeFilter.join(",") : undefined,
+    photographerId: photographerFilter === "all" ? undefined : Number(photographerFilter),
+    from: dateFrom || undefined,
+    to: dateTo || undefined,
+    group: groupBy,
+    sort: sortBy,
+    seed: sortBy === "random" ? randomSeed : undefined,
+    limit: 24,
+  }), [clubFilter, dateFrom, dateTo, debouncedSearch, groupBy, photographerFilter, randomSeed, sortBy, themeFilter]);
 
-      return matchesSearch && matchesClub && matchesTheme && matchesPhotographer && matchesStartDate && matchesEndDate;
-    });
-  }, [photos, search, clubFilter, themeFilter, photographerFilter, dateFrom, dateTo]);
+  const {
+    data: galleryData,
+    isLoading: photosLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: getListGalleryPhotosQueryKey(galleryParams),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam, signal }) => listGalleryPhotos({ ...galleryParams, cursor: pageParam }, { signal }),
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
+  });
 
-  const sortedPhotos = useMemo(() => {
-    const result = [...filteredPhotos];
-    const newestFirst = (a: typeof result[number], b: typeof result[number]) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-
-    if (sortBy === "random") {
-      return result.sort((a, b) => randomRank(a.id, randomSeed) - randomRank(b.id, randomSeed));
-    }
-    if (sortBy === "photographer") {
-      return result.sort((a, b) => {
-        const photographerCompare = (a.photographerName ?? "").localeCompare(
-          b.photographerName ?? "",
-          undefined,
-          { sensitivity: "base" },
-        );
-        if (photographerCompare !== 0) return photographerCompare;
-        const aOrder = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
-        const bOrder = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
-        return aOrder - bOrder || newestFirst(a, b);
-      });
-    }
-    if (sortBy === "oldest") return result.sort((a, b) => -newestFirst(a, b));
-    if (sortBy === "likes") return result.sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0) || newestFirst(a, b));
-    if (sortBy === "comments") return result.sort((a, b) => (b.commentCount ?? 0) - (a.commentCount ?? 0) || newestFirst(a, b));
-    return result.sort(newestFirst);
-  }, [filteredPhotos, randomSeed, sortBy]);
+  const galleryPhotos = useMemo(
+    () => galleryData?.pages.flatMap((page) => page.items) ?? [],
+    [galleryData],
+  );
+  const totalPhotos = galleryData?.pages[0]?.total ?? 0;
 
   const groupedPhotos = useMemo(() => {
     if (groupBy === "none") {
-      return [{ key: "all", label: "", photos: sortedPhotos }];
+      return [{ key: "all", label: "", photos: galleryPhotos }];
     }
 
-    const groups = new Map<string, { key: string; label: string; photos: typeof sortedPhotos }>();
-    for (const photo of sortedPhotos) {
+    const groups: { key: string; groupId: string; label: string; photos: typeof galleryPhotos }[] = [];
+    for (const photo of galleryPhotos) {
       const key =
         groupBy === "club"
           ? photo.clubId?.toString() ?? "none"
@@ -163,15 +153,15 @@ export default function Gallery() {
           : groupBy === "photographer"
             ? photo.photographerName ?? t("gallery.ungroupedPhotographer")
             : photo.themeName ?? t("gallery.ungroupedTheme");
-      const existing = groups.get(key);
-      if (existing) {
-        existing.photos.push(photo);
+      const previousGroup = groups.at(-1);
+      if (previousGroup?.groupId === key) {
+        previousGroup.photos.push(photo);
       } else {
-        groups.set(key, { key, label, photos: [photo] });
+        groups.push({ key: `${key}-${groups.length}`, groupId: key, label, photos: [photo] });
       }
     }
-    return Array.from(groups.values());
-  }, [groupBy, sortedPhotos, t]);
+    return groups;
+  }, [galleryPhotos, groupBy, t]);
 
   const activeFiltersCount = clubFilter.length + themeFilter.length + (photographerFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
@@ -188,13 +178,16 @@ export default function Gallery() {
     setThemeFilter([]);
     setPhotographerFilter("all");
     setSearch("");
+    setDebouncedSearch("");
     setDateFrom("");
     setDateTo("");
   };
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSearch((current) => current.trim());
+    const trimmedSearch = search.trim();
+    setSearch(trimmedSearch);
+    setDebouncedSearch(trimmedSearch);
   };
 
   const copyShareLink = async () => {
@@ -382,7 +375,7 @@ export default function Gallery() {
 
       <div className="mb-6 flex items-center justify-between">
         <div className="text-sm font-mono text-muted-foreground">
-          {sortedPhotos.length} {t("common.prints")}
+          {totalPhotos} {t("common.prints")}
         </div>
         {activeFiltersCount > 0 && (
           <div className="flex gap-2">
@@ -403,7 +396,7 @@ export default function Gallery() {
             </div>
           ))}
         </div>
-      ) : sortedPhotos.length > 0 ? (
+      ) : galleryPhotos.length > 0 ? (
         <div className="space-y-12">
           {groupedPhotos.map((group) => (
             <section key={group.key} className="space-y-6">
@@ -429,6 +422,19 @@ export default function Gallery() {
           <h3 className="font-serif text-xl font-medium mb-2">{t("gallery.empty")}</h3>
           <p className="text-muted-foreground mb-6">{t("home.recent.subheading")}</p>
           <Button variant="outline" onClick={clearFilters}>{t("gallery.clearFilters")}</Button>
+        </div>
+      )}
+      {hasNextPage && (
+        <div className="mt-10 flex justify-center">
+          <Button
+            data-testid="gallery-load-more"
+            type="button"
+            variant="outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? t("gallery.loadingMore") : t("gallery.loadMore")}
+          </Button>
         </div>
       )}
     </div>

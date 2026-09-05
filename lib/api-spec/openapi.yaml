@@ -542,6 +542,76 @@ paths:
                 items:
                   $ref: "#/components/schemas/Photo"
 
+  /photos/gallery:
+    get:
+      operationId: listGalleryPhotos
+      tags: [photos]
+      summary: List a filtered and sorted page of Gallery photos
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: clubIds
+          in: query
+          description: Comma-separated club IDs
+          schema:
+            type: string
+        - name: themeIds
+          in: query
+          description: Comma-separated theme IDs
+          schema:
+            type: string
+        - name: photographerId
+          in: query
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: group
+          in: query
+          schema:
+            type: string
+            enum: [none, club, photographer, theme]
+            default: none
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, oldest, photographer, likes, comments, random]
+            default: newest
+        - name: seed
+          in: query
+          schema:
+            type: integer
+        - name: cursor
+          in: query
+          description: Opaque cursor returned by the previous page
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 48
+            default: 24
+      responses:
+        "200":
+          description: A page of Gallery photos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryPhotoPage"
+
   /photos/ai/backfill:
     post:
       operationId: backfillPhotoAiAnalysis
@@ -1856,6 +1926,21 @@ components:
           description: Photographer-defined display order for profile and gallery views
         createdAt:
           type: string
+
+    GalleryPhotoPage:
+      type: object
+      required: [items, total, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Photo"
+        total:
+          type: integer
+        nextCursor:
+          type: ["string", "null"]
+        hasMore:
+          type: boolean
 
     PhotoInput:
       type: object

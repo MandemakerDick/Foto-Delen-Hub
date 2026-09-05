@@ -494,6 +494,63 @@ export const ListRecentPhotosResponse = zod.array(ListRecentPhotosResponseItem)
 
 
 /**
+ * @summary List a filtered and sorted page of Gallery photos
+ */
+export const listGalleryPhotosQueryGroupDefault = `none`;
+export const listGalleryPhotosQuerySortDefault = `newest`;
+export const listGalleryPhotosQueryLimitDefault = 24;
+export const listGalleryPhotosQueryLimitMax = 48;
+
+
+
+export const ListGalleryPhotosQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "clubIds": zod.coerce.string().optional().describe('Comma-separated club IDs'),
+  "themeIds": zod.coerce.string().optional().describe('Comma-separated theme IDs'),
+  "photographerId": zod.coerce.number().optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "group": zod.enum(['none', 'club', 'photographer', 'theme']).default(listGalleryPhotosQueryGroupDefault),
+  "sort": zod.enum(['newest', 'oldest', 'photographer', 'likes', 'comments', 'random']).default(listGalleryPhotosQuerySortDefault),
+  "seed": zod.coerce.number().optional(),
+  "cursor": zod.coerce.string().optional().describe('Opaque cursor returned by the previous page'),
+  "limit": zod.coerce.number().min(1).max(listGalleryPhotosQueryLimitMax).default(listGalleryPhotosQueryLimitDefault)
+})
+
+export const ListGalleryPhotosResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "imageUrl": zod.string(),
+  "photographerId": zod.number().nullish(),
+  "photographerName": zod.string().nullish(),
+  "photographerAvatarUrl": zod.string().nullish(),
+  "clubId": zod.number().nullish(),
+  "clubName": zod.string().nullish(),
+  "themeId": zod.number().nullish(),
+  "themeName": zod.string().nullish(),
+  "aiTags": zod.array(zod.string()).nullish().describe('Search-only tags generated from visible photo content'),
+  "aiDescription": zod.string().nullish().describe('Search-only description generated from visible photo content'),
+  "aiStatus": zod.union([zod.literal('pending'),zod.literal('processing'),zod.literal('complete'),zod.literal('failed'),zod.literal(null)]).nullish(),
+  "aiSuggestedThemeId": zod.number().nullish().describe('Theme suggested by AI from the existing theme library'),
+  "aiSuggestedThemeConfidence": zod.number().nullish().describe('AI confidence for the suggested theme, from 0 to 1'),
+  "aiSuggestedThemeReason": zod.string().nullish().describe('Short explanation for the suggested theme'),
+  "aiThemeSuggestionStatus": zod.union([zod.literal('pending'),zod.literal('auto_applied'),zod.literal('accepted'),zod.literal('rejected'),zod.literal(null)]).nullish(),
+  "aiThemeReviewOutcome": zod.union([zod.literal('correct'),zod.literal('incorrect'),zod.literal(null)]).nullish(),
+  "aiThemeReviewedAt": zod.coerce.date().nullish(),
+  "likeCount": zod.number().optional(),
+  "commentCount": zod.number().optional(),
+  "sortOrder": zod.number().nullish().describe('Photographer-defined display order for profile and gallery views'),
+  "createdAt": zod.string()
+})),
+  "total": zod.number(),
+  "nextCursor": zod.string().nullish(),
+  "hasMore": zod.boolean()
+})
+
+
+/**
  * @summary Queue AI analysis for unprocessed or failed photos (admin only)
  */
 export const backfillPhotoAiAnalysisBodyLimitDefault = 25;

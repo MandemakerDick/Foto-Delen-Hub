@@ -215,6 +215,14 @@ export interface Photo {
   createdAt: string;
 }
 
+export interface GalleryPhotoPage {
+  items: Photo[];
+  total: number;
+  /** @nullable */
+  nextCursor?: string | null;
+  hasMore: boolean;
+}
+
 export interface PhotoInput {
   /** @minLength 1 */
   title: string;
@@ -666,6 +674,55 @@ photographerId?: number;
 export type ListRecentPhotosParams = {
 limit?: number;
 };
+
+export type ListGalleryPhotosParams = {
+search?: string;
+/**
+ * Comma-separated club IDs
+ */
+clubIds?: string;
+/**
+ * Comma-separated theme IDs
+ */
+themeIds?: string;
+photographerId?: number;
+from?: string;
+to?: string;
+group?: ListGalleryPhotosGroup;
+sort?: ListGalleryPhotosSort;
+seed?: number;
+/**
+ * Opaque cursor returned by the previous page
+ */
+cursor?: string;
+/**
+ * @minimum 1
+ * @maximum 48
+ */
+limit?: number;
+};
+
+export type ListGalleryPhotosGroup = typeof ListGalleryPhotosGroup[keyof typeof ListGalleryPhotosGroup];
+
+
+export const ListGalleryPhotosGroup = {
+  none: 'none',
+  club: 'club',
+  photographer: 'photographer',
+  theme: 'theme',
+} as const;
+
+export type ListGalleryPhotosSort = typeof ListGalleryPhotosSort[keyof typeof ListGalleryPhotosSort];
+
+
+export const ListGalleryPhotosSort = {
+  newest: 'newest',
+  oldest: 'oldest',
+  photographer: 'photographer',
+  likes: 'likes',
+  comments: 'comments',
+  random: 'random',
+} as const;
 
 export type ListReviewSessionsParams = {
 clubId?: number;

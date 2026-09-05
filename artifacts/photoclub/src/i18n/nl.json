@@ -558,7 +558,9 @@
     "shareTooltip": "Kopieert een link met je huidige zoekopdracht, filters, groepering en sortering.",
     "shareCopied": "Link gekopieerd",
     "shareFailed": "De galerijlink kon niet worden gekopieerd",
-    "shareFailedDescription": "Kopieer in plaats daarvan het huidige adres uit je browser."
+    "shareFailedDescription": "Kopieer in plaats daarvan het huidige adres uit je browser.",
+    "loadMore": "Meer laden",
+    "loadingMore": "Meer laden…"
   },
   "upload": {
     "linkFirstTitle": "Koppel eerst je fotografenprofiel",

@@ -558,7 +558,9 @@
     "shareTooltip": "Copies a link that keeps your current search, filters, grouping, and sorting.",
     "shareCopied": "Link copied",
     "shareFailed": "Could not copy the Gallery link",
-    "shareFailedDescription": "Copy the current address from your browser instead."
+    "shareFailedDescription": "Copy the current address from your browser instead.",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more…"
   },
   "upload": {
     "linkFirstTitle": "Link your photographer profile first",
