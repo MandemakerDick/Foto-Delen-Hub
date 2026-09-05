@@ -554,8 +554,9 @@
     "filterSelected": "{{count}} {{label}} geselecteerd",
     "dateFrom": "Vanaf datum",
     "dateTo": "Tot datum",
-    "shareView": "Kopieer de link naar je huidige galerijweergave",
-    "shareCopied": "Galerijlink gekopieerd",
+    "shareView": "Kopieer link naar deze weergave",
+    "shareTooltip": "Kopieert een link met je huidige zoekopdracht, filters, groepering en sortering.",
+    "shareCopied": "Link gekopieerd",
     "shareFailed": "De galerijlink kon niet worden gekopieerd",
     "shareFailedDescription": "Kopieer in plaats daarvan het huidige adres uit je browser."
   },

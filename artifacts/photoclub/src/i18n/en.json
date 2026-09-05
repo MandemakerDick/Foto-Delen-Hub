@@ -554,8 +554,9 @@
     "filterSelected": "{{count}} {{label}} selected",
     "dateFrom": "From date",
     "dateTo": "To date",
-    "shareView": "Copy your current Gallery view link",
-    "shareCopied": "Gallery link copied",
+    "shareView": "Copy link to this view",
+    "shareTooltip": "Copies a link that keeps your current search, filters, grouping, and sorting.",
+    "shareCopied": "Link copied",
     "shareFailed": "Could not copy the Gallery link",
     "shareFailedDescription": "Copy the current address from your browser instead."
   },

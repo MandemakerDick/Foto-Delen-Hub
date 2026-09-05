@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Filter, Shuffle, CalendarDays, ArrowDownUp, Layers, Share2, X } from "lucide-react";
+import { Filter, Shuffle, CalendarDays, ArrowDownUp, Check, Layers, Link2, X } from "lucide-react";
 import { useListPhotos, useListClubs, useListThemes, useListPhotographers } from "@workspace/api-client-react";
 import { PhotoCard } from "@/components/photo-card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SearchBar } from "@/components/search-bar";
 import { useToast } from "@/hooks/use-toast";
 
@@ -69,6 +70,7 @@ export default function Gallery() {
   const [randomSeed, setRandomSeed] = useState(
     Number.isSafeInteger(initialSeed) && initialSeed > 0 ? initialSeed : Date.now(),
   );
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   const shareablePath = useMemo(() => {
     const params = new URLSearchParams();
@@ -198,6 +200,8 @@ export default function Gallery() {
   const copyShareLink = async () => {
     try {
       await navigator.clipboard.writeText(new URL(shareablePath, window.location.origin).toString());
+      setIsLinkCopied(true);
+      window.setTimeout(() => setIsLinkCopied(false), 2000);
       toast({ title: t("gallery.shareCopied") });
     } catch {
       toast({
@@ -217,7 +221,7 @@ export default function Gallery() {
         </p>
       </div>
 
-      <div className="mb-4 flex max-w-2xl flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="mb-4 max-w-2xl">
         <SearchBar
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -225,16 +229,6 @@ export default function Gallery() {
           placeholder={t("home.searchPlaceholder")}
           className="min-w-0 flex-1"
         />
-        <Button
-          data-testid="gallery-share"
-          type="button"
-          variant="outline"
-          onClick={copyShareLink}
-          className="h-9 self-start shrink-0 gap-2 rounded-full px-6 sm:self-auto"
-        >
-          <Share2 className="w-4 h-4" />
-          {t("gallery.shareView")}
-        </Button>
       </div>
 
       <div data-testid="gallery-filter-bar" className="mb-10 bg-secondary/50 p-4 rounded-lg border border-border/50">
@@ -291,9 +285,31 @@ export default function Gallery() {
             </SelectContent>
           </Select>
         </div>
-        <p className="mb-2 mt-4 text-sm leading-relaxed text-muted-foreground">
-          {t("gallery.viewControlsHelp")}
-        </p>
+        <div className="mb-2 mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {t("gallery.viewControlsHelp")}
+          </p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="gallery-share"
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={copyShareLink}
+                  className="h-auto shrink-0 gap-1.5 px-1.5 py-1 text-sm font-normal text-muted-foreground hover:text-foreground"
+                >
+                  {isLinkCopied ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+                  {isLinkCopied ? t("gallery.shareCopied") : t("gallery.shareView")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-center">
+                {t("gallery.shareTooltip")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="flex min-w-0 flex-wrap gap-3">
           <Select value={groupBy} onValueChange={(value) => {
             const next = value as GroupOption;
