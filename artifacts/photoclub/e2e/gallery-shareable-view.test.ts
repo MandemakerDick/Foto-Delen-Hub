@@ -9,6 +9,39 @@ async function stubGalleryApi(page: Page) {
       return;
     }
 
+    if (/\/api\/photos\/gallery(\?|$)/.test(url)) {
+      const requestUrl = new URL(url);
+      const isNextPage = requestUrl.searchParams.get("cursor") === "page-2";
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              id: isNextPage ? 2 : 1,
+              title: isNextPage ? "Owl" : "Fox",
+              description: null,
+              imageUrl: isNextPage ? "/owl.jpg" : "/fox.jpg",
+              photographerId: 3,
+              photographerName: "Ada",
+              clubId: 1,
+              clubName: "Lens Club",
+              themeId: 2,
+              themeName: "Wildlife",
+              likeCount: 0,
+              commentCount: 0,
+              sortOrder: isNextPage ? 1 : 0,
+              createdAt: isNextPage ? "2026-05-01T12:00:00.000Z" : "2026-06-01T12:00:00.000Z",
+            },
+          ],
+          total: 2,
+          nextCursor: isNextPage ? null : "page-2",
+          hasMore: !isNextPage,
+        }),
+      });
+      return;
+    }
+
     if (/\/api\/photos(\?|$)/.test(url)) {
       await route.fulfill({
         status: 200,
@@ -97,4 +130,37 @@ test("Photographer's order automatically groups the Gallery by photographer", as
 
   await expect(page.getByTestId("gallery-group-by")).toContainText("Photographer");
   await expect(page).toHaveURL(/\?group=photographer&sort=photographer$/);
+});
+
+test("the Gallery sends the complete shared view to the server", async ({ page }) => {
+  await stubGalleryApi(page);
+  const galleryRequest = page.waitForRequest((request) => request.url().includes("/api/photos/gallery?"));
+
+  await page.goto(
+    "/photos?search=fox&clubs=1&themes=2&photographer=3&from=2026-01-01&to=2026-12-31&group=photographer&sort=photographer",
+  );
+
+  const request = await galleryRequest;
+  const params = new URL(request.url()).searchParams;
+  expect(params.get("search")).toBe("fox");
+  expect(params.get("clubIds")).toBe("1");
+  expect(params.get("themeIds")).toBe("2");
+  expect(params.get("photographerId")).toBe("3");
+  expect(params.get("from")).toBe("2026-01-01");
+  expect(params.get("to")).toBe("2026-12-31");
+  expect(params.get("group")).toBe("photographer");
+  expect(params.get("sort")).toBe("photographer");
+  expect(params.get("limit")).toBe("24");
+});
+
+test("Load more appends the next cursor page without replacing current photos", async ({ page }) => {
+  await stubGalleryApi(page);
+  await page.goto("/photos");
+
+  await expect(page.getByText("Fox", { exact: true })).toBeVisible();
+  await page.getByTestId("gallery-load-more").click();
+
+  await expect(page.getByText("Fox", { exact: true })).toBeVisible();
+  await expect(page.getByText("Owl", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("gallery-load-more")).toHaveCount(0);
 });

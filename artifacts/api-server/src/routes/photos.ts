@@ -83,7 +83,7 @@ export function mapPhoto(p: { createdAt: Date; [key: string]: unknown }) {
   return { ...p, createdAt: p.createdAt.toISOString() };
 }
 
-type GalleryQuery = {
+export type GalleryQuery = {
   search?: string;
   clubIds?: string;
   themeIds?: string;
@@ -103,13 +103,13 @@ function parseGalleryDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? new Date("") : date;
 }
 
-function parseGalleryIds(value: string | undefined) {
+export function parseGalleryIds(value: string | undefined) {
   if (!value) return [];
   const ids = value.split(",").map((part) => Number(part.trim()));
   return ids.every((id) => Number.isSafeInteger(id) && id > 0) ? [...new Set(ids)] : undefined;
 }
 
-function galleryCursor(query: GalleryQuery, offset: number) {
+export function galleryCursor(query: GalleryQuery, offset: number) {
   const fingerprint = {
     search: query.search ?? "",
     clubIds: query.clubIds ?? "",
@@ -124,7 +124,7 @@ function galleryCursor(query: GalleryQuery, offset: number) {
   return Buffer.from(JSON.stringify({ v: 1, offset, fingerprint })).toString("base64url");
 }
 
-function parseGalleryCursor(cursor: string | undefined, query: GalleryQuery) {
+export function parseGalleryCursor(cursor: string | undefined, query: GalleryQuery) {
   if (!cursor) return 0;
   try {
     // Re-encoding guards against non-canonical base64url input.
