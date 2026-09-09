@@ -1334,50 +1334,54 @@ export default function Manage() {
               </div>
               <ul className="divide-y divide-border/50">
                 {photographers.map((p) => (
-                  <li key={p.id} className="flex items-center gap-4 px-6 py-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 overflow-hidden shrink-0 flex items-center justify-center">
-                      {p.avatarUrl ? <img src={p.avatarUrl} alt={p.name} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-primary/60" />}
+                  <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-6 py-4">
+                    <div className="flex min-w-[220px] flex-1 items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 overflow-hidden shrink-0 flex items-center justify-center">
+                        {p.avatarUrl ? <img src={p.avatarUrl} alt={p.name} className="w-full h-full object-cover" /> : <User className="w-4 h-4 text-primary/60" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{p.name}</p>
+                        {p.clubs && p.clubs.length > 0 && <p className="text-xs text-muted-foreground truncate">{p.clubs.map((c) => c.memberSince ? `${c.name} · ${c.memberSince}` : c.name).join(", ")}</p>}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{p.name}</p>
-                      {p.clubs && p.clubs.length > 0 && <p className="text-xs text-muted-foreground truncate">{p.clubs.map((c) => c.memberSince ? `${c.name} · ${c.memberSince}` : c.name).join(", ")}</p>}
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} {t("manage.photographer.printsSuffix")}</span>
-                    {!p.claimed && (
-                      <span className="text-[10px] uppercase tracking-wider text-amber-500 border border-amber-400/40 bg-amber-400/10 rounded px-1.5 py-0.5 shrink-0">
-                        {t("manage.photographer.unclaimedBadge")}
-                      </span>
-                    )}
-                    {!p.claimed && (
+                    <div className="ml-14 flex w-full flex-wrap items-center gap-2 sm:ml-0 sm:w-auto">
+                      <span className="text-xs text-muted-foreground font-mono shrink-0">{p.photoCount} {t("manage.photographer.printsSuffix")}</span>
+                      {!p.claimed && (
+                        <span className="text-[10px] uppercase tracking-wider text-amber-500 border border-amber-400/40 bg-amber-400/10 rounded px-1.5 py-0.5 shrink-0">
+                          {t("manage.photographer.unclaimedBadge")}
+                        </span>
+                      )}
+                      {!p.claimed && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="shrink-0 gap-1.5 text-primary hover:text-primary"
+                          onClick={() => { setInviteDialog({ id: p.id, name: p.name }); setInviteDialogEmail(p.email ?? ""); }}
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          {t("manage.photographer.inviteBtn")}
+                        </Button>
+                      )}
+                      <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                        {editingPhotographerId === p.id ? t("common.editing") : t("common.edit")}
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="shrink-0 gap-1.5 text-primary hover:text-primary"
-                        onClick={() => { setInviteDialog({ id: p.id, name: p.name }); setInviteDialogEmail(p.email ?? ""); }}
+                        className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={deletePhotographerMutation.isPending}
+                        onClick={() => {
+                          setDeleteReason("");
+                          setDeleteTarget({ id: p.id, name: p.name });
+                        }}
                       >
-                        <Mail className="w-3.5 h-3.5" />
-                        {t("manage.photographer.inviteBtn")}
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {t("manage.photographer.deleteBtn")}
                       </Button>
-                    )}
-                    <Button type="button" variant={editingPhotographerId === p.id ? "default" : "ghost"} size="sm" className="shrink-0 gap-1.5" onClick={() => startEditingPhotographer(p.id)}>
-                      <Pencil className="w-3.5 h-3.5" />
-                      {editingPhotographerId === p.id ? t("common.editing") : t("common.edit")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={deletePhotographerMutation.isPending}
-                      onClick={() => {
-                        setDeleteReason("");
-                        setDeleteTarget({ id: p.id, name: p.name });
-                      }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      {t("manage.photographer.deleteBtn")}
-                    </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

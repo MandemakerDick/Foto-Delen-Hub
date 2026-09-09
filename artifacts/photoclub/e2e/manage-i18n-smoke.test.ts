@@ -109,7 +109,24 @@ const API_STUBS: ApiStub[] = [
   // Regular list endpoints — empty-but-valid arrays
   { urlPattern: /\/api\/clubs(\?|$)/, status: 200, body: [] },
   { urlPattern: /\/api\/themes(\?|$)/, status: 200, body: [] },
-  { urlPattern: /\/api\/photographers(\?|$)/, status: 200, body: [] },
+  {
+    urlPattern: /\/api\/photographers(\?|$)/,
+    status: 200,
+    body: [
+      {
+        id: 9,
+        name: "Harry Michiels",
+        bio: "",
+        email: null,
+        avatarUrl: null,
+        clubs: [{ id: 4, name: "Fotoclub Veghel", memberSince: null }],
+        themes: [],
+        createdAt: "2026-07-23T12:00:00.000Z",
+        photoCount: 22,
+        claimed: false,
+      },
+    ],
+  },
   { urlPattern: /\/api\/photos\/recent(\?|$)/, status: 200, body: [] },
   { urlPattern: /\/api\/photos(\?|$)/, status: 200, body: [] },
 
@@ -290,3 +307,14 @@ for (const { label, testId } of MANAGE_TABS) {
     await assertNoRawKeys(page, `Manage / ${label}`);
   });
 }
+
+test("Photographer names remain visible when unclaimed-profile actions need to wrap", async ({ page }) => {
+  await page.setViewportSize({ width: 950, height: 900 });
+  await visitManageInDutch(page);
+  await page.getByTestId("manage-tab-photographer").click();
+
+  const name = page.getByText("Harry Michiels", { exact: true });
+  await expect(name).toBeVisible();
+  expect((await name.boundingBox())?.width ?? 0).toBeGreaterThan(100);
+  await expect(page.getByRole("button", { name: "Uitnodiging sturen" })).toBeVisible();
+});
