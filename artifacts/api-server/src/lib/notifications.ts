@@ -1,8 +1,8 @@
 import { clerkClient } from "@clerk/express";
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import { db, photographersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import { sendEmail } from "./email";
 
 type EmailMessage = {
   subject: string;
@@ -37,14 +37,9 @@ async function sendToClerkUser(clerkUserId: string | null, message: EmailMessage
     )?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
     if (!primaryEmail) return;
 
-    const connectors = new ReplitConnectors();
-    await connectors.proxy("resend", "/emails", {
-      method: "POST",
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM ?? "PhotoMatrix <onboarding@resend.dev>",
-        to: [primaryEmail],
-        ...message,
-      }),
+    await sendEmail({
+      to: primaryEmail,
+      ...message,
     });
   } catch (err) {
     logger.warn({ err, clerkUserId }, "Unable to send PhotoMatrix notification email");

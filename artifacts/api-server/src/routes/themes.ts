@@ -12,7 +12,8 @@ import { requireAdmin } from "./admins";
 import { requireAuth } from "./auth";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { clerkClient } from "@clerk/express";
-import { ReplitConnectors } from "@replit/connectors-sdk";
+import { sendEmail } from "../lib/email";
+import { logger } from "../lib/logger";
 
 /** Send an email to a photographer notifying them of their proposal outcome. */
 async function sendProposalStatusEmail(
@@ -25,27 +26,21 @@ async function sendProposalStatusEmail(
     const clerkUser = await clerkClient.users.getUser(clerkUserId);
     const email = clerkUser.emailAddresses[0]?.emailAddress;
     if (!email) return;
-    const connectors = new ReplitConnectors();
-    const from = process.env.EMAIL_FROM ?? "PhotoMatrix <onboarding@resend.dev>";
     const isApproved = status === "approved";
-    await connectors.proxy("resend", "/emails", {
-      method: "POST",
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject: isApproved
-          ? `Your theme proposal "${proposalName}" has been approved`
-          : `Your theme proposal "${proposalName}" was not accepted`,
-        html: isApproved
-          ? `<p>Good news! Your theme proposal <strong>"${proposalName}"</strong> has been approved and added to the theme library. You can now tag your photos with this theme.</p><p>— The PhotoMatrix Team</p>`
-          : `<p>Thank you for your suggestion. Unfortunately, your theme proposal <strong>"${proposalName}"</strong> has not been accepted at this time.</p><p>Feel free to submit another — we welcome your ideas!</p><p>— The PhotoMatrix Team</p>`,
-        text: isApproved
-          ? `Good news! Your theme proposal "${proposalName}" has been approved and added to the theme library.\n\n— The PhotoMatrix Team`
-          : `Thank you for your suggestion. Unfortunately, your theme proposal "${proposalName}" has not been accepted at this time. Feel free to submit another!\n\n— The PhotoMatrix Team`,
-      }),
+    await sendEmail({
+      to: email,
+      subject: isApproved
+        ? `Your theme proposal "${proposalName}" has been approved`
+        : `Your theme proposal "${proposalName}" was not accepted`,
+      html: isApproved
+        ? `<p>Good news! Your theme proposal <strong>"${proposalName}"</strong> has been approved and added to the theme library. You can now tag your photos with this theme.</p><p>— The PhotoMatrix Team</p>`
+        : `<p>Thank you for your suggestion. Unfortunately, your theme proposal <strong>"${proposalName}"</strong> has not been accepted at this time.</p><p>Feel free to submit another — we welcome your ideas!</p><p>— The PhotoMatrix Team</p>`,
+      text: isApproved
+        ? `Good news! Your theme proposal "${proposalName}" has been approved and added to the theme library.\n\n— The PhotoMatrix Team`
+        : `Thank you for your suggestion. Unfortunately, your theme proposal "${proposalName}" has not been accepted at this time. Feel free to submit another!\n\n— The PhotoMatrix Team`,
     });
   } catch (err) {
-    console.error("Failed to send proposal status email:", err);
+    logger.warn({ err, clerkUserId }, "Failed to send proposal status email");
   }
 }
 

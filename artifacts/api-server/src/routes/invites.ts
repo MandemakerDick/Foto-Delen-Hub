@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { db, inviteTokensTable, photographersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "./admins";
-import { ReplitConnectors } from "@replit/connectors-sdk";
+import { sendEmail } from "../lib/email";
 
 const router = Router();
 
@@ -117,21 +117,15 @@ router.post("/invites/send-email", requireAdmin, async (req: any, res) => {
   // Send the invite email.
   const joinUrl = `${process.env.APP_ORIGIN ?? "https://photomatrix.repl.co"}/join/${token}`;
   try {
-    const connectors = new ReplitConnectors();
-    const from = process.env.EMAIL_FROM ?? "PhotoMatrix <noreply@connectingthedots.fit>";
-    await connectors.proxy("resend", "/emails", {
-      method: "POST",
-      body: JSON.stringify({
-        from,
-        to: [email.trim()],
-        subject: `You've been invited to join PhotoMatrix`,
-        html: `<p>Hi ${photographer.name},</p><p>An administrator has set up a photographer profile for you on PhotoMatrix. Click the link below to create your account and claim your profile:</p><p><a href="${joinUrl}">${joinUrl}</a></p><p>This link expires in 30 days and can only be used once.</p><p>— The PhotoMatrix Team</p>`,
-        text: `Hi ${photographer.name},\n\nAn administrator has set up a photographer profile for you on PhotoMatrix. Click the link below to create your account and claim your profile:\n\n${joinUrl}\n\nThis link expires in 30 days and can only be used once.\n\n— The PhotoMatrix Team`,
-      }),
+    await sendEmail({
+      to: email.trim(),
+      subject: `You've been invited to join PhotoMatrix`,
+      html: `<p>Hi ${photographer.name},</p><p>An administrator has set up a photographer profile for you on PhotoMatrix. Click the link below to create your account and claim your profile:</p><p><a href="${joinUrl}">${joinUrl}</a></p><p>This link expires in 30 days and can only be used once.</p><p>— The PhotoMatrix Team</p>`,
+      text: `Hi ${photographer.name},\n\nAn administrator has set up a photographer profile for you on PhotoMatrix. Click the link below to create your account and claim your profile:\n\n${joinUrl}\n\nThis link expires in 30 days and can only be used once.\n\n— The PhotoMatrix Team`,
     });
   } catch (err) {
     // Log but still return the token — admin can copy it manually.
-    console.error("Failed to send invite email:", err);
+    req.log.warn({ err, photographerId }, "Failed to send invite email");
   }
 
   res.status(201).json(serializeToken(row));

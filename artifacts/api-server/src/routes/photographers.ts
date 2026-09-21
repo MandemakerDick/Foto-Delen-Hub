@@ -9,8 +9,8 @@ import {
   UpdatePhotographerParams,
 } from "@workspace/api-zod";
 import { getAuth, clerkClient } from "@clerk/express";
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import { requireAdmin } from "./admins";
+import { sendEmail } from "../lib/email";
 
 const router = Router();
 
@@ -368,22 +368,16 @@ router.delete("/photographers/:id", requireAdmin, async (req, res) => {
       const clerkUser = await clerkClient.users.getUser(clerkUserId);
       const email = clerkUser.emailAddresses[0]?.emailAddress;
       if (email) {
-        const connectors = new ReplitConnectors();
-        const fromAddress = process.env.EMAIL_FROM ?? "PhotoMatrix <onboarding@resend.dev>";
-        await connectors.proxy("resend", "/emails", {
-          method: "POST",
-          body: JSON.stringify({
-            from: fromAddress,
-            to: [email],
-            subject: "Your PhotoMatrix account has been removed",
-            html: `<p>Dear ${name},</p><p>Your PhotoMatrix account has been removed by an administrator.</p><p><strong>Reason:</strong> ${reason}</p><p>If you have questions, please contact your club administrator.</p><p>— The PhotoMatrix Team</p>`,
-            text: `Dear ${name},\n\nYour PhotoMatrix account has been removed by an administrator.\n\nReason: ${reason}\n\nIf you have any questions, please contact your club administrator.\n\n— The PhotoMatrix Team`,
-          }),
+        await sendEmail({
+          to: email,
+          subject: "Your PhotoMatrix account has been removed",
+          html: `<p>Dear ${name},</p><p>Your PhotoMatrix account has been removed by an administrator.</p><p><strong>Reason:</strong> ${reason}</p><p>If you have questions, please contact your club administrator.</p><p>— The PhotoMatrix Team</p>`,
+          text: `Dear ${name},\n\nYour PhotoMatrix account has been removed by an administrator.\n\nReason: ${reason}\n\nIf you have any questions, please contact your club administrator.\n\n— The PhotoMatrix Team`,
         });
       }
     } catch (err) {
       // Log but don't block the deletion if the email fails.
-      console.error("Failed to send removal notification email:", err);
+      req.log.warn({ err, photographerId: id }, "Failed to send removal notification email");
     }
   }
 
