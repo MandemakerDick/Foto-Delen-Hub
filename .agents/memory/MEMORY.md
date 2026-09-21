@@ -1,5 +1,5 @@
  - [Secure GitHub publishing](secure-github-publishing.md) — store GitHub credentials in Replit Secrets and use them only for a temporary push URL; keep origin credential-free.
-- [Resend sending domain](resend-domain-reminder.md) — Domain connectingthedots.fit verified 2026-08-03; EMAIL_FROM set to "PhotoMatrix <noreply@connectingthedots.fit>" in shared env.
+- [Resend delivery](resend-domain-reminder.md) — use the verified connectingthedots.fit sender and direct send-only API key; do not return to the connector path.
 - [Radix Select empty-value crash](radix-select-empty-value.md) — SelectItem value="" crashes at runtime; use "none" and check accordingly in save logic.
 - [Dark-theme dialog visibility](dark-theme-dialog.md) — with near-black backgrounds, dialog bg-background blends into the overlay; use hardcoded arbitrary values in dialog.tsx.
 - [Drizzle-kit non-TTY](drizzle-kit-noninteractive.md) — drizzle-kit push needs TTY; use executeSql for raw DDL in agent shells.

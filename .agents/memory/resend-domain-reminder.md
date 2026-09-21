@@ -1,18 +1,12 @@
 ---
-name: Resend sending domain reminder
-description: Remind the user on 2026-07-27 to configure a verified Resend sending domain for the photographer removal email.
+name: Resend delivery
+description: Durable sender and authentication decisions for PhotoMatrix transactional email.
 ---
 
-# Resend Sending Domain — Action Required by 2026-07-27
+# Resend delivery
 
-**Reminder date:** 2026-07-27
+Use `PhotoMatrix <noreply@connectingthedots.fit>` from the verified `connectingthedots.fit` domain. Authenticate direct Resend API calls with the securely stored send-only API key; do not use the Replit Resend connector.
 
-The photographer removal notification email currently uses `onboarding@resend.dev` as the sender, which only works in Resend's test/sandbox mode.
+**Why:** The connector repeatedly forwarded an invalid credential despite appearing enabled and connected. A direct send on 2026-09-21 was accepted successfully with the restricted key.
 
-**To fix for production:**
-1. Verify a sending domain in the Resend dashboard (e.g. `photomatrix.com`)
-2. Set the `EMAIL_FROM` environment variable on the API server:
-   - Example value: `PhotoMatrix <noreply@yourdomain.com>`
-   - Set it via the Replit environment secrets / env vars
-
-**Why:** Without this, removal notification emails will either not reach photographers in production, or come from an unrecognised test address.
+**How to apply:** Keep the credential in Replit Secrets, retain sending-only access, and use the shared direct-email path for all transactional messages. Republish backend changes before expecting production to use them.
