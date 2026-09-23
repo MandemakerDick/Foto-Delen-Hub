@@ -31,6 +31,8 @@ import type {
   CommentInput,
   CreateInviteRequest,
   ErrorEnvelope,
+  FeedbackInput,
+  FeedbackResult,
   FollowStatus,
   GalleryPhotoPage,
   HealthStatus,
@@ -47,6 +49,7 @@ import type {
   ListReviewSessionsParams,
   ListThemesParams,
   MembershipStatus,
+  MyProfileInput,
   Photo,
   PhotoAiBackfillRequest,
   PhotoAiBackfillResponse,
@@ -61,6 +64,7 @@ import type {
   Photographer,
   PhotographerInput,
   PhotographerUpdate,
+  ProfileLinkInput,
   RedeemInviteRequest,
   ReorderPhotosInput,
   ReviewSession,
@@ -3373,6 +3377,296 @@ export const useReorderPhotos = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getReorderPhotosMutationOptions(options));
+    }
+
+export const getGetMyProfileUrl = () => {
+
+
+
+
+  return `/api/me`
+}
+
+/**
+ * @summary Get the authenticated Clerk user's linked photographer profile
+ */
+export const getMyProfile = async ( options?: RequestInit): Promise<Photographer> => {
+
+  return customFetch<Photographer>(getGetMyProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyProfileQueryKey = () => {
+    return [
+    `/api/me`
+    ] as const;
+    }
+
+
+export const getGetMyProfileQueryOptions = <TData = Awaited<ReturnType<typeof getMyProfile>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProfile>>> = ({ signal }) => getMyProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getMyProfile>>>
+export type GetMyProfileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the authenticated Clerk user's linked photographer profile
+ */
+
+export function useGetMyProfile<TData = Awaited<ReturnType<typeof getMyProfile>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getLinkMyProfileUrl = () => {
+
+
+
+
+  return `/api/me/link`
+}
+
+/**
+ * @summary Link the authenticated user to their matching invited photographer profile
+ */
+export const linkMyProfile = async (profileLinkInput: ProfileLinkInput, options?: RequestInit): Promise<Photographer> => {
+
+  return customFetch<Photographer>(getLinkMyProfileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      profileLinkInput,)
+  }
+);}
+
+
+
+
+export const getLinkMyProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkMyProfile>>, TError,{data: BodyType<ProfileLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkMyProfile>>, TError,{data: BodyType<ProfileLinkInput>}, TContext> => {
+
+const mutationKey = ['linkMyProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkMyProfile>>, {data: BodyType<ProfileLinkInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  linkMyProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkMyProfileMutationResult = NonNullable<Awaited<ReturnType<typeof linkMyProfile>>>
+    export type LinkMyProfileMutationBody = BodyType<ProfileLinkInput>
+    export type LinkMyProfileMutationError = ErrorType<void>
+
+    /**
+ * @summary Link the authenticated user to their matching invited photographer profile
+ */
+export const useLinkMyProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkMyProfile>>, TError,{data: BodyType<ProfileLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof linkMyProfile>>,
+        TError,
+        {data: BodyType<ProfileLinkInput>},
+        TContext
+      > => {
+      return useMutation(getLinkMyProfileMutationOptions(options));
+    }
+
+export const getCreateMyProfileUrl = () => {
+
+
+
+
+  return `/api/me/profile`
+}
+
+/**
+ * @summary Create a photographer profile for the authenticated Clerk user
+ */
+export const createMyProfile = async (myProfileInput: MyProfileInput, options?: RequestInit): Promise<Photographer> => {
+
+  return customFetch<Photographer>(getCreateMyProfileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      myProfileInput,)
+  }
+);}
+
+
+
+
+export const getCreateMyProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMyProfile>>, TError,{data: BodyType<MyProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMyProfile>>, TError,{data: BodyType<MyProfileInput>}, TContext> => {
+
+const mutationKey = ['createMyProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMyProfile>>, {data: BodyType<MyProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMyProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMyProfileMutationResult = NonNullable<Awaited<ReturnType<typeof createMyProfile>>>
+    export type CreateMyProfileMutationBody = BodyType<MyProfileInput>
+    export type CreateMyProfileMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a photographer profile for the authenticated Clerk user
+ */
+export const useCreateMyProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMyProfile>>, TError,{data: BodyType<MyProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMyProfile>>,
+        TError,
+        {data: BodyType<MyProfileInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMyProfileMutationOptions(options));
+    }
+
+export const getSubmitFeedbackUrl = () => {
+
+
+
+
+  return `/api/feedback`
+}
+
+/**
+ * @summary Send feedback and optionally consented sanitized diagnostics
+ */
+export const submitFeedback = async (feedbackInput: FeedbackInput, options?: RequestInit): Promise<FeedbackResult> => {
+
+  return customFetch<FeedbackResult>(getSubmitFeedbackUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      feedbackInput,)
+  }
+);}
+
+
+
+
+export const getSubmitFeedbackMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedback>>, TError,{data: BodyType<FeedbackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitFeedback>>, TError,{data: BodyType<FeedbackInput>}, TContext> => {
+
+const mutationKey = ['submitFeedback'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFeedback>>, {data: BodyType<FeedbackInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitFeedback(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitFeedbackMutationResult = NonNullable<Awaited<ReturnType<typeof submitFeedback>>>
+    export type SubmitFeedbackMutationBody = BodyType<FeedbackInput>
+    export type SubmitFeedbackMutationError = ErrorType<void>
+
+    /**
+ * @summary Send feedback and optionally consented sanitized diagnostics
+ */
+export const useSubmitFeedback = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedback>>, TError,{data: BodyType<FeedbackInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitFeedback>>,
+        TError,
+        {data: BodyType<FeedbackInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitFeedbackMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {

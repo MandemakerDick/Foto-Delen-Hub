@@ -9,6 +9,37 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface ProfileLinkInput {
+  /** @minimum 1 */
+  photographerId: number;
+}
+
+export interface MyProfileInput {
+  /** @minLength 1 */
+  name: string;
+  bio?: string;
+  avatarUrl?: string;
+  clubIds?: number[];
+  themeIds?: number[];
+}
+
+export type FeedbackInputDiagnostics = { [key: string]: unknown };
+
+export interface FeedbackInput {
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  message: string;
+  /** Opt in to sending sanitized app/device diagnostics */
+  consent?: boolean;
+  diagnostics?: FeedbackInputDiagnostics;
+}
+
+export interface FeedbackResult {
+  ok: boolean;
+}
+
 export interface Club {
   id: number;
   name: string;
@@ -343,9 +374,15 @@ export interface Stats {
 export interface UploadUrlRequest {
   /** @minLength 1 */
   name: string;
-  /** @minimum 1 */
+  /**
+     * @minimum 1
+     * @maximum 26214400
+     */
   size: number;
-  /** @minLength 1 */
+  /**
+     * @minLength 1
+     * @pattern ^image/.+
+     */
   contentType: string;
 }
 
@@ -434,6 +471,13 @@ export interface RedeemInviteRequest {
 
 export interface InviteRedeemResult {
   ok: boolean;
+  /**
+     * Pre-linked photographer profile, if present
+     * @nullable
+     */
+  photographerId: number | null;
+  /** Whether an authenticated Clerk identity was linked immediately */
+  linked: boolean;
 }
 
 export interface InviteSessionResponse {

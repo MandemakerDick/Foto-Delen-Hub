@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable, photographerFollowsTable } from "@workspace/db";
+import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable, photographerFollowsTable, adminsTable } from "@workspace/db";
 import { eq, ilike, count, or, sql, exists, and } from "drizzle-orm";
 import {
   ListPhotographersQueryParams,
@@ -163,7 +163,7 @@ router.get("/photographers", async (req, res) => {
 });
 
 // POST /api/photographers — create a new photographer profile (admin action)
-router.post("/photographers", async (req, res) => {
+router.post("/photographers", requireAdmin, async (req, res) => {
   const body = CreatePhotographerBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: "Invalid body" });
@@ -276,9 +276,8 @@ router.get("/photographers/:id", async (req, res) => {
 });
 
 // PATCH /api/photographers/:id — update a photographer's profile.
-// If the request is Clerk-authenticated, only the profile owner may edit;
-// unauthenticated requests (e.g. admin panel) are allowed through unchecked.
-router.patch("/photographers/:id", async (req, res) => {
+// PATCH is available to the linked Clerk profile owner or a verified admin.
+router.patch("/photographers/:id", async (req: any, res) => {
   const params = UpdatePhotographerParams.safeParse({ id: Number(req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -294,20 +293,22 @@ router.patch("/photographers/:id", async (req, res) => {
   const { id } = params.data;
   const { userId } = getAuth(req);
 
-  if (userId) {
-    // Enforce ownership: a Clerk user can only edit their own profile
-    const existing = await db
+  const existing = await db
       .select({ clerkUserId: photographersTable.clerkUserId })
       .from(photographersTable)
       .where(eq(photographersTable.id, id));
-    if (!existing[0]) {
-      res.status(404).json({ error: "Not found" });
-      return;
-    }
-    if (existing[0].clerkUserId && existing[0].clerkUserId !== userId) {
-      res.status(403).json({ error: "Forbidden" });
-      return;
-    }
+  if (!existing[0]) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const [admin] = userId
+    ? await db.select({ id: adminsTable.id }).from(adminsTable).where(eq(adminsTable.clerkUserId, userId)).limit(1)
+    : req.session?.adminId
+      ? await db.select({ id: adminsTable.id }).from(adminsTable).where(eq(adminsTable.id, req.session.adminId)).limit(1)
+      : [];
+  if (!admin && (!userId || existing[0].clerkUserId !== userId)) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
   }
 
   const { clubs, themeIds, ...photographerFields } = body.data;

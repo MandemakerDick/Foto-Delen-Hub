@@ -917,6 +917,90 @@ export const ReorderPhotosBody = zod.object({
 
 
 /**
+ * @summary Get the authenticated Clerk user's linked photographer profile
+ */
+export const GetMyProfileResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish(),
+  "email": zod.string().nullish().describe('Contact email stored by admin (used to pre-fill invite dialogs)'),
+  "avatarUrl": zod.string().nullish(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club (not the club\'s founding year)')
+})),
+  "themes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "photoCount": zod.number().optional(),
+  "claimed": zod.boolean().optional().describe('Whether this photographer has linked a Clerk account and can log in'),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Link the authenticated user to their matching invited photographer profile
+ */
+
+
+
+export const LinkMyProfileBody = zod.object({
+  "photographerId": zod.number().min(1)
+})
+
+export const LinkMyProfileResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "bio": zod.string().nullish(),
+  "email": zod.string().nullish().describe('Contact email stored by admin (used to pre-fill invite dialogs)'),
+  "avatarUrl": zod.string().nullish(),
+  "clubs": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "memberSince": zod.number().nullish().describe('Year the photographer joined this club (not the club\'s founding year)')
+})),
+  "themes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "photoCount": zod.number().optional(),
+  "claimed": zod.boolean().optional().describe('Whether this photographer has linked a Clerk account and can log in'),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Create a photographer profile for the authenticated Clerk user
+ */
+
+
+
+export const CreateMyProfileBody = zod.object({
+  "name": zod.string().min(1),
+  "bio": zod.string().optional(),
+  "avatarUrl": zod.string().optional(),
+  "clubIds": zod.array(zod.number()).optional(),
+  "themeIds": zod.array(zod.number()).optional()
+})
+
+
+/**
+ * @summary Send feedback and optionally consented sanitized diagnostics
+ */
+export const submitFeedbackBodyMessageMax = 4000;
+
+export const submitFeedbackBodyConsentDefault = false;
+
+export const SubmitFeedbackBody = zod.object({
+  "message": zod.string().min(1).max(submitFeedbackBodyMessageMax),
+  "consent": zod.boolean().default(submitFeedbackBodyConsentDefault).describe('Opt in to sending sanitized app\/device diagnostics'),
+  "diagnostics": zod.record(zod.string(), zod.unknown()).optional()
+})
+
+
+/**
  * @summary Get dashboard statistics
  */
 export const GetStatsResponse = zod.object({
@@ -932,19 +1016,25 @@ export const GetStatsResponse = zod.object({
  * @summary Request a presigned URL for file upload
  */
 
+export const requestUploadUrlBodySizeMax = 26214400;
 
 
+
+export const requestUploadUrlBodyContentTypeRegExp = new RegExp('^image\/.+');
 
 
 export const RequestUploadUrlBody = zod.object({
   "name": zod.string().min(1),
-  "size": zod.number().min(1),
-  "contentType": zod.string().min(1)
+  "size": zod.number().min(1).max(requestUploadUrlBodySizeMax),
+  "contentType": zod.string().min(1).regex(requestUploadUrlBodyContentTypeRegExp)
 })
 
 
+export const requestUploadUrlResponseMetadataSizeMax = 26214400;
 
 
+
+export const requestUploadUrlResponseMetadataContentTypeRegExp = new RegExp('^image\/.+');
 
 
 export const RequestUploadUrlResponse = zod.object({
@@ -952,8 +1042,8 @@ export const RequestUploadUrlResponse = zod.object({
   "objectPath": zod.string(),
   "metadata": zod.object({
   "name": zod.string().min(1),
-  "size": zod.number().min(1),
-  "contentType": zod.string().min(1)
+  "size": zod.number().min(1).max(requestUploadUrlResponseMetadataSizeMax),
+  "contentType": zod.string().min(1).regex(requestUploadUrlResponseMetadataContentTypeRegExp)
 }).optional()
 })
 
@@ -1474,7 +1564,9 @@ export const RedeemInviteBody = zod.object({
 })
 
 export const RedeemInviteResponse = zod.object({
-  "ok": zod.boolean()
+  "ok": zod.boolean(),
+  "photographerId": zod.number().nullable().describe('Pre-linked photographer profile, if present'),
+  "linked": zod.boolean().describe('Whether an authenticated Clerk identity was linked immediately')
 })
 
 

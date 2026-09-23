@@ -6,15 +6,18 @@ id = "4jv_glfjKoTX-DlQdVXxv"
 uri = "file://.local/outputs/PhotoShare-Hub.pptx"
 type = "slides"
 title = "PhotoShare Hub.pptx"
+logical_id = "7fdd0cde-271d-4c38-ab25-72984f949ec5"
 
 [[outputs]]
 id = "-8mEKsnG-B5Jgs0GHH8jq"
 uri = "file://docs/user-guide.pdf"
 type = "pdf"
 title = "User Guide"
+logical_id = "a1de5de2-d20c-4da3-8ad4-d703f62b48b9"
 
 [[outputs]]
 id = "NM2M5YMCQLCW1RWVYdvV7"
 uri = "file://docs/admin-guide-import.pdf"
 type = "pdf"
 title = "Admin Guide — Import"
+logical_id = "c2fbf27b-8aad-4246-bfc1-e3be15711594"

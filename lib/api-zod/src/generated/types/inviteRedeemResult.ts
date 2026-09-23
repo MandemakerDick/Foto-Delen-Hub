@@ -8,4 +8,11 @@
 
 export interface InviteRedeemResult {
   ok: boolean;
+  /**
+     * Pre-linked photographer profile, if present
+     * @nullable
+     */
+  photographerId: number | null;
+  /** Whether an authenticated Clerk identity was linked immediately */
+  linked: boolean;
 }

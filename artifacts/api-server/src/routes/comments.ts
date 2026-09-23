@@ -44,6 +44,11 @@ router.get("/photos/:id/comments", async (req, res) => {
 
 // POST /api/photos/:id/comments — add a comment to a photo
 router.post("/photos/:id/comments", async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Sign in to comment" });
+    return;
+  }
   const params = CreateCommentParams.safeParse({ id: Number(req.params.id) });
   const body = CreateCommentBody.safeParse(req.body);
   if (!params.success || !body.success) {
@@ -51,9 +56,15 @@ router.post("/photos/:id/comments", async (req, res) => {
     return;
   }
 
+  const photographerId = await getPhotographerIdForClerkUser(userId);
+  if (!photographerId) {
+    res.status(403).json({ error: "Link a photographer profile before commenting" });
+    return;
+  }
+
   const [comment] = await db
     .insert(commentsTable)
-    .values({ photoId: params.data.id, ...body.data })
+    .values({ photoId: params.data.id, body: body.data.body, photographerId })
     .returning();
 
   // Re-fetch the inserted row with the joined photographer name/avatar

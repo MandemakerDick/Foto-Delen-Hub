@@ -4,6 +4,7 @@ declare module "express-session" {
   interface SessionData {
     inviteGranted?: boolean;
     inviteTokenId?: number;
+    invitePhotographerId?: number;
     adminId?: number;
   }
 }

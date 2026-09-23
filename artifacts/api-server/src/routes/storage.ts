@@ -5,6 +5,10 @@ import {
   RequestUploadUrlResponse,
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { db, adminsTable } from "@workspace/db";
+import { getAuth } from "@clerk/express";
+import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
+import { eq } from "drizzle-orm";
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
@@ -14,6 +18,20 @@ const objectStorageService = new ObjectStorageService();
  * Request a presigned URL for file upload.
  */
 router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
+  const linkedPhotographerId = userId ? await getPhotographerIdForClerkUser(userId) : null;
+  const [clerkAdmin] = userId
+    ? await db.select({ id: adminsTable.id }).from(adminsTable)
+      .where(eq(adminsTable.clerkUserId, userId)).limit(1)
+    : [];
+  const [sessionAdmin] = (req as any).session?.adminId
+    ? await db.select({ id: adminsTable.id }).from(adminsTable)
+      .where(eq(adminsTable.id, (req as any).session.adminId)).limit(1)
+    : [];
+  if (!linkedPhotographerId && !clerkAdmin && !sessionAdmin) {
+    res.status(401).json({ error: "A linked photographer or admin session is required" });
+    return;
+  }
   const parsed = RequestUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Missing or invalid required fields" });
@@ -22,6 +40,14 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
 
   try {
     const { name, size, contentType } = parsed.data;
+    if (!contentType.startsWith("image/")) {
+      res.status(400).json({ error: "Only image uploads are allowed" });
+      return;
+    }
+    if (size > 25 * 1024 * 1024) {
+      res.status(400).json({ error: "Image must be 25MB or smaller" });
+      return;
+    }
 
     const uploadURL = await objectStorageService.getObjectEntityUploadURL();
     const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);

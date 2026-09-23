@@ -158,6 +158,16 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
     res.status(400).json({ error: "photographerId required" });
     return;
   }
+  // A profile claim must be backed by the invite grant. This preserves the
+  // browser cookie flow while preventing an authenticated user from claiming
+  // an arbitrary unlinked photographer profile.
+  if (
+    req.session?.inviteGranted !== true ||
+    req.session.invitePhotographerId !== photographerId
+  ) {
+    res.status(403).json({ error: "A matching photographer invite is required" });
+    return;
+  }
 
   const existing = await db
     .select({ id: photographersTable.id, clerkUserId: photographersTable.clerkUserId })
@@ -178,6 +188,9 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
     .set({ clerkUserId: req.clerkUserId })
     .where(eq(photographersTable.id, photographerId));
 
+  delete req.session.inviteGranted;
+  delete req.session.inviteTokenId;
+  delete req.session.invitePhotographerId;
   const profile = await getPhotographerByClerkId(req.clerkUserId);
   res.json({ ...profile!, createdAt: profile!.createdAt.toISOString() });
 });

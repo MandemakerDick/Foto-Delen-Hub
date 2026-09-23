@@ -19,6 +19,7 @@ import adminsRouter from "./admins";
 import invitesRouter from "./invites";
 import reviewSessionsRouter from "./review-sessions";
 import urlImportRouter from "./url-import";
+import feedbackRouter from "./feedback";
 
 const router: IRouter = Router();
 
@@ -35,5 +36,6 @@ router.use(adminsRouter);
 router.use(invitesRouter);
 router.use(reviewSessionsRouter);
 router.use(urlImportRouter);
+router.use(feedbackRouter);
 
 export default router;

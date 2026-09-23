@@ -1,11 +1,18 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
 import { db, inviteTokensTable, photographersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { requireAdmin } from "./admins";
 import { sendEmail } from "../lib/email";
+import { getAuth } from "@clerk/express";
 
 const router = Router();
+
+class InviteRedeemError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
 
 /** Serialise an invite token row — convert dates to ISO strings for JSON. */
 function serializeToken(t: typeof inviteTokensTable.$inferSelect) {
@@ -170,32 +177,77 @@ router.post("/invites/redeem", async (req: any, res) => {
     return;
   }
 
-  const [row] = await db
-    .select()
-    .from(inviteTokensTable)
-    .where(eq(inviteTokensTable.token, token.trim()))
-    .limit(1);
+  const { userId } = getAuth(req);
+  try {
+    // The token row lock makes validation, use-count increment, and profile
+    // claim one atomic unit. Any conflict rolls back both the count and claim.
+    const result = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(inviteTokensTable)
+        .where(eq(inviteTokensTable.token, token.trim()))
+        .limit(1)
+        .for("update");
 
-  if (!row) { res.status(404).json({ error: "Token not found" }); return; }
-  if (row.revoked) { res.status(400).json({ error: "Token has been revoked" }); return; }
-  if (row.expiresAt && row.expiresAt < new Date()) { res.status(400).json({ error: "Token has expired" }); return; }
-  if (row.maxUses !== null && row.useCount >= row.maxUses) {
-    res.status(400).json({ error: "Token has reached its usage limit" });
-    return;
+      if (!row) throw new InviteRedeemError(404, "Token not found");
+      if (row.revoked) throw new InviteRedeemError(400, "Token has been revoked");
+      if (row.expiresAt && row.expiresAt < new Date()) throw new InviteRedeemError(400, "Token has expired");
+      if (row.maxUses !== null && row.useCount >= row.maxUses) {
+        throw new InviteRedeemError(400, "Token has reached its usage limit");
+      }
+
+      // Native clients send Clerk's bearer token rather than the browser's
+      // express-session cookie. When authenticated, link a pre-created profile
+      // during redemption; the token itself is the authorization to claim it.
+      if (userId && row.photographerId) {
+        const [existing] = await tx
+          .select({ id: photographersTable.id })
+          .from(photographersTable)
+          .where(eq(photographersTable.clerkUserId, userId));
+        if (existing && existing.id !== row.photographerId) {
+          throw new InviteRedeemError(409, "Your account already has a different photographer profile");
+        }
+        const [profile] = await tx
+          .select({ clerkUserId: photographersTable.clerkUserId })
+          .from(photographersTable)
+          .where(eq(photographersTable.id, row.photographerId));
+        if (!profile) throw new InviteRedeemError(404, "Photographer profile not found");
+        if (profile.clerkUserId && profile.clerkUserId !== userId) {
+          throw new InviteRedeemError(409, "This profile is already claimed by another account");
+        }
+        if (!existing) {
+          const claimed = await tx.update(photographersTable)
+            .set({ clerkUserId: userId })
+            .where(and(eq(photographersTable.id, row.photographerId), isNull(photographersTable.clerkUserId)))
+            .returning({ id: photographersTable.id });
+          if (claimed.length === 0) {
+            throw new InviteRedeemError(409, "This profile is already claimed by another account");
+          }
+        }
+      }
+
+      await tx.update(inviteTokensTable)
+        .set({ useCount: row.useCount + 1 })
+        .where(and(
+          eq(inviteTokensTable.id, row.id),
+          eq(inviteTokensTable.useCount, row.useCount),
+          or(isNull(inviteTokensTable.maxUses), sql`${inviteTokensTable.useCount} < ${inviteTokensTable.maxUses}`),
+        ));
+      return { photographerId: row.photographerId ?? null, linked: Boolean(userId && row.photographerId), id: row.id };
+    });
+
+    // Only establish the browser grant after the transaction commits.
+    req.session.inviteGranted = true;
+    req.session.inviteTokenId = result.id;
+    if (result.photographerId) req.session.invitePhotographerId = result.photographerId;
+    res.json({ ok: true, photographerId: result.photographerId, linked: result.linked });
+  } catch (error) {
+    if (error instanceof InviteRedeemError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
   }
-
-  await db
-    .update(inviteTokensTable)
-    .set({ useCount: row.useCount + 1 })
-    .where(eq(inviteTokensTable.id, row.id));
-
-  req.session.inviteGranted = true;
-  req.session.inviteTokenId = row.id;
-  if (row.photographerId) {
-    req.session.invitePhotographerId = row.photographerId;
-  }
-
-  res.json({ ok: true });
 });
 
 // GET /api/invites/session — check whether the current session holds an invite grant.

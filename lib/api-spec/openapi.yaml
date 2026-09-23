@@ -26,6 +26,10 @@ tags:
     description: Photo comment operations
   - name: admins
     description: Admin user management
+  - name: invites
+    description: Secure photographer invite redemption
+  - name: feedback
+    description: Authenticated app feedback
 paths:
   /healthz:
     get:
@@ -954,6 +958,90 @@ paths:
         "204":
           description: Updated
 
+  /me:
+    get:
+      operationId: getMyProfile
+      tags: [photographers]
+      summary: Get the authenticated Clerk user's linked photographer profile
+      responses:
+        "200":
+          description: Linked profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photographer"
+        "401":
+          description: Authentication required
+        "404":
+          description: No photographer profile is linked
+
+  /me/link:
+    post:
+      operationId: linkMyProfile
+      tags: [photographers]
+      summary: Link the authenticated user to their matching invited photographer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileLinkInput"
+      responses:
+        "200":
+          description: Linked profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photographer"
+        "403":
+          description: Matching invite required
+        "409":
+          description: Profile already claimed
+
+  /me/profile:
+    post:
+      operationId: createMyProfile
+      tags: [photographers]
+      summary: Create a photographer profile for the authenticated Clerk user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MyProfileInput"
+      responses:
+        "201":
+          description: Created profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photographer"
+        "409":
+          description: User already has a profile
+
+  /feedback:
+    post:
+      operationId: submitFeedback
+      tags: [feedback]
+      summary: Send feedback and optionally consented sanitized diagnostics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackInput"
+      responses:
+        "202":
+          description: Feedback accepted for delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackResult"
+        "400":
+          description: Explicit consent and valid feedback are required
+        "401":
+          description: Authentication required
+
   /stats:
     get:
       operationId: getStats
@@ -1689,6 +1777,57 @@ components:
       required:
         - status
 
+    ProfileLinkInput:
+      type: object
+      required: [photographerId]
+      properties:
+        photographerId:
+          type: integer
+          minimum: 1
+
+    MyProfileInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        clubIds:
+          type: array
+          items:
+            type: integer
+        themeIds:
+          type: array
+          items:
+            type: integer
+
+    FeedbackInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        consent:
+          type: boolean
+          default: false
+          description: Opt in to sending sanitized app/device diagnostics
+        diagnostics:
+          type: object
+          additionalProperties: true
+
+    FeedbackResult:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+
     Club:
       type: object
       required: [id, name, createdAt]
@@ -2124,9 +2263,11 @@ components:
         size:
           type: integer
           minimum: 1
+          maximum: 26214400
         contentType:
           type: string
           minLength: 1
+          pattern: '^image/.+'
 
     UploadUrlResponse:
       type: object
@@ -2292,10 +2433,16 @@ components:
 
     InviteRedeemResult:
       type: object
-      required: [ok]
+      required: [ok, photographerId, linked]
       properties:
         ok:
           type: boolean
+        photographerId:
+          type: ["integer", "null"]
+          description: Pre-linked photographer profile, if present
+        linked:
+          type: boolean
+          description: Whether an authenticated Clerk identity was linked immediately
 
     InviteSessionResponse:
       type: object

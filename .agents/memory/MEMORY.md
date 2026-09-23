@@ -17,3 +17,4 @@
 - [AI theme assignment policy](ai-theme-assignment.md) — auto-apply only high-confidence suggestions to new unthemed photos; keep existing-library changes review-first.
 - [Shared Gallery pagination contract](gallery-pagination-contract.md) — web and future native clients should use the dedicated paginated Gallery API; keep legacy photo lists compatible.
 - [Standalone frontend builds](standalone-frontend-builds.md) — artifact workflows inject routing variables that ad-hoc build shells lack; supply them explicitly when building outside a workflow.
+- [Expo React version alignment](expo-react-version-alignment.md) — root pnpm React overrides defeat Expo's local version pin; native and shared React peers must agree.
