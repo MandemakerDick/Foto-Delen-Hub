@@ -6,6 +6,7 @@ import { useListPhotographers, useListClubs, useListThemes } from "@workspace/ap
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { sortPhotographersBySurname } from "@/lib/photographer-sort";
 
 export default function Photographers() {
   const { t } = useTranslation();
@@ -24,12 +25,13 @@ export default function Photographers() {
     Object.keys(queryParams).length ? queryParams : undefined,
   );
 
-  const filteredPhotographers =
+  const filteredPhotographers = sortPhotographersBySurname(
     photographers?.filter(
       (p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         (p.bio && p.bio.toLowerCase().includes(search.toLowerCase())),
-    ) || [];
+    ) ?? [],
+  );
 
   return (
     <div className="container mx-auto px-4 py-12">

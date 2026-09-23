@@ -16,3 +16,4 @@
 - [Bilingual semantic photo search](bilingual-semantic-search.md) — use cached LLM query expansion; the managed OpenAI proxy rejects embeddings.
 - [AI theme assignment policy](ai-theme-assignment.md) — auto-apply only high-confidence suggestions to new unthemed photos; keep existing-library changes review-first.
 - [Shared Gallery pagination contract](gallery-pagination-contract.md) — web and future native clients should use the dedicated paginated Gallery API; keep legacy photo lists compatible.
+- [Standalone frontend builds](standalone-frontend-builds.md) — artifact workflows inject routing variables that ad-hoc build shells lack; supply them explicitly when building outside a workflow.
