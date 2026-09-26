@@ -18,3 +18,4 @@
 - [Shared Gallery pagination contract](gallery-pagination-contract.md) — web and future native clients should use the dedicated paginated Gallery API; keep legacy photo lists compatible.
 - [Standalone frontend builds](standalone-frontend-builds.md) — artifact workflows inject routing variables that ad-hoc build shells lack; supply them explicitly when building outside a workflow.
 - [Expo React version alignment](expo-react-version-alignment.md) — root pnpm React overrides defeat Expo's local version pin; native and shared React peers must agree.
+- [Daemon test processes](daemon-test-processes.md) — avoid piped stdio when synchronously starting a daemon; inherited pipes can make the caller wait forever.
