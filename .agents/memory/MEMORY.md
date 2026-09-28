@@ -19,3 +19,4 @@
 - [Standalone frontend builds](standalone-frontend-builds.md) — artifact workflows inject routing variables that ad-hoc build shells lack; supply them explicitly when building outside a workflow.
 - [Expo React version alignment](expo-react-version-alignment.md) — root pnpm React overrides defeat Expo's local version pin; native and shared React peers must agree.
 - [Daemon test processes](daemon-test-processes.md) — avoid piped stdio when synchronously starting a daemon; inherited pipes can make the caller wait forever.
+- [Mobile query-key invalidation](mobile-query-key-invalidation.md) — generated URL keys are single strings; invalidate related list/detail caches by family, not array-prefix alone.
