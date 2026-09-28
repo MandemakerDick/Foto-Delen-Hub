@@ -12,14 +12,18 @@ import * as schema from "@workspace/db/schema";
 
 // Never import @workspace/db's live Pool. This test boots a disposable,
 // socket-only PostgreSQL cluster, with no network listener or shared records.
-const fixture = vi.hoisted(() => ({ db: null as unknown, }));
+const fixture = vi.hoisted(() => ({
+  db: null as unknown,
+  sessions: new Map<string, { inviteGranted?: boolean; invitePhotographerId?: number; inviteTokenId?: number }>(),
+}));
 vi.mock("@workspace/db", async () => ({
   ...await import("@workspace/db/schema"),
   db: fixture.db,
 }));
 vi.mock("@clerk/express", () => ({
-  getAuth: (req: { headers: { authorization?: string } }) => ({
-    userId: req.headers.authorization?.match(/^Bearer (claimant-[a-d])$/)?.[1] ?? null,
+  getAuth: (req: { headers: { authorization?: string; cookie?: string } }) => ({
+    userId: req.headers.authorization?.match(/^Bearer (claimant-[a-d])$/)?.[1]
+      ?? req.headers.cookie?.match(/(?:^|;\s*)fixture-user=(claimant-[e-f])(?:;|$)/)?.[1] ?? null,
   }),
 }));
 vi.mock("./routes/admins", () => ({ requireAdmin: (_req: unknown, _res: unknown, next: () => void) => next() }));
@@ -68,6 +72,15 @@ async function redeem(token: string, claimant: "claimant-a" | "claimant-b" | "cl
   return result;
 }
 
+async function link(photographerId: number, claimant: "claimant-e" | "claimant-f") {
+  const response = await fetch(`${baseUrl}/api/me/link`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: `fixture-user=${claimant}` },
+    body: JSON.stringify({ photographerId }),
+  });
+  return { status: response.status, body: await response.json() as { clerkUserId?: string; error?: string } };
+}
+
 beforeAll(async () => {
   tempDir = mkdtempSync(join(tmpdir(), "pm-invite-pg-"));
   // Replit exposes postgres on PATH; its sibling tools are from the same build.
@@ -87,7 +100,7 @@ beforeAll(async () => {
   await pool.query(`
     CREATE TABLE photographer (
       id serial PRIMARY KEY, name text NOT NULL, bio text, email text,
-      avatar_url text, clerk_user_id text UNIQUE, created_at timestamp NOT NULL DEFAULT now()
+      avatar_url text, clerk_user_id text, created_at timestamp NOT NULL DEFAULT now()
     );
     CREATE TABLE invite_token (
       id serial PRIMARY KEY, token text NOT NULL UNIQUE, label text NOT NULL DEFAULT '',
@@ -96,13 +109,25 @@ beforeAll(async () => {
       expires_at timestamp, revoked boolean NOT NULL DEFAULT false,
       created_at timestamp NOT NULL DEFAULT now()
     );
+    CREATE TABLE club (id serial PRIMARY KEY, name text NOT NULL);
+    CREATE TABLE theme (id serial PRIMARY KEY, name text NOT NULL);
+    CREATE TABLE photographer_club (
+      photographer_id integer NOT NULL, club_id integer NOT NULL, member_since integer
+    );
+    CREATE TABLE photographer_theme (photographer_id integer NOT NULL, theme_id integer NOT NULL);
   `);
   fixture.db = drizzle(pool, { schema });
-  const { default: invites } = await import("./routes/invites");
+  const [{ default: invites }, { default: auth }] = await Promise.all([
+    import("./routes/invites"), import("./routes/auth"),
+  ]);
   const app = express();
   app.use(express.json());
-  app.use((req, _res, next) => { (req as any).session = {}; next(); });
-  app.use("/api", invites);
+  app.use((req, _res, next) => {
+    const browserUser = req.headers.cookie?.match(/(?:^|;\s*)fixture-user=(claimant-[e-f])(?:;|$)/)?.[1];
+    (req as any).session = browserUser ? fixture.sessions.get(browserUser) : {};
+    next();
+  });
+  app.use("/api", invites, auth);
   server = createServer(app);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -193,5 +218,44 @@ describe("concurrent authenticated invite redemption with real PostgreSQL locks"
     );
     expect(invites.map((i) => i.use_count).sort()).toEqual([0, 1]);
     expect(invites.find((i) => i.use_count === 1)?.token).toBe(responses[0].status === 200 ? "grant-a" : "grant-b");
+  }, 15000);
+});
+
+describe("concurrent browser profile linking with two valid session grants", () => {
+  it("keeps the first owner and only consumes the winning browser grant", async () => {
+    const { rows: [profile] } = await pool.query<{ id: number }>(
+      "INSERT INTO photographer (name) VALUES ('Browser claim fixture') RETURNING id",
+    );
+    fixture.sessions.set("claimant-e", { inviteGranted: true, invitePhotographerId: profile.id, inviteTokenId: 101 });
+    fixture.sessions.set("claimant-f", { inviteGranted: true, invitePhotographerId: profile.id, inviteTokenId: 102 });
+    const blocker = await pool.connect();
+    let first: ReturnType<typeof link> | undefined;
+    let second: ReturnType<typeof link> | undefined;
+    try {
+      await blocker.query("BEGIN");
+      await blocker.query("SELECT id FROM photographer WHERE id = $1 FOR UPDATE", [profile.id]);
+      first = link(profile.id, "claimant-e");
+      second = link(profile.id, "claimant-f");
+      await waitForTwoBlockedClaims("photographer");
+    } finally {
+      await blocker.query("COMMIT");
+      blocker.release();
+    }
+    const responses = await Promise.all([first!, second!]);
+    expect(responses.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(responses.find((r) => r.status === 409)?.body.error).toMatch(/already claimed/i);
+    const winner = responses[0].status === 200 ? "claimant-e" : "claimant-f";
+    const loser = winner === "claimant-e" ? "claimant-f" : "claimant-e";
+    expect(responses.find((r) => r.status === 200)?.body.clerkUserId).toBe(winner);
+    const { rows: [owner] } = await pool.query<{ clerk_user_id: string }>(
+      "SELECT clerk_user_id FROM photographer WHERE id = $1", [profile.id],
+    );
+    expect(owner.clerk_user_id).toBe(winner);
+    expect(fixture.sessions.get(winner)).toEqual({});
+    expect(fixture.sessions.get(loser)).toMatchObject({
+      inviteGranted: true, invitePhotographerId: profile.id,
+    });
+    expect((await link(profile.id, loser)).status).toBe(409);
+    expect(fixture.sessions.get(loser)?.inviteGranted).toBe(true);
   }, 15000);
 });

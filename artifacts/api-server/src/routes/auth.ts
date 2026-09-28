@@ -11,7 +11,7 @@ import {
   themesTable,
   photosTable,
 } from "@workspace/db";
-import { eq, asc, desc, inArray } from "drizzle-orm";
+import { eq, asc, desc, inArray, and, or, isNull } from "drizzle-orm";
 import { buildPhotoSelect, mapPhoto } from "./photos";
 import { buildRow, groupByFields, photographerBaseQuery } from "./photographers";
 
@@ -183,16 +183,29 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
     return;
   }
 
-  await db
+  // The earlier read is only for a useful 404/409 response. The write itself
+  // must recheck ownership: two valid browser grants can race after that read.
+  const claimed = await db
     .update(photographersTable)
     .set({ clerkUserId: req.clerkUserId })
-    .where(eq(photographersTable.id, photographerId));
+    .where(and(
+      eq(photographersTable.id, photographerId),
+      or(isNull(photographersTable.clerkUserId), eq(photographersTable.clerkUserId, req.clerkUserId)),
+    ))
+    .returning({ id: photographersTable.id });
+  if (claimed.length === 0) {
+    res.status(409).json({ error: "This profile is already claimed by another account" });
+    return;
+  }
 
+  const profile = await getPhotographerByClerkId(req.clerkUserId);
+  if (!profile) {
+    throw new Error("Linked photographer profile could not be loaded");
+  }
   delete req.session.inviteGranted;
   delete req.session.inviteTokenId;
   delete req.session.invitePhotographerId;
-  const profile = await getPhotographerByClerkId(req.clerkUserId);
-  res.json({ ...profile!, createdAt: profile!.createdAt.toISOString() });
+  res.json({ ...profile, createdAt: profile.createdAt.toISOString() });
 });
 
 // POST /api/me/profile — create a new photographer profile linked to the Clerk account.
