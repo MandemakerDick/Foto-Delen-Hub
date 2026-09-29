@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +18,7 @@ import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { LocaleProvider } from '@/context/locale';
+import { clearPrivateAccountCaches } from '@/utils/privateCache';
 
 if (process.env.EXPO_PUBLIC_DOMAIN) setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
@@ -28,8 +29,17 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { getToken, userId } = useAuth();
-  useEffect(() => { setAuthTokenGetter(() => getToken()); return () => setAuthTokenGetter(null); }, [getToken]);
-  useEffect(() => { queryClient.clear(); }, [userId]);
+  const [cacheOwner, setCacheOwner] = useState(userId);
+  useLayoutEffect(() => { setAuthTokenGetter(() => getToken()); return () => setAuthTokenGetter(null); }, [getToken]);
+  useLayoutEffect(() => {
+    if (cacheOwner !== userId) {
+      clearPrivateAccountCaches(queryClient);
+      setCacheOwner(userId);
+    }
+  }, [cacheOwner, userId]);
+  // Unmount observers before clearing their cache and never render a new
+  // identity against the prior identity's private query results.
+  if (cacheOwner !== userId) return null;
   return (
       <Stack screenOptions={{ headerBackTitle: 'Back', headerStyle: { backgroundColor: '#0b0b0c' }, headerTintColor: '#e7e3dc', headerTitleStyle: { fontFamily: 'Inter_600SemiBold' } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

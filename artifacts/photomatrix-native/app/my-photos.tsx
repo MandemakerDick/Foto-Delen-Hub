@@ -4,8 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Link, Stack } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useClerk } from '@clerk/expo';
-import { useCreatePhoto, useDeletePhoto, useGetMyProfile, useListClubs, useListPhotos, useListThemes, useRequestUploadUrl, useUpdatePhoto } from '@workspace/api-client-react';
+import { useAuth, useClerk } from '@clerk/expo';
+import { getGetMyProfileQueryKey, useCreatePhoto, useDeletePhoto, useGetMyProfile, useListClubs, useListPhotos, useListThemes, useRequestUploadUrl, useUpdatePhoto } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useLocale } from '@/context/locale';
 import { resolveMediaUrl, storageMediaPath } from '@/utils/media';
@@ -14,7 +14,8 @@ import { fetch as expoFetch } from 'expo/fetch';
 import { File } from 'expo-file-system';
 
 export default function MyPhotos() {
-  const c = useColors(); const { t } = useLocale(); const profile = useGetMyProfile(); const id = profile.data?.id;
+  const c = useColors(); const { t } = useLocale(); const { isSignedIn } = useAuth();
+  const profile = useGetMyProfile({ query: { enabled: !!isSignedIn, queryKey: getGetMyProfileQueryKey() } }); const id = profile.data?.id;
   const clubs = useListClubs(); const themes = useListThemes(); const mine = useListPhotos({ photographerId: id }, { query: { enabled: !!id, queryKey: ['my-photos', id] } });
   const qc = useQueryClient(); const { signOut } = useClerk(); const request = useRequestUploadUrl(); const create = useCreatePhoto(); const update = useUpdatePhoto(); const remove = useDeletePhoto();
   const [busy, setBusy] = useState(false); const [editing, setEditing] = useState<number | null>(null); const [title, setTitle] = useState(''); const [description, setDescription] = useState(''); const [uploadTitle, setUploadTitle] = useState(''); const [uploadDescription, setUploadDescription] = useState(''); const [clubId, setClubId] = useState<number | undefined>(); const [themeId, setThemeId] = useState<number | undefined>();
