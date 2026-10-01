@@ -6,6 +6,7 @@
  * POST /api/admins/import-from-url/import — download + upload + create records
  */
 import { Router } from "express";
+import { withUploadAttachment } from "../lib/upload-staging";
 import * as cheerio from "cheerio";
 import { db, photosTable, photographersTable, commentsTable, clubsTable, themesTable, photographerClubsTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
@@ -386,7 +387,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
 
       // 4. Create photo record
       const title = img.title?.trim() || titleFromSrc(img.src);
-      const [photo] = await db
+      const [photo] = await withUploadAttachment(imageUrl, (tx) => tx
         .insert(photosTable)
         .values({
           title,
@@ -396,7 +397,7 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
           clubId: clubId ?? null,
           themeId: img.themeId ?? themeId ?? null,
         })
-        .returning();
+        .returning());
 
       // Re-fetch with full joins
       const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));

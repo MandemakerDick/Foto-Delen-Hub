@@ -9,6 +9,7 @@ import { db, adminsTable } from "@workspace/db";
 import { getAuth } from "@clerk/express";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { eq } from "drizzle-orm";
+import { registerPendingUpload } from "../lib/upload-staging";
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
@@ -51,6 +52,8 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
 
     const uploadURL = await objectStorageService.getObjectEntityUploadURL();
     const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+    // Only issue the URL once its durable staging record exists.
+    await registerPendingUpload(objectPath);
 
     res.json(
       RequestUploadUrlResponse.parse({

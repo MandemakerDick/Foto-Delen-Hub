@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { withUploadAttachment } from "../lib/upload-staging";
 import { eq, and } from "drizzle-orm";
 import {
   db,
@@ -344,10 +345,10 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
   let photoId: number;
   if (isDirectUpload) {
     const { title, imageUrl } = parsed.data as unknown as { title: string; imageUrl: string };
-    const [newPhoto] = await db
+    const [newPhoto] = await withUploadAttachment(imageUrl, (tx) => tx
       .insert(photosTable)
       .values({ title, imageUrl, photographerId })
-      .returning({ id: photosTable.id });
+      .returning({ id: photosTable.id }));
     photoId = newPhoto.id;
   } else {
     photoId = (parsed.data as { photoId: number }).photoId;

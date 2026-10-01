@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { withUploadAttachment } from "../lib/upload-staging";
 import { getAuth } from "@clerk/express";
 import {
   db,
@@ -223,10 +224,10 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
     return;
   }
 
-  const [newPhotographer] = await db
+  const [newPhotographer] = await withUploadAttachment(avatarUrl ?? "", (tx) => tx
     .insert(photographersTable)
     .values({ name, bio, avatarUrl, clerkUserId: req.clerkUserId })
-    .returning();
+    .returning());
 
   // Link club memberships via junction table
   if (Array.isArray(clubIds) && clubIds.length > 0) {

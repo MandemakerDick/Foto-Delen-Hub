@@ -5,7 +5,8 @@
  * paths (e.g. /photos/recent) must be registered before wildcard ones
  * (e.g. /photos/:id) to avoid shadowing.
  */
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type ErrorRequestHandler } from "express";
+import { UploadUnavailableError } from "../lib/upload-staging";
 import healthRouter from "./health";
 import clubsRouter from "./clubs";
 import themesRouter from "./themes";
@@ -37,5 +38,14 @@ router.use(invitesRouter);
 router.use(reviewSessionsRouter);
 router.use(urlImportRouter);
 router.use(feedbackRouter);
+
+const uploadErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (error instanceof UploadUnavailableError) {
+    res.status(409).json({ error: error.message });
+    return;
+  }
+  next(error);
+};
+router.use(uploadErrorHandler);
 
 export default router;

@@ -1403,7 +1403,7 @@ export const createPhotographer = async (photographerInput: PhotographerInput, o
 
 
 
-export const getCreatePhotographerMutationOptions = <TError = ErrorType<unknown>,
+export const getCreatePhotographerMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotographer>>, TError,{data: BodyType<PhotographerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPhotographer>>, TError,{data: BodyType<PhotographerInput>}, TContext> => {
 
@@ -1432,12 +1432,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreatePhotographerMutationResult = NonNullable<Awaited<ReturnType<typeof createPhotographer>>>
     export type CreatePhotographerMutationBody = BodyType<PhotographerInput>
-    export type CreatePhotographerMutationError = ErrorType<unknown>
+    export type CreatePhotographerMutationError = ErrorType<void>
 
     /**
  * @summary Create a photographer profile
  */
-export const useCreatePhotographer = <TError = ErrorType<unknown>,
+export const useCreatePhotographer = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotographer>>, TError,{data: BodyType<PhotographerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createPhotographer>>,
@@ -1924,7 +1924,7 @@ export const createPhoto = async (photoInput: PhotoInput, options?: RequestInit)
 
 
 
-export const getCreatePhotoMutationOptions = <TError = ErrorType<unknown>,
+export const getCreatePhotoMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhoto>>, TError,{data: BodyType<PhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPhoto>>, TError,{data: BodyType<PhotoInput>}, TContext> => {
 
@@ -1953,12 +1953,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreatePhotoMutationResult = NonNullable<Awaited<ReturnType<typeof createPhoto>>>
     export type CreatePhotoMutationBody = BodyType<PhotoInput>
-    export type CreatePhotoMutationError = ErrorType<unknown>
+    export type CreatePhotoMutationError = ErrorType<void>
 
     /**
  * @summary Upload a new photo
  */
-export const useCreatePhoto = <TError = ErrorType<unknown>,
+export const useCreatePhoto = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhoto>>, TError,{data: BodyType<PhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createPhoto>>,
@@ -3755,6 +3755,7 @@ export const getRequestUploadUrlUrl = () => {
 }
 
 /**
+ * Unattached uploads expire after 24 hours. Saving a photo or avatar protects its file from cleanup.
  * @summary Request a presigned URL for file upload
  */
 export const requestUploadUrl = async (uploadUrlRequest: UploadUrlRequest, options?: RequestInit): Promise<UploadUrlResponse> => {
@@ -5383,7 +5384,7 @@ export const submitSessionPhoto = async (id: number,
 
 
 
-export const getSubmitSessionPhotoMutationOptions = <TError = ErrorType<unknown>,
+export const getSubmitSessionPhotoMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSessionPhoto>>, TError,{id: number;data: BodyType<SessionPhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof submitSessionPhoto>>, TError,{id: number;data: BodyType<SessionPhotoInput>}, TContext> => {
 
@@ -5412,12 +5413,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SubmitSessionPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof submitSessionPhoto>>>
     export type SubmitSessionPhotoMutationBody = BodyType<SessionPhotoInput>
-    export type SubmitSessionPhotoMutationError = ErrorType<unknown>
+    export type SubmitSessionPhotoMutationError = ErrorType<void>
 
     /**
  * @summary Submit a photo to a review session
  */
-export const useSubmitSessionPhoto = <TError = ErrorType<unknown>,
+export const useSubmitSessionPhoto = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSessionPhoto>>, TError,{id: number;data: BodyType<SessionPhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof submitSessionPhoto>>,

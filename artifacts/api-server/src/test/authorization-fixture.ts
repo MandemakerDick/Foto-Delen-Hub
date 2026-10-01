@@ -4,7 +4,7 @@ import type { Server } from "node:http";
 import { once } from "node:events";
 
 type Row = Record<string, any>;
-type TableName = "photographers" | "admins" | "invites" | "clubs" | "themes";
+type TableName = "photographers" | "admins" | "invites" | "clubs" | "themes" | "uploadReservations";
 type Condition = (row: Row) => boolean;
 
 const fixture = vi.hoisted(() => {
@@ -14,6 +14,7 @@ const fixture = vi.hoisted(() => {
     invites: [] as Row[],
     clubs: [] as Row[],
     themes: [] as Row[],
+    uploadReservations: [] as Row[],
     userId: null as string | null,
     failInviteUpdate: false,
     uploadCalls: 0,
@@ -34,6 +35,7 @@ const tables = {
   photographerFollowsTable: table("photographers", ["photographerId", "clerkUserId"]),
   adminsTable: table("admins", ["id", "clerkUserId", "email"]),
   inviteTokensTable: table("invites", ["id", "token", "photographerId", "maxUses", "useCount", "expiresAt", "revoked", "createdAt"]),
+  uploadReservationsTable: table("uploadReservations", ["objectPath", "status", "expiresAt", "retryAt", "createdAt"]),
 };
 
 function field(row: Row, key: string) {
@@ -45,6 +47,12 @@ vi.mock("drizzle-orm", () => ({
   isNull: (key: string): Condition => (row: Row) => field(row, key) == null,
   and: (...checks: Condition[]): Condition => (row: Row) => checks.every((check) => check(row)),
   or: (...checks: Condition[]): Condition => (row: Row) => checks.some((check) => check(row)),
+  lte: (key: string, value: unknown): Condition => (row: Row) =>
+    new Date(field(row, key)).getTime() <= new Date(value as Date).getTime(),
+  like: (key: string, pattern: string): Condition => (row: Row) => {
+    const needle = pattern.replace(/^%|%$/g, "");
+    return String(field(row, key) ?? "").includes(needle);
+  },
   sql: Object.assign(
     (parts: TemplateStringsArray, ...values: unknown[]): Condition =>
       (row: Row) => parts.join("").includes(" < ") ? Number(field(row, values[0] as string)) < Number(field(row, values[1] as string)) : true,
@@ -61,6 +69,7 @@ function nameOf(tableRef: Row): TableName {
   if (tableRef === tables.inviteTokensTable) return "invites";
   if (tableRef === tables.photographerClubsTable) return "clubs";
   if (tableRef === tables.photographerThemesTable) return "themes";
+  if (tableRef === tables.uploadReservationsTable) return "uploadReservations";
   throw new Error("Unexpected table in authorization fixture");
 }
 
@@ -112,11 +121,21 @@ function database() {
     values: (values: Row | Row[]) => {
       const name = nameOf(ref);
       const rows = (Array.isArray(values) ? values : [values]).map((value) => {
-        const row = { id: fixture[name].length + 1, createdAt: new Date(), ...value };
+        const row = {
+          id: fixture[name].length + 1, createdAt: new Date(),
+          ...(name === "uploadReservations" ? { status: "pending" } : {}),
+          ...value,
+        };
         fixture[name].push(row);
         return row;
       });
-      return { returning: () => Promise.resolve(rows) };
+      const builder = {
+        onConflictDoNothing: () => ({ returning: () => Promise.resolve(rows) }),
+        returning: () => Promise.resolve(rows),
+        then: (resolve: (rows: Row[]) => unknown, reject?: (reason: unknown) => unknown) =>
+          Promise.resolve(rows).then(resolve, reject),
+      };
+      return builder;
     },
   });
   const remove = (ref: Row) => ({
@@ -131,7 +150,7 @@ function database() {
     transaction: async <T>(callback: (tx: ReturnType<typeof database>) => Promise<T>) => {
       const snapshot = structuredClone({
         photographers: fixture.photographers, admins: fixture.admins, invites: fixture.invites,
-        clubs: fixture.clubs, themes: fixture.themes,
+        clubs: fixture.clubs, themes: fixture.themes, uploadReservations: fixture.uploadReservations,
       });
       try { return await callback(database()); }
       catch (error) {
@@ -152,7 +171,7 @@ vi.mock("../lib/email", () => ({ sendEmail: vi.fn() }));
 vi.mock("../lib/objectStorage", () => ({
   ObjectStorageService: class {
     async getObjectEntityUploadURL() { fixture.uploadCalls++; return "https://uploads.example.test/objects/new"; }
-    normalizeObjectEntityPath() { return "/objects/new"; }
+    normalizeObjectEntityPath() { return "/objects/uploads/00000000-0000-4000-8000-000000000001"; }
   },
   ObjectNotFoundError: class extends Error {},
 }));
@@ -172,6 +191,7 @@ export function resetFixture() {
   }];
   fixture.clubs = [];
   fixture.themes = [];
+  fixture.uploadReservations = [];
   fixture.userId = null;
   fixture.failInviteUpdate = false;
   fixture.uploadCalls = 0;

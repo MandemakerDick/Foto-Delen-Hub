@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { sendPhotoUploadConfirmation } from "../lib/notifications";
+import { withUploadAttachment } from "../lib/upload-staging";
 import { requireAdmin } from "./admins";
 import {
   enqueuePhotoAiAnalysis,
@@ -404,7 +405,8 @@ router.post("/photos", async (req: any, res) => {
     }
   }
 
-  const [photo] = await db.insert(photosTable).values(body.data).returning();
+  const [photo] = await withUploadAttachment(body.data.imageUrl,
+    (tx) => tx.insert(photosTable).values(body.data).returning());
   // Re-fetch via buildPhotoSelect so the response includes all joined fields
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
   res.status(201).json(mapPhoto(rows[0]));

@@ -21,3 +21,4 @@
 - [Daemon test processes](daemon-test-processes.md) — avoid piped stdio when synchronously starting a daemon; inherited pipes can make the caller wait forever.
 - [Mobile query-key invalidation](mobile-query-key-invalidation.md) — generated URL keys are single strings; invalidate related list/detail caches by family, not array-prefix alone.
 - [Mobile account-cache boundary](mobile-account-cache-boundary.md) — remove only private queries on identity change, and hide the old navigation tree until removal completes.
+- [Staged upload safety](staged-upload-safety.md) — the shared uploader serves avatars too; cleanup must protect every attachment type and remain compatible with deployed writers.

@@ -378,6 +378,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Photographer"
+        "409":
+          description: The supplied avatar upload expired; upload the image again
 
   /photographers/{id}:
     get:
@@ -424,6 +426,8 @@ paths:
                 $ref: "#/components/schemas/Photographer"
         "404":
           description: Not found
+        "409":
+          description: The supplied avatar upload expired; upload the image again
     delete:
       operationId: deletePhotographer
       tags: [photographers]
@@ -525,6 +529,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Photo"
+        "409":
+          description: The supplied upload expired; upload the image again
 
   /photos/recent:
     get:
@@ -1017,7 +1023,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Photographer"
         "409":
-          description: User already has a profile
+          description: User already has a profile, or the supplied avatar upload expired
 
   /feedback:
     post:
@@ -1060,6 +1066,7 @@ paths:
       tags: [Storage]
       operationId: requestUploadUrl
       summary: Request a presigned URL for file upload
+      description: Unattached uploads expire after 24 hours. Saving a photo or avatar protects its file from cleanup.
       requestBody:
         required: true
         content:
@@ -1551,6 +1558,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SessionPhoto"
+        "409":
+          description: The supplied direct upload expired; upload the image again
 
   /review-sessions/{id}/photos/{sessionPhotoId}:
     delete:

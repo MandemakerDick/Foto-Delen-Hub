@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { withUploadAttachment } from "../lib/upload-staging";
 import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable, photographerFollowsTable, adminsTable } from "@workspace/db";
 import { eq, ilike, count, or, sql, exists, and } from "drizzle-orm";
 import {
@@ -170,7 +171,8 @@ router.post("/photographers", requireAdmin, async (req, res) => {
     return;
   }
   const { clubs, themeIds, ...photographerData } = body.data;
-  const [photographer] = await db.insert(photographersTable).values(photographerData).returning();
+  const [photographer] = await withUploadAttachment(photographerData.avatarUrl ?? "",
+    (tx) => tx.insert(photographersTable).values(photographerData).returning());
 
   if (clubs && clubs.length > 0) {
     await setClubMemberships(photographer.id, clubs);
@@ -315,7 +317,8 @@ router.patch("/photographers/:id", async (req: any, res) => {
 
   // Update scalar photographer fields (skip if nothing to update)
   if (Object.keys(photographerFields).length > 0) {
-    await db.update(photographersTable).set(photographerFields).where(eq(photographersTable.id, id));
+    await withUploadAttachment(photographerFields.avatarUrl ?? "",
+      (tx) => tx.update(photographersTable).set(photographerFields).where(eq(photographersTable.id, id)));
   }
 
   // Replace club memberships if clubs was provided

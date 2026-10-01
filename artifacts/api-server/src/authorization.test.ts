@@ -28,7 +28,8 @@ describe("authenticated authorization over HTTP", () => {
     expect(edited.body.name).toBe("Updated owner");
     expect(fixture.photographers[0]).toMatchObject({ name: "Updated owner", bio: "Hello", clerkUserId: "owner" });
     expect((await http.request("POST", "/storage/uploads/request-url", upload)).body).toMatchObject({
-      uploadURL: "https://uploads.example.test/objects/new", objectPath: "/objects/new",
+      uploadURL: "https://uploads.example.test/objects/new",
+      objectPath: "/objects/uploads/00000000-0000-4000-8000-000000000001",
     });
     expect(fixture.uploadCalls).toBe(1);
     expect((await http.request("POST", "/photographers", { name: "Forbidden" })).status).toBe(401);

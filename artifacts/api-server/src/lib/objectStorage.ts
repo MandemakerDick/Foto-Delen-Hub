@@ -154,6 +154,17 @@ export class ObjectStorageService {
     return objectFile;
   }
 
+  async deleteUploadObject(objectPath: string): Promise<void> {
+    if (!/^\/objects\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(objectPath)) {
+      throw new Error("Only staged upload objects can be deleted");
+    }
+    const entityId = objectPath.slice("/objects/".length);
+    const { bucketName, objectName } = parseObjectPath(`${this.getPrivateObjectDir()}/${entityId}`);
+    // Missing files are normal when the picker/PUT was canceled, and when a
+    // prior worker deleted the object but stopped before recording completion.
+    await objectStorageClient.bucket(bucketName).file(objectName).delete({ ignoreNotFound: true });
+  }
+
   normalizeObjectEntityPath(rawPath: string): string {
     if (!rawPath.startsWith("https://storage.googleapis.com/")) {
       return rawPath;

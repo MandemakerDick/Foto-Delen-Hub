@@ -1013,6 +1013,7 @@ export const GetStatsResponse = zod.object({
 
 
 /**
+ * Unattached uploads expire after 24 hours. Saving a photo or avatar protects its file from cleanup.
  * @summary Request a presigned URL for file upload
  */
 
