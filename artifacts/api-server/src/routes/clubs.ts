@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, clubsTable, photosTable, photographerClubsTable, photographersTable } from "@workspace/db";
 import { eq, ilike, countDistinct, sql, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
+import { withUploadAttachment } from "../lib/upload-staging";
 import {
   ListClubsQueryParams,
   CreateClubBody,
@@ -73,7 +74,8 @@ router.post("/clubs", async (req, res) => {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
-  const [club] = await db.insert(clubsTable).values(body.data).returning();
+  const [club] = await withUploadAttachment(body.data.logoUrl ?? "", (tx) =>
+    tx.insert(clubsTable).values(body.data).returning());
   // New club always starts with zero photos and members
   res.status(201).json({ ...club, photoCount: 0, memberCount: 0, createdAt: club.createdAt.toISOString() });
 });
@@ -119,11 +121,12 @@ router.put("/clubs/:id", async (req, res) => {
     return;
   }
 
-  const [updated] = await db
-    .update(clubsTable)
-    .set(body.data)
-    .where(eq(clubsTable.id, params.data.id))
-    .returning();
+  const [updated] = await withUploadAttachment(body.data.logoUrl ?? "", (tx) =>
+    tx
+      .update(clubsTable)
+      .set(body.data)
+      .where(eq(clubsTable.id, params.data.id))
+      .returning());
 
   // Re-fetch with aggregated counts so the response matches the list/get shape
   const rows = await clubBaseQuery()

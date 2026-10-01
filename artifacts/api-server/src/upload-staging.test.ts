@@ -106,6 +106,11 @@ beforeAll(async () => {
       id serial PRIMARY KEY, name text NOT NULL, bio text, email text, avatar_url text,
       clerk_user_id text, created_at timestamp NOT NULL DEFAULT now()
     );
+    CREATE TABLE club (
+      id serial PRIMARY KEY, name text NOT NULL, description text, location text,
+      website_url text, logo_url text, year_established integer,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
   `);
   fixture.db = drizzle(pool, { schema });
   staging = await import("./lib/upload-staging");

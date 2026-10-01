@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { withUploadAttachment } from "../lib/upload-staging";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import {
   db,
   reviewSessionsTable,
@@ -35,6 +34,14 @@ import {
 import { requireAuth } from "./auth";
 import { requireAdmin } from "./admins";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
+import {
+  createPhotoReviewWithReferences,
+  createReviewPhotoReference,
+  ImageLifecycleError,
+  removeSessionPhotoWithReferences,
+  withReviewPhotographerReferences,
+  withReviewSessionUploadAttachment,
+} from "../lib/image-lifecycle";
 
 const router = Router();
 
@@ -81,24 +88,27 @@ router.post("/review-sessions", requireAdmin, async (req: any, res): Promise<voi
   }
 
   const { title, description, clubId, scheduledFor, submissionDeadline, maxPhotosPerMember, reviewerIds } = parsed.data;
-  const [session] = await db
-    .insert(reviewSessionsTable)
-    .values({
-      title,
-      description: description ?? null,
-      clubId,
-      scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-      submissionDeadline: submissionDeadline ? new Date(submissionDeadline) : null,
-      maxPhotosPerMember: maxPhotosPerMember ?? null,
-      createdByAdminId: req.adminId ?? null,
-    })
-    .returning();
+  const session = await withReviewPhotographerReferences(reviewerIds ?? [], async (tx) => {
+    const [created] = await tx
+      .insert(reviewSessionsTable)
+      .values({
+        title,
+        description: description ?? null,
+        clubId,
+        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        submissionDeadline: submissionDeadline ? new Date(submissionDeadline) : null,
+        maxPhotosPerMember: maxPhotosPerMember ?? null,
+        createdByAdminId: req.adminId ?? null,
+      })
+      .returning();
 
-  if (reviewerIds && reviewerIds.length > 0) {
-    await db.insert(sessionReviewersTable).values(
-      reviewerIds.map((photographerId) => ({ sessionId: session.id, photographerId }))
-    );
-  }
+    if (reviewerIds && reviewerIds.length > 0) {
+      await tx.insert(sessionReviewersTable).values(
+        reviewerIds.map((photographerId) => ({ sessionId: created.id, photographerId }))
+      );
+    }
+    return created;
+  });
 
   res.status(201).json(serializeSession(session));
 });
@@ -174,37 +184,36 @@ router.delete("/review-sessions/:id", requireAdmin, async (req: any, res): Promi
 
   const { id } = params.data;
 
-  const [session] = await db
-    .select()
-    .from(reviewSessionsTable)
-    .where(eq(reviewSessionsTable.id, id));
+  const deleted = await db.transaction(async (tx) => {
+    const [session] = await tx
+      .select()
+      .from(reviewSessionsTable)
+      .where(eq(reviewSessionsTable.id, id))
+      .for("update");
+    if (!session) return false;
 
-  if (!session) {
+    const sessionPhotoIds = await tx
+      .select({ id: sessionPhotosTable.id })
+      .from(sessionPhotosTable)
+      .where(eq(sessionPhotosTable.sessionId, id))
+      .orderBy(sessionPhotosTable.id)
+      .for("update");
+    const ids = sessionPhotoIds.map((row) => row.id);
+    if (ids.length > 0) {
+      await tx
+        .delete(photoReviewsTable)
+        .where(inArray(photoReviewsTable.sessionPhotoId, ids));
+    }
+    await tx.delete(sessionPhotosTable).where(eq(sessionPhotosTable.sessionId, id));
+    await tx.delete(sessionReviewersTable).where(eq(sessionReviewersTable.sessionId, id));
+    await tx.delete(reviewSessionsTable).where(eq(reviewSessionsTable.id, id));
+    return true;
+  });
+
+  if (!deleted) {
     res.status(404).json({ error: "Review session not found" });
     return;
   }
-
-  // 1. Delete photo reviews (child of session_photos)
-  const sessionPhotoIds = await db
-    .select({ id: sessionPhotosTable.id })
-    .from(sessionPhotosTable)
-    .where(eq(sessionPhotosTable.sessionId, id));
-
-  if (sessionPhotoIds.length > 0) {
-    const { inArray } = await import("drizzle-orm");
-    await db
-      .delete(photoReviewsTable)
-      .where(inArray(photoReviewsTable.sessionPhotoId, sessionPhotoIds.map((r) => r.id)));
-  }
-
-  // 2. Delete session photos
-  await db.delete(sessionPhotosTable).where(eq(sessionPhotosTable.sessionId, id));
-
-  // 3. Delete session reviewers
-  await db.delete(sessionReviewersTable).where(eq(sessionReviewersTable.sessionId, id));
-
-  // 4. Delete the session itself
-  await db.delete(reviewSessionsTable).where(eq(reviewSessionsTable.id, id));
 
   res.sendStatus(204);
 });
@@ -341,19 +350,6 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     }
   }
 
-  // For direct uploads, create a gallery-less photo record first
-  let photoId: number;
-  if (isDirectUpload) {
-    const { title, imageUrl } = parsed.data as unknown as { title: string; imageUrl: string };
-    const [newPhoto] = await withUploadAttachment(imageUrl, (tx) => tx
-      .insert(photosTable)
-      .values({ title, imageUrl, photographerId })
-      .returning({ id: photosTable.id }));
-    photoId = newPhoto.id;
-  } else {
-    photoId = (parsed.data as { photoId: number }).photoId;
-  }
-
   // Enforce max photos per member
   if (session[0].maxPhotosPerMember) {
     const existing = await db
@@ -373,14 +369,40 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     }
   }
 
-  const [sp] = await db
-    .insert(sessionPhotosTable)
-    .values({
-      sessionId: params.data.id,
-      photoId,
-      photographerId,
-    })
-    .returning();
+  let sp: typeof sessionPhotosTable.$inferSelect;
+  try {
+    if (isDirectUpload) {
+      const { title, imageUrl } = parsed.data as unknown as { title: string; imageUrl: string };
+      sp = await withReviewSessionUploadAttachment(params.data.id, photographerId, imageUrl, async (tx) => {
+        const [newPhoto] = await tx
+          .insert(photosTable)
+          .values({ title, imageUrl, photographerId })
+          .returning({ id: photosTable.id });
+        const [reference] = await tx
+          .insert(sessionPhotosTable)
+          .values({
+            sessionId: params.data.id,
+            photoId: newPhoto.id,
+            photographerId,
+          })
+          .returning();
+        return reference;
+      });
+    } else {
+      const photoId = (parsed.data as { photoId: number }).photoId;
+      sp = await createReviewPhotoReference({
+        photographerId,
+        sessionId: params.data.id,
+        photoId,
+      });
+    }
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 
   res.status(201).json({
     id: sp.id,
@@ -423,7 +445,11 @@ router.delete(
       return;
     }
 
-    await db.delete(sessionPhotosTable).where(eq(sessionPhotosTable.id, params.data.sessionPhotoId));
+    const deleted = await removeSessionPhotoWithReferences(params.data.sessionPhotoId);
+    if (!deleted) {
+      res.status(404).json({ error: "Session photo not found" });
+      return;
+    }
     res.sendStatus(204);
   }
 );
@@ -496,13 +522,17 @@ router.post(
       return;
     }
 
-    const [reviewer] = await db
-      .insert(sessionReviewersTable)
-      .values({
-        sessionId: params.data.id,
-        photographerId: parsed.data.photographerId,
-      })
-      .returning();
+    const [reviewer] = await withReviewPhotographerReferences(
+      [parsed.data.photographerId],
+      (tx) => tx
+        .insert(sessionReviewersTable)
+        .values({
+          sessionId: params.data.id,
+          photographerId: parsed.data.photographerId,
+        })
+        .returning(),
+      params.data.id,
+    );
 
     const [photographer] = await db
       .select({ name: photographersTable.name, avatarUrl: photographersTable.avatarUrl })
@@ -661,15 +691,12 @@ router.post(
       return;
     }
 
-    const [review] = await db
-      .insert(photoReviewsTable)
-      .values({
-        sessionPhotoId: params.data.sessionPhotoId,
-        reviewerPhotographerId: photographerId,
-        rating: parsed.data.rating,
-        comment: parsed.data.comment ?? null,
-      })
-      .returning();
+    const review = await createPhotoReviewWithReferences({
+      sessionPhotoId: params.data.sessionPhotoId,
+      reviewerPhotographerId: photographerId,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment ?? null,
+    });
 
     const [photographer] = await db
       .select({ name: photographersTable.name, avatarUrl: photographersTable.avatarUrl })

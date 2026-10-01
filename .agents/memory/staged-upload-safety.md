@@ -19,3 +19,13 @@ its attachment transaction and fallback reference check. Do not enable cleanup
 alongside older writers that bypass the protocol; disable/drain cleanup workers
 before a mixed-version rollout or legacy rollback. Never extend cleanup to
 untracked legacy files merely by scanning storage.
+
+Apply the same decoded object identity to reference checks and attachment
+locking, including mixed literal and percent-encoded UUID characters.
+
+**Why:** A served storage URL can encode UUID characters. Literal UUID matching
+alone misses a surviving photo/avatar/logo reference and can delete its file.
+Canonicalizing only new writes does not protect older noncanonical references.
+
+**How to apply:** Preserve conservative alias matching for existing references
+when changing path normalization or adding an image consumer.

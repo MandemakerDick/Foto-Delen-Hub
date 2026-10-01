@@ -7,6 +7,7 @@
  */
 import { Router, type IRouter, type ErrorRequestHandler } from "express";
 import { UploadUnavailableError } from "../lib/upload-staging";
+import { ImageLifecycleError } from "../lib/image-lifecycle";
 import healthRouter from "./health";
 import clubsRouter from "./clubs";
 import themesRouter from "./themes";
@@ -40,6 +41,10 @@ router.use(urlImportRouter);
 router.use(feedbackRouter);
 
 const uploadErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (error instanceof ImageLifecycleError) {
+    res.status(error.status).json({ error: error.message });
+    return;
+  }
   if (error instanceof UploadUnavailableError) {
     res.status(409).json({ error: error.message });
     return;

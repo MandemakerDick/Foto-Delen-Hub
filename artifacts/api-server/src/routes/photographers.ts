@@ -12,6 +12,7 @@ import {
 import { getAuth, clerkClient } from "@clerk/express";
 import { requireAdmin } from "./admins";
 import { sendEmail } from "../lib/email";
+import { deletePhotographerWithReclamation, ImageLifecycleError, updatePhotographerWithReclamation } from "../lib/image-lifecycle";
 
 const router = Router();
 
@@ -317,8 +318,15 @@ router.patch("/photographers/:id", async (req: any, res) => {
 
   // Update scalar photographer fields (skip if nothing to update)
   if (Object.keys(photographerFields).length > 0) {
-    await withUploadAttachment(photographerFields.avatarUrl ?? "",
-      (tx) => tx.update(photographersTable).set(photographerFields).where(eq(photographersTable.id, id)));
+    try {
+      await updatePhotographerWithReclamation(id, photographerFields);
+    } catch (error) {
+      if (error instanceof ImageLifecycleError) {
+        res.status(error.status).json({ error: error.message });
+        return;
+      }
+      throw error;
+    }
   }
 
   // Replace club memberships if clubs was provided
@@ -354,19 +362,19 @@ router.delete("/photographers/:id", requireAdmin, async (req, res) => {
 
   const reason: string | undefined = typeof req.body?.reason === "string" ? req.body.reason.trim() : undefined;
 
-  const existing = await db
-    .select({ id: photographersTable.id, name: photographersTable.name, clerkUserId: photographersTable.clerkUserId })
-    .from(photographersTable)
-    .where(eq(photographersTable.id, id))
-    .limit(1);
-
-  if (!existing[0]) {
-    res.status(404).json({ error: "Not found" });
-    return;
+  let removed: Awaited<ReturnType<typeof deletePhotographerWithReclamation>>;
+  try {
+    removed = await deletePhotographerWithReclamation(id);
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
   }
 
-  // Send notification email if photographer has a Clerk account and a reason was given.
-  const { name, clerkUserId } = existing[0];
+  // Send notification email after the committed deletion, using its actual profile.
+  const { name, clerkUserId } = removed;
   if (clerkUserId && reason) {
     try {
       const clerkUser = await clerkClient.users.getUser(clerkUserId);
@@ -384,11 +392,6 @@ router.delete("/photographers/:id", requireAdmin, async (req, res) => {
       req.log.warn({ err, photographerId: id }, "Failed to send removal notification email");
     }
   }
-
-  await db.delete(photosTable).where(eq(photosTable.photographerId, id));
-  await db.delete(photographerClubsTable).where(eq(photographerClubsTable.photographerId, id));
-  await db.delete(photographerThemesTable).where(eq(photographerThemesTable.photographerId, id));
-  await db.delete(photographersTable).where(eq(photographersTable.id, id));
 
   res.status(204).end();
 });

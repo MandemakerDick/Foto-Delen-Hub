@@ -44,6 +44,7 @@ function field(row: Row, key: string) {
 
 vi.mock("drizzle-orm", () => ({
   eq: (key: string, value: unknown): Condition => (row: Row) => field(row, key) === value,
+  inArray: (key: string, values: unknown[]): Condition => (row: Row) => values.includes(field(row, key)),
   isNull: (key: string): Condition => (row: Row) => field(row, key) == null,
   and: (...checks: Condition[]): Condition => (row: Row) => checks.every((check) => check(row)),
   or: (...checks: Condition[]): Condition => (row: Row) => checks.some((check) => check(row)),

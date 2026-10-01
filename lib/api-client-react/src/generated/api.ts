@@ -290,7 +290,7 @@ export const createClub = async (clubInput: ClubInput, options?: RequestInit): P
 
 
 
-export const getCreateClubMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateClubMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClub>>, TError,{data: BodyType<ClubInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createClub>>, TError,{data: BodyType<ClubInput>}, TContext> => {
 
@@ -319,12 +319,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateClubMutationResult = NonNullable<Awaited<ReturnType<typeof createClub>>>
     export type CreateClubMutationBody = BodyType<ClubInput>
-    export type CreateClubMutationError = ErrorType<unknown>
+    export type CreateClubMutationError = ErrorType<void>
 
     /**
  * @summary Create a new photo club
  */
-export const useCreateClub = <TError = ErrorType<unknown>,
+export const useCreateClub = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClub>>, TError,{data: BodyType<ClubInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createClub>>,
@@ -2664,7 +2664,7 @@ export const deletePhoto = async (id: number, options?: RequestInit): Promise<vo
 
 
 
-export const getDeletePhotoMutationOptions = <TError = ErrorType<unknown>,
+export const getDeletePhotoMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deletePhoto>>, TError,{id: number}, TContext> => {
 
@@ -2693,12 +2693,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeletePhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deletePhoto>>>
 
-    export type DeletePhotoMutationError = ErrorType<unknown>
+    export type DeletePhotoMutationError = ErrorType<void>
 
     /**
  * @summary Delete a photo
  */
-export const useDeletePhoto = <TError = ErrorType<unknown>,
+export const useDeletePhoto = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deletePhoto>>,
@@ -5016,7 +5016,7 @@ export const createReviewSession = async (reviewSessionInput: ReviewSessionInput
 
 
 
-export const getCreateReviewSessionMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateReviewSessionMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewSession>>, TError,{data: BodyType<ReviewSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createReviewSession>>, TError,{data: BodyType<ReviewSessionInput>}, TContext> => {
 
@@ -5045,12 +5045,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateReviewSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createReviewSession>>>
     export type CreateReviewSessionMutationBody = BodyType<ReviewSessionInput>
-    export type CreateReviewSessionMutationError = ErrorType<unknown>
+    export type CreateReviewSessionMutationError = ErrorType<void>
 
     /**
  * @summary Create a new review session (admin only)
  */
-export const useCreateReviewSession = <TError = ErrorType<unknown>,
+export const useCreateReviewSession = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReviewSession>>, TError,{data: BodyType<ReviewSessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createReviewSession>>,
@@ -5605,7 +5605,7 @@ export const addSessionReviewer = async (id: number,
 
 
 
-export const getAddSessionReviewerMutationOptions = <TError = ErrorType<unknown>,
+export const getAddSessionReviewerMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSessionReviewer>>, TError,{id: number;data: BodyType<SessionReviewerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof addSessionReviewer>>, TError,{id: number;data: BodyType<SessionReviewerInput>}, TContext> => {
 
@@ -5634,12 +5634,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type AddSessionReviewerMutationResult = NonNullable<Awaited<ReturnType<typeof addSessionReviewer>>>
     export type AddSessionReviewerMutationBody = BodyType<SessionReviewerInput>
-    export type AddSessionReviewerMutationError = ErrorType<unknown>
+    export type AddSessionReviewerMutationError = ErrorType<void>
 
     /**
  * @summary Add a reviewer to a session (admin only)
  */
-export const useAddSessionReviewer = <TError = ErrorType<unknown>,
+export const useAddSessionReviewer = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSessionReviewer>>, TError,{id: number;data: BodyType<SessionReviewerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof addSessionReviewer>>,
@@ -5833,7 +5833,7 @@ export const createPhotoReview = async (id: number,
 
 
 
-export const getCreatePhotoReviewMutationOptions = <TError = ErrorType<unknown>,
+export const getCreatePhotoReviewMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoReview>>, TError,{id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createPhotoReview>>, TError,{id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}, TContext> => {
 
@@ -5862,12 +5862,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreatePhotoReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createPhotoReview>>>
     export type CreatePhotoReviewMutationBody = BodyType<PhotoReviewInput>
-    export type CreatePhotoReviewMutationError = ErrorType<unknown>
+    export type CreatePhotoReviewMutationError = ErrorType<void>
 
     /**
  * @summary Submit a review for a session photo (reviewers only)
  */
-export const useCreatePhotoReview = <TError = ErrorType<unknown>,
+export const useCreatePhotoReview = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoReview>>, TError,{id: number;sessionPhotoId: number;data: BodyType<PhotoReviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createPhotoReview>>,

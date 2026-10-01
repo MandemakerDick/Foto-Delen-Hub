@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { sendPhotoUploadConfirmation } from "../lib/notifications";
-import { withUploadAttachment } from "../lib/upload-staging";
+import { withPhotographerUploadAttachment, deletePhotosWithReclamation, ImageLifecycleError } from "../lib/image-lifecycle";
 import { requireAdmin } from "./admins";
 import {
   enqueuePhotoAiAnalysis,
@@ -405,8 +405,17 @@ router.post("/photos", async (req: any, res) => {
     }
   }
 
-  const [photo] = await withUploadAttachment(body.data.imageUrl,
-    (tx) => tx.insert(photosTable).values(body.data).returning());
+  let photo: typeof photosTable.$inferSelect;
+  try {
+    [photo] = await withPhotographerUploadAttachment(photographerId!, body.data.imageUrl,
+      (tx) => tx.insert(photosTable).values(body.data).returning());
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
   // Re-fetch via buildPhotoSelect so the response includes all joined fields
   const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));
   res.status(201).json(mapPhoto(rows[0]));
@@ -642,13 +651,16 @@ router.delete("/photos/bulk-delete", async (req, res) => {
     return;
   }
 
-  await Promise.all(
-    (photoIds as number[]).map((id) =>
-      db.delete(photosTable).where(eq(photosTable.id, id)),
-    ),
-  );
-
-  res.json({ deleted: (photoIds as number[]).length });
+  try {
+    const deleted = await deletePhotosWithReclamation(photoIds as number[]);
+    res.json({ deleted: deleted.length });
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 });
 
 // PATCH /api/photos/:id — update a photo's metadata (owner or admin)
@@ -722,8 +734,16 @@ router.delete("/photos/:id", async (req, res) => {
     }
   }
 
-  await db.delete(photosTable).where(eq(photosTable.id, params.data.id));
-  res.status(204).send();
+  try {
+    await deletePhotosWithReclamation([params.data.id]);
+    res.status(204).send();
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 });
 
 // PATCH /api/me/photos/order — set sort_order for all photos belonging to the authenticated photographer.

@@ -23,3 +23,4 @@
 - [Mobile account-cache boundary](mobile-account-cache-boundary.md) — remove only private queries on identity change, and hide the old navigation tree until removal completes.
 - [Account identity epochs](account-identity-epochs.md) — bind private-cache responses and mutation callbacks to an identity epoch, and observe auth changes outside private pages.
 - [Staged upload safety](staged-upload-safety.md) — the shared uploader serves avatars too; cleanup must protect every attachment type and remain compatible with deployed writers.
+- [Review retention policy](review-retention-policy.md) — file reclamation must protect live review-linked records, not only retain their image bytes.
