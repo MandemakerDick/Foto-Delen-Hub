@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { syncMyProfileIdentity } from "@/hooks/use-my-profile";
 import { HelmetProvider } from "react-helmet-async";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -158,6 +159,7 @@ function ClerkQueryClientCacheInvalidator() {
   useEffect(() => {
     const unsubscribe = addListener(({ user }) => {
       const userId = user?.id ?? null;
+      syncMyProfileIdentity(userId);
       if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) {
         qc.clear();
       }

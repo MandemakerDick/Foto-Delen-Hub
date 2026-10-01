@@ -1,80 +1,42 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useUser } from "@clerk/react";
+import { createMyProfileStore, getProfileView, type MyProfile } from "./my-profile-store";
 
-export type MyProfile = {
-  id: number;
-  name: string;
-  bio: string | null;
-  avatarUrl: string | null;
-  clubs: { id: number; name: string }[];
-  createdAt: string;
-};
+export type { MyProfile } from "./my-profile-store";
 
-/**
- * Module-level cache for the current user's profile.
- *
- * "none" = not yet fetched; null = fetched but no profile exists.
- *
- * Using a module-level variable means the profile is only fetched once per
- * page session regardless of how many components call this hook. Call
- * `invalidate()` after creating or linking a profile to force a re-fetch.
- */
-let cache: MyProfile | null | "none" = "none";
+const store = createMyProfileStore();
+
+// Keep the epoch current even on public routes with no profile-hook consumer.
+// This invalidates old callbacks across A → B → A without fetching a private
+// profile until a consumer actually mounts.
+export function syncMyProfileIdentity(userId: string | null) {
+  store.setIdentity(userId, false);
+}
 
 /**
- * Returns the Clerk-linked photographer profile for the signed-in user.
- *
- * - `profile === undefined` — loading
- * - `profile === null`      — signed in but no profile linked yet
- * - `profile`               — fully resolved photographer profile
+ * Current Clerk account's linked photographer profile. Shared consumers use
+ * one cache and request; identity transitions hide the old result immediately.
+ * Refresh keeps a loaded dashboard mounted, while callbacks from a previous
+ * identity cannot refresh or mutate the next account's cache.
  */
 export function useMyProfile() {
-  const { isSignedIn, isLoaded } = useUser();
-  const [profile, setProfile] = useState<MyProfile | null | undefined>(
-    cache === "none" ? undefined : cache,
-  );
-  const [loading, setLoading] = useState(cache === "none");
-
-  const fetchProfile = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/me", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        cache = data;
-        setProfile(data);
-      } else {
-        cache = null;
-        setProfile(null);
-      }
-    } catch {
-      cache = null;
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { isSignedIn, isLoaded, user } = useUser();
+  const userId = !isLoaded ? undefined : isSignedIn && user ? user.id : null;
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const identityRevision = snapshot.userId === userId ? snapshot.identityRevision : undefined;
 
   useEffect(() => {
-    if (!isLoaded) return;
-    if (!isSignedIn) {
-      // User is signed out — clear cache immediately so it is not stale on
-      // the next sign-in.
-      cache = null;
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-    if (cache === "none") {
-      fetchProfile();
-    }
-  }, [isSignedIn, isLoaded]);
+    if (userId !== undefined) store.setIdentity(userId);
+  }, [userId]);
 
-  /** Reset the cache and re-fetch — call after linking or creating a profile. */
-  const invalidate = () => {
-    cache = "none";
-    fetchProfile();
-  };
+  const refetch = useCallback(
+    () => store.refresh(userId, identityRevision),
+    [userId, identityRevision],
+  );
+  const updateProfile = useCallback(
+    (partial: Partial<MyProfile>) => store.updateProfile(userId, identityRevision, partial),
+    [userId, identityRevision],
+  );
 
-  return { profile, loading, invalidate };
+  return { ...getProfileView(snapshot, userId), invalidate: refetch, refetch, updateProfile };
 }

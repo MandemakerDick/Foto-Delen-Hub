@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useMyProfile, type MyProfile as PhotographerProfile } from "@/hooks/use-my-profile";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,49 +54,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const homePath = `${basePath}/`;
-
-type PhotographerProfile = {
-  id: number;
-  name: string;
-  bio: string | null;
-  avatarUrl: string | null;
-  clubs: { id: number; name: string; memberSince?: number | null }[];
-  themes: { id: number; name: string }[];
-  createdAt: string;
-};
-
-function useMyProfile() {
-  const [profile, setProfile] = useState<PhotographerProfile | null | undefined>(undefined);
-  // initialLoading gates the skeleton/spinner shown on first page load.
-  // Subsequent refetches (e.g. after saving clubs/themes) must NOT set this
-  // back to true, otherwise MyPhotosDashboard unmounts mid-save and the
-  // in-progress profile update is lost.
-  const [initialLoading, setInitialLoading] = useState(true);
-
-  const fetchProfile = async () => {
-    try {
-      const res = await fetch("/api/me", { credentials: "include", cache: "no-store" });
-      if (res.status === 404) {
-        setProfile(null);
-      } else if (res.ok) {
-        setProfile(await res.json());
-      }
-    } catch {
-      setProfile(null);
-    } finally {
-      setInitialLoading(false);
-    }
-  };
-
-  useState(() => {
-    fetchProfile();
-  });
-
-  const updateProfile = (partial: Partial<PhotographerProfile>) =>
-    setProfile((prev) => (prev ? { ...prev, ...partial } : prev));
-
-  return { profile, loading: initialLoading, refetch: fetchProfile, updateProfile };
-}
 
 function AvatarUploader({
   profile,
