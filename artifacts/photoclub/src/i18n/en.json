@@ -131,6 +131,7 @@
       "websiteLabel": "Website URL",
       "descriptionLabel": "Description",
       "logoLabel": "Logo",
+      "removeLogo": "Remove logo",
       "yearEstablishedLabel": "Year established",
       "logoHint": "Click to upload a club logo (optional)",
       "submitCreate": "Establish Club",

@@ -46,6 +46,15 @@ type ReviewMutationHelpers = {
   removeSessionPhotoWithReferences(id: number): Promise<unknown>;
 };
 
+type ClubMutationHelpers = {
+  updateClubWithReclamation(
+    id: number, fields: Partial<typeof schema.clubsTable.$inferInsert>, now?: Date,
+  ): Promise<any>;
+};
+
+const updateClub = (id: number, fields: Partial<typeof schema.clubsTable.$inferInsert>, at = now) =>
+  (lifecycle as typeof lifecycle & ClubMutationHelpers).updateClubWithReclamation(id, fields, at);
+
 async function waitForLockWait(queryFragment: string, count = 1) {
   const deadline = Date.now() + 8000;
   while (Date.now() < deadline) {
@@ -80,6 +89,14 @@ async function addPhoto(url: string, photographerId: number | null = null) {
     `INSERT INTO photo (title, image_url, photographer_id)
      VALUES ('Lifecycle fixture', $1, $2) RETURNING id`,
     [url, photographerId],
+  );
+  return row.id;
+}
+
+async function addClub(name: string, logoUrl: string | null = null) {
+  const { rows: [row] } = await pool.query<{ id: number }>(
+    "INSERT INTO club (name, logo_url) VALUES ($1, $2) RETURNING id",
+    [name, logoUrl],
   );
   return row.id;
 }
@@ -447,6 +464,216 @@ describe("image reclamation on isolated Unix-socket PostgreSQL", () => {
     expect((await reservation(finalPath)).status).toBe("attached");
     expect((await reservation(replacedPath)).status).toBe("pending");
     expect((await reservation(objectPath(initialId))).status).toBe("pending");
+  });
+
+  it("retires a replaced club logo for 24 hours before sweeping it", async () => {
+    const oldId = "27272727-2727-4727-8727-272727272727";
+    const newId = "28282828-2828-4828-8828-282828282828";
+    const oldUrl = imageUrl(oldId);
+    const newUrl = imageUrl(newId);
+    const clubId = await addClub("Replacement club", oldUrl);
+    await addReservation(objectPath(oldId));
+    await addReservation(objectPath(newId), "pending");
+
+    const updated = await updateClub(clubId, { logoUrl: newUrl });
+    expect(updated.logoUrl).toBe(newUrl);
+    expect((await reservation(objectPath(oldId))).status).toBe("pending");
+    expect((await reservation(objectPath(oldId))).expires_at.getTime())
+      .toBe(now.getTime() + 24 * 60 * 60 * 1000);
+    expect((await reservation(objectPath(newId))).status).toBe("attached");
+
+    const deleteObject = vi.fn(async (_path: string) => undefined);
+    await staging.cleanupExpiredUploads({
+      now: new Date(now.getTime() + 24 * 60 * 60 * 1000 - 1), deleteObject,
+    });
+    expect(deleteObject).not.toHaveBeenCalled();
+    await staging.cleanupExpiredUploads({
+      now: new Date(now.getTime() + 24 * 60 * 60 * 1000 + 1), deleteObject,
+    });
+    expect(deleteObject).toHaveBeenCalledExactlyOnceWith(objectPath(oldId));
+    expect((await reservation(objectPath(oldId))).status).toBe("deleted");
+    expect((await reservation(objectPath(newId))).status).toBe("attached");
+  });
+
+  it("clears club logos for null and empty-string values", async () => {
+    for (const [index, clearedValue] of [null, ""].entries()) {
+      const id = index === 0
+        ? "29292929-2929-4929-8929-292929292929"
+        : "30303030-3030-4030-8030-303030303030";
+      const url = imageUrl(id);
+      const clubId = await addClub(`Cleared club ${index}`, url);
+      await addReservation(objectPath(id));
+
+      const updated = await updateClub(clubId, { logoUrl: clearedValue });
+      expect(updated.logoUrl).toBeNull();
+      expect((await reservation(objectPath(id))).status).toBe("pending");
+    }
+  });
+
+  it("leaves a club logo and its upload attached when the update omits logoUrl", async () => {
+    const id = "31313131-3131-4131-8131-313131313131";
+    const url = imageUrl(id);
+    const clubId = await addClub("Omitted logo field", url);
+    await addReservation(objectPath(id));
+
+    const updated = await updateClub(clubId, { description: "Updated details" });
+    expect(updated.logoUrl).toBe(url);
+    expect(updated.description).toBe("Updated details");
+    expect((await reservation(objectPath(id))).status).toBe("attached");
+  });
+
+  it("keeps identical and percent-encoded aliases of the same club logo attached", async () => {
+    const aliases = [
+      ["32323232-3232-4232-8232-323232323232", (url: string) => url],
+      ["a3333333-3333-4333-8333-333333333333", (url: string) => url.replace("a333", "%61333")],
+    ] as const;
+    for (const [id, alias] of aliases) {
+      const originalUrl = imageUrl(id);
+      const clubId = await addClub(`Same logo ${id}`, originalUrl);
+      await addReservation(objectPath(id));
+
+      const updated = await updateClub(clubId, { logoUrl: alias(originalUrl) });
+      expect(updated.logoUrl).toBe(alias(originalUrl));
+      expect((await reservation(objectPath(id))).status).toBe("attached");
+    }
+  });
+
+  it("preserves replaced logos shared by photos, avatars, other clubs, and gallery-less review photos", async () => {
+    const references = [
+      ["photo", "45454545-4545-4545-8545-454545454545"],
+      ["avatar", "46464646-4646-4646-8646-464646464646"],
+      ["club", "47474747-4747-4747-8747-474747474747"],
+      ["review-photo", "48484848-4848-4848-8848-484848484848"],
+    ] as const;
+    const paths: string[] = [];
+    for (const [index, [kind, id]] of references.entries()) {
+      const url = imageUrl(id);
+      const replacedClubId = await addClub(`Replaced ${kind} logo`, url);
+      paths.push(objectPath(id));
+      if (kind === "photo") {
+        await addPhoto(url);
+      } else if (kind === "avatar") {
+        await addPhotographer("Shared avatar", url);
+      } else if (kind === "club") {
+        await addClub("Other club sharing logo", url);
+      } else {
+        const photographerId = await addPhotographer("Review photo owner");
+        const photoId = await addPhoto(url, photographerId);
+        const sessionId = 48 + index;
+        await addReviewSession(sessionId);
+        await pool.query(
+          "INSERT INTO session_photo (session_id, photo_id, photographer_id) VALUES ($1, $2, $3)",
+          [sessionId, photoId, photographerId],
+        );
+      }
+      await addReservation(objectPath(id));
+      await updateClub(replacedClubId, { logoUrl: `https://example.com/${kind}.jpg` });
+      expect((await reservation(objectPath(id))).status).toBe("attached");
+    }
+
+    await pool.query(
+      "UPDATE upload_reservation SET status = 'pending', expires_at = $2 WHERE object_path = ANY($1::text[])",
+      [paths, new Date(now.getTime() - 1)],
+    );
+    const deleteObject = vi.fn(async (_path: string) => undefined);
+    const cleanup = await staging.cleanupExpiredUploads({ now, deleteObject });
+    expect(cleanup).toMatchObject({ retained: references.length, deleted: 0, failed: 0 });
+    expect(deleteObject).not.toHaveBeenCalled();
+    for (const path of paths) expect((await reservation(path)).status).toBe("attached");
+  });
+
+  it("serializes concurrent club-logo replacements and retires the initial and intermediate uploads", async () => {
+    const initialId = "36363636-3636-4636-8636-363636363636";
+    const firstId = "37373737-3737-4737-8737-373737373737";
+    const secondId = "38383838-3838-4838-8838-383838383838";
+    const urls = [initialId, firstId, secondId].map(imageUrl);
+    const clubId = await addClub("Concurrent club", urls[0]);
+    for (const id of [initialId, firstId, secondId]) await addReservation(objectPath(id));
+
+    await Promise.all([
+      updateClub(clubId, { logoUrl: urls[1] }),
+      updateClub(clubId, { logoUrl: urls[2] }),
+    ]);
+
+    const { rows: [club] } = await pool.query<{ logo_url: string }>(
+      "SELECT logo_url FROM club WHERE id = $1", [clubId],
+    );
+    expect([urls[1], urls[2]]).toContain(club.logo_url);
+    const finalId = club.logo_url === urls[1] ? firstId : secondId;
+    const intermediateId = club.logo_url === urls[1] ? secondId : firstId;
+    expect((await reservation(objectPath(finalId))).status).toBe("attached");
+    expect((await reservation(objectPath(intermediateId))).status).toBe("pending");
+    expect((await reservation(objectPath(initialId))).status).toBe("pending");
+  });
+
+  it("rolls back club mutation and upload states when the database rejects a logo update", async () => {
+    const oldId = "39393939-3939-4939-8939-393939393939";
+    const newId = "40404040-4040-4040-8040-404040404040";
+    const oldUrl = imageUrl(oldId);
+    const newUrl = imageUrl(newId);
+    const clubId = await addClub("Rejected club update", oldUrl);
+    await addReservation(objectPath(oldId));
+    await addReservation(objectPath(newId), "pending");
+    await pool.query(`
+      CREATE FUNCTION reject_fixture_club_update() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'simulated club update failure'; END;
+      $$;
+      CREATE TRIGGER reject_fixture_club_update BEFORE UPDATE ON club
+      FOR EACH ROW EXECUTE FUNCTION reject_fixture_club_update();
+    `);
+
+    try {
+      await expect(updateClub(clubId, { logoUrl: newUrl })).rejects.toThrow();
+      const { rows: [club] } = await pool.query<{ logo_url: string }>(
+        "SELECT logo_url FROM club WHERE id = $1", [clubId],
+      );
+      expect(club.logo_url).toBe(oldUrl);
+      expect((await reservation(objectPath(oldId))).status).toBe("attached");
+      expect((await reservation(objectPath(newId))).status).toBe("pending");
+    } finally {
+      await pool.query("DROP TRIGGER reject_fixture_club_update ON club");
+      await pool.query("DROP FUNCTION reject_fixture_club_update()");
+    }
+  });
+
+  it("rejects an expired new club logo and rolls back the old logo release", async () => {
+    const oldId = "41414141-4141-4141-8141-414141414141";
+    const expiredId = "42424242-4242-4242-8242-424242424242";
+    const oldUrl = imageUrl(oldId);
+    const expiredUrl = imageUrl(expiredId);
+    const clubId = await addClub("Expired upload club", oldUrl);
+    await addReservation(objectPath(oldId));
+    await addReservation(objectPath(expiredId), "pending", new Date(Date.now() - 1));
+
+    await expect(updateClub(clubId, { logoUrl: expiredUrl })).rejects.toThrow();
+    const { rows: [club] } = await pool.query<{ logo_url: string }>(
+      "SELECT logo_url FROM club WHERE id = $1", [clubId],
+    );
+    expect(club.logo_url).toBe(oldUrl);
+    expect((await reservation(objectPath(oldId))).status).toBe("attached");
+    expect((await reservation(objectPath(expiredId))).status).toBe("pending");
+  });
+
+  it("protects a retired club logo when it is reattached before cleanup", async () => {
+    const oldId = "43434343-4343-4343-8343-434343434343";
+    const oldUrl = imageUrl(oldId);
+    const externalUrl = "https://example.com/club-logo.jpg";
+    const clubId = await addClub("Reattached logo club", oldUrl);
+    await addReservation(objectPath(oldId));
+    const reattachNow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await updateClub(clubId, { logoUrl: externalUrl }, reattachNow);
+    const expiry = (await reservation(objectPath(oldId))).expires_at;
+    expect((await reservation(objectPath(oldId))).status).toBe("pending");
+
+    await updateClub(clubId, { logoUrl: oldUrl }, reattachNow);
+    expect((await reservation(objectPath(oldId))).status).toBe("attached");
+    const deleteObject = vi.fn(async (_path: string) => undefined);
+    await staging.cleanupExpiredUploads({
+      now: new Date(expiry.getTime() + 1), deleteObject,
+    });
+    expect(deleteObject).not.toHaveBeenCalled();
+    expect((await reservation(objectPath(oldId))).status).toBe("attached");
   });
 
   it("rolls back photo mutation and reclamation state when the database rejects deletion", async () => {

@@ -60,6 +60,38 @@ describe("authenticated authorization over HTTP", () => {
     expect((await http.request("POST", "/invites", { label: "Welcome", photographerId: 2, maxUses: 1 })).status).toBe(201);
     expect(fixture.invites[1]).toMatchObject({ photographerId: 2, maxUses: 1, useCount: 0 });
   });
+
+  it("keeps club reads public while denying anonymous and member club writes", async () => {
+    const list = await http.request("GET", "/clubs");
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0]).toMatchObject({ id: 1, name: "Public club" });
+    expect((await http.request("GET", "/clubs/1")).status).toBe(200);
+
+    expect((await http.request("POST", "/clubs", { name: "Anonymous club" })).status).toBe(401);
+    expect((await http.request("PUT", "/clubs/1", { name: "Anonymous edit" })).status).toBe(401);
+    fixture.userId = "owner";
+    expect((await http.request("POST", "/clubs", { name: "Member club" })).status).toBe(401);
+    expect((await http.request("PUT", "/clubs/1", { name: "Member edit" })).status).toBe(401);
+    expect(fixture.clubRecords).toHaveLength(1);
+    expect(fixture.clubRecords[0].name).toBe("Public club");
+  });
+
+  it("allows verified Clerk admins and session admins to create and update clubs", async () => {
+    fixture.userId = "admin";
+    const created = await http.request("POST", "/clubs", { name: "Admin-created club" });
+    expect(created.status).toBe(201);
+    expect(created.body.name).toBe("Admin-created club");
+    const edited = await http.request("PUT", "/clubs/2", { name: "Clerk admin edit" });
+    expect(edited.status).toBe(200);
+    expect(fixture.clubRecords[1].name).toBe("Clerk admin edit");
+
+    fixture.userId = null;
+    fixture.sessionAdminId = 1;
+    const sessionEdited = await http.request("PUT", "/clubs/1", { name: "Session admin edit" });
+    expect(sessionEdited.status).toBe(200);
+    expect(fixture.clubRecords[0].name).toBe("Session admin edit");
+  });
 });
 
 describe("one-use prelinked invite transaction over HTTP", () => {

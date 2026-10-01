@@ -11,7 +11,7 @@ or attached uploads. Deleted ledger entries remain as tombstones so a late save
 cannot attach a removed file. A failed request after a successful database commit
 does not expose the file to cleanup.
 
-Deleting the last photo reference or replacing/removing an avatar schedules a
+Deleting the last photo reference or replacing/removing an avatar or club logo schedules a
 tracked file for another 24-hour grace period. Bulk photo deletion and profile
 deletion use the same transaction as that scheduling. Shared references from
 other photos, avatars, or club logos keep the file attached; reattaching during
@@ -24,8 +24,11 @@ reviewer assignments, and reviews lock their referenced records so concurrent
 deletion cannot leave a broken review. Removing a reviewed submission also
 returns HTTP 409 rather than implicitly deleting its review history; an admin
 can explicitly delete the containing session with its existing review cascade.
-Gallery-less review uploads count as photo references. Changing a club logo is protected as an attachment but does
-not itself schedule the previous logo for reclamation.
+Gallery-less review uploads count as photo references. Club logo updates lock
+the actual current club row before capturing its previous URL and use the same
+attachment/retirement transaction. Omitting the logo field preserves it; an
+explicit empty string removes it. Club creation and updates require a verified
+Clerk or password-session administrator; public browsing is unchanged.
 
 ## Publishing and rollback
 

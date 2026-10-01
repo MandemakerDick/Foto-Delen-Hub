@@ -29,3 +29,14 @@ Canonicalizing only new writes does not protect older noncanonical references.
 
 **How to apply:** Preserve conservative alias matching for existing references
 when changing path normalization or adding an image consumer.
+
+Authorize writes that can trigger retirement on the server, not just through
+management-page link visibility. Club creation and updates require a verified
+administrator; public club reads remain public.
+
+**Why:** Club edits were previously callable without an admin check. Adding
+physical cleanup would otherwise let an unauthorized logo replacement schedule
+another club's file for deletion.
+
+**How to apply:** Keep the verified Clerk/password-session admin boundary when
+extending club image mutations or adding another retirement-triggering route.

@@ -3,6 +3,8 @@ import { db, clubsTable, photosTable, photographerClubsTable, photographersTable
 import { eq, ilike, countDistinct, sql, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { withUploadAttachment } from "../lib/upload-staging";
+import { updateClubWithReclamation } from "../lib/image-lifecycle";
+import { requireAdmin } from "./admins";
 import {
   ListClubsQueryParams,
   CreateClubBody,
@@ -68,7 +70,7 @@ router.get("/clubs", async (req, res) => {
 });
 
 // POST /api/clubs — create a new club
-router.post("/clubs", async (req, res) => {
+router.post("/clubs", requireAdmin, async (req, res) => {
   const body = CreateClubBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: "Invalid body" });
@@ -100,7 +102,7 @@ router.get("/clubs/:id", async (req, res) => {
 });
 
 // PUT /api/clubs/:id — update a club's details
-router.put("/clubs/:id", async (req, res) => {
+router.put("/clubs/:id", requireAdmin, async (req, res) => {
   const params = UpdateClubParams.safeParse({ id: Number(req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -112,21 +114,7 @@ router.put("/clubs/:id", async (req, res) => {
     return;
   }
 
-  const existing = await db
-    .select({ id: clubsTable.id })
-    .from(clubsTable)
-    .where(eq(clubsTable.id, params.data.id));
-  if (!existing[0]) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-
-  const [updated] = await withUploadAttachment(body.data.logoUrl ?? "", (tx) =>
-    tx
-      .update(clubsTable)
-      .set(body.data)
-      .where(eq(clubsTable.id, params.data.id))
-      .returning());
+  const updated = await updateClubWithReclamation(params.data.id, body.data);
 
   // Re-fetch with aggregated counts so the response matches the list/get shape
   const rows = await clubBaseQuery()

@@ -64,6 +64,7 @@ export interface ClubInput {
   description?: string;
   location?: string;
   websiteUrl?: string;
+  /** Omit to preserve an existing logo on update; send an empty string to remove it */
   logoUrl?: string;
   yearEstablished?: number;
 }

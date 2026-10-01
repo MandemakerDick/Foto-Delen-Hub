@@ -50,7 +50,7 @@ export const CreateClubBody = zod.object({
   "description": zod.string().optional(),
   "location": zod.string().optional(),
   "websiteUrl": zod.string().optional(),
-  "logoUrl": zod.string().optional(),
+  "logoUrl": zod.string().optional().describe('Omit to preserve an existing logo on update; send an empty string to remove it'),
   "yearEstablished": zod.number().optional()
 })
 
@@ -91,7 +91,7 @@ export const UpdateClubBody = zod.object({
   "description": zod.string().optional(),
   "location": zod.string().optional(),
   "websiteUrl": zod.string().optional(),
-  "logoUrl": zod.string().optional(),
+  "logoUrl": zod.string().optional().describe('Omit to preserve an existing logo on update; send an empty string to remove it'),
   "yearEstablished": zod.number().optional()
 })
 

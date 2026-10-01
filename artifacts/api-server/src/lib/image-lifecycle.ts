@@ -1,7 +1,7 @@
 import {
-  db, photographersTable, photosTable, photographerClubsTable,
+  clubsTable, db, photographersTable, photosTable, photographerClubsTable,
   photographerThemesTable, photoReviewsTable, sessionPhotosTable,
-  sessionReviewersTable, reviewSessionsTable, type InsertPhotographer,
+  sessionReviewersTable, reviewSessionsTable, type InsertClub, type InsertPhotographer,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import { withUploadLifecycle, type UploadTransaction } from "./upload-staging";
@@ -50,6 +50,26 @@ export async function updatePhotographerWithReclamation(
       release: replacesAvatar ? [previous.avatarUrl] : [],
     }, (transaction) => transaction.update(photographersTable).set(fields)
       .where(eq(photographersTable.id, id)).returning(), { transaction: tx, now });
+    return updated;
+  });
+}
+
+export async function updateClubWithReclamation(
+  id: number, fields: Partial<InsertClub>, now?: Date,
+) {
+  return db.transaction(async (tx) => {
+    const [previous] = await tx.select().from(clubsTable)
+      .where(eq(clubsTable.id, id)).for("update");
+    if (!previous) throw new ImageLifecycleError("Club not found", 404);
+    // Omission preserves the logo; explicit empty string/null removes it.
+    const replacesLogo = fields.logoUrl !== undefined;
+    const logoUrl = fields.logoUrl || null;
+    const [updated] = await withUploadLifecycle({
+      attach: replacesLogo ? [logoUrl] : [],
+      release: replacesLogo ? [previous.logoUrl] : [],
+    }, (transaction) => transaction.update(clubsTable)
+      .set(replacesLogo ? { ...fields, logoUrl } : fields)
+      .where(eq(clubsTable.id, id)).returning(), { transaction: tx, now });
     return updated;
   });
 }

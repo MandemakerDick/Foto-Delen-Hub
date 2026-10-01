@@ -83,6 +83,8 @@ paths:
                 $ref: "#/components/schemas/Club"
         "409":
           description: The supplied logo upload expired; upload the image again
+        "401":
+          description: Administrator authentication required
 
   /clubs/{id}:
     get:
@@ -131,6 +133,8 @@ paths:
           description: Not found
         "409":
           description: The supplied logo upload expired; upload the image again
+        "401":
+          description: Administrator authentication required
 
   /clubs/{id}/membership:
     get:
@@ -1895,6 +1899,7 @@ components:
           type: string
         logoUrl:
           type: string
+          description: Omit to preserve an existing logo on update; send an empty string to remove it
         yearEstablished:
           type: integer
 

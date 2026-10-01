@@ -64,6 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { isFileSlugTitle, isImportButtonDisabled } from "@/lib/import-utils";
+import { getClubLogoPayload } from "@/lib/club-logo-payload";
 import { Users, LayoutDashboard, User, Camera, Pencil, Trash2, X, ShieldCheck, UserPlus, Link2, Copy, Check, Globe, Download, SquareCheck, Square, Loader2, CheckCircle2, XCircle, ImageIcon, Mail, Sparkles, Bell } from "lucide-react";
 
 const clubSchema = z.object({
@@ -461,6 +462,7 @@ export default function Manage() {
   const [editingClubId, setEditingClubId] = useState<number | null>(null);
   const clubFormRef = useRef<HTMLDivElement>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const originalClubLogoUrlRef = useRef<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const pendingLogoPathRef = useRef<string | null>(null);
 
@@ -507,6 +509,7 @@ export default function Manage() {
     if (!club) return;
     setEditingClubId(clubId);
     setLogoUrl(club.logoUrl ?? null);
+    originalClubLogoUrlRef.current = club.logoUrl ?? null;
     clubForm.reset({ name: club.name, description: club.description ?? "", location: club.location ?? "", websiteUrl: club.websiteUrl ?? "", yearEstablished: club.yearEstablished ?? undefined });
     setTimeout(() => clubFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
@@ -514,14 +517,17 @@ export default function Manage() {
   const cancelEditingClub = () => {
     setEditingClubId(null);
     setLogoUrl(null);
+    originalClubLogoUrlRef.current = null;
     clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", yearEstablished: undefined });
   };
 
   const onClubSubmit = (values: ClubFormValues) => {
-    const data: ClubFormValues & { logoUrl?: string } = { ...values };
+    const data: ClubFormValues & { logoUrl?: string } = {
+      ...values,
+      ...getClubLogoPayload(editingClubId !== null, originalClubLogoUrlRef.current, logoUrl),
+    };
     if (!data.websiteUrl) delete data.websiteUrl;
     if (!data.yearEstablished) delete data.yearEstablished;
-    if (logoUrl) data.logoUrl = logoUrl;
 
     if (editingClubId !== null) {
       updateClubMutation.mutate({ id: editingClubId, data }, {
@@ -538,6 +544,7 @@ export default function Manage() {
           toast({ title: t("manage.club.toastCreatedTitle"), description: t("manage.club.toastCreatedDesc", { name: values.name }) });
           clubForm.reset({ name: "", description: "", location: "", websiteUrl: "", yearEstablished: undefined });
           setLogoUrl(null);
+          originalClubLogoUrlRef.current = null;
           queryClient.invalidateQueries({ queryKey: getListClubsQueryKey() });
         },
         onError: () => toast({ title: t("common.error"), description: t("manage.club.toastCreateError"), variant: "destructive" }),
@@ -949,6 +956,11 @@ export default function Manage() {
                       : <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors"><Camera className="w-6 h-6" /><span className="text-[10px] uppercase tracking-wider">{t("manage.club.logoLabel")}</span></div>}
                   </ObjectUploader>
                   <p className="text-xs text-muted-foreground">{t("manage.club.logoHint")}</p>
+                  {logoUrl && (
+                    <Button type="button" variant="outline" size="sm" disabled={isClubPending} onClick={() => setLogoUrl(null)}>
+                      {t("manage.club.removeLogo")}
+                    </Button>
+                  )}
                 </div>
 
                 <FormField control={clubForm.control} name="name" render={({ field }) => (
