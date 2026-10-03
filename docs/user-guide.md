@@ -1,231 +1,93 @@
-# PhotoMatrix — User Guide
+# PhotoMatrix — Web Guide
 
-PhotoMatrix is a portfolio platform for photography club members. You can share your photos, discover work from fellow photographers, and organise everything by club and theme.
-
----
-
-## Table of Contents
-
-1. [Getting Started](#1-getting-started)
-2. [Installing the App on Your Phone](#2-installing-the-app-on-your-phone)
-3. [Home Page](#3-home-page)
-4. [Gallery](#4-gallery)
-5. [Photo Detail](#5-photo-detail)
-6. [Your Profile and Photos](#6-your-profile-and-photos)
-7. [Uploading a Photo](#7-uploading-a-photo)
-8. [Themes](#8-themes)
-9. [Clubs](#9-clubs)
-10. [Photographers](#10-photographers)
-11. [Switching Language](#11-switching-language)
+This guide covers the PhotoMatrix website in a desktop or mobile web browser. It does not describe the native app.
 
 ---
 
-## 1. Getting Started
+## Contents
 
-### Registration
-
-PhotoMatrix uses invite-only registration. You need an invite link from an administrator to create an account.
-
-1. Open the invite link you received by email.
-2. You will be taken to the registration page where you can create an account with a social login (Google) or an email address.
-3. If the administrator pre-built a profile for you, you will see a **"Claim my profile"** screen after signing in — click the button to link your account to your photographer profile in one step. No manual linking is needed.
-
-### Signing In
-
-- Click **Sign in** in the top-right corner and choose Google or email/password.
-
-### Signing Out
-
-There are two quick ways to sign out:
-
-- Click the **→ (log-out) icon** next to your avatar in the top-right corner — signs you out immediately.
-- Or click your **avatar** → **Sign out** at the bottom of the dropdown.
-
-### Account Settings & Passkeys
-
-Click your **avatar** in the top-right corner, then choose **Manage account**. From there you can:
-
-- Change your name or email address
-- Connect or disconnect social login providers
-- **Add a passkey** (Security → Passkeys → Add passkey) — once set up, you can sign in with a fingerprint, Face ID, or device PIN instead of going through Google every time. No app store installation required.
+1. [Invites and signing in](#1-invites-and-signing-in)
+2. [Finding photos](#2-finding-photos)
+3. [Photo details](#3-photo-details)
+4. [Your profile and photos](#4-your-profile-and-photos)
+5. [Uploading a photo](#5-uploading-a-photo)
+6. [Themes](#6-themes)
+7. [Clubs](#7-clubs)
+8. [Photographers and navigation](#8-photographers-and-navigation)
 
 ---
 
-## 2. Installing the App on Your Phone
+## 1. Invites and signing in
 
-PhotoMatrix can be installed as an app on your phone's home screen — no App Store required.
+PhotoMatrix uses invite tokens. Open the supplied invite link, or visit **/join** and enter the token. The site redeems the token; then sign in using **Sign in** in the header. An invite does not guarantee that an email will be sent.
 
-**Android (Chrome):**
-After visiting the site, Chrome will show an **"Add to Home Screen"** or **"Install app"** banner at the bottom of the screen. Tap it and follow the prompt.
+After signing in, open **My Photos** from your avatar menu (or the mobile menu). If the invite was linked to a photographer profile in advance, My Photos offers **Claim my profile**. Select it to link that profile to your account. If no profile was prelinked, My Photos lets you choose an existing profile or create one.
 
-**iPhone / iPad (Safari):**
-1. Tap the **Share** button (the square with an arrow pointing up) at the bottom of the screen.
-2. Scroll down and tap **"Add to Home Screen"**.
-3. Give it a name and tap **Add**.
-
-Once installed, PhotoMatrix opens full screen without a browser address bar, just like a native app.
+To sign out, open your avatar menu on desktop, or open the mobile navigation menu and choose **Sign out**. Account settings are available from the avatar menu; choose **Security & Passkeys** there to manage security and passkeys.
 
 ---
 
-## 3. Home Page
+## 2. Finding photos
 
-The home page gives a quick overview of the platform:
+Choose **Gallery** in the navigation to browse photos. Search within the gallery, then narrow results with club, theme, photographer, and date-range filters. You can select multiple clubs and themes; photographer is a single selection. Use **Clear filters** when it appears to reset the filters.
 
-- **Statistics bar** — total number of photos, clubs, photographers, and themes. Each stat is a link to the corresponding section.
-- **Featured photographers** — a selection of members with their latest work.
-- **Recent photos** — the most recently uploaded photos across all clubs and themes.
+Use **Group by** to organize results by club, photographer, or theme, or leave them ungrouped. **Sort by** offers newest, oldest, photographer, likes, comments, or random; shuffle changes the random order. **Load more** fetches additional results when available.
 
-Use the **search bar** at the top to find photos, photographers, themes, or clubs in one go.
+Choose **Share view** to copy a link that preserves the current search, filters, grouping, and sort selection.
 
----
-
-## 4. Gallery
-
-The Gallery shows all photos on the platform. You can narrow down what you see using the filter bar at the top:
-
-| Filter | What it does |
-|---|---|
-| **Club** | Show only photos submitted under a specific club |
-| **Theme** | Show only photos tagged with a specific theme |
-| **Photographer** | Show only photos by a specific photographer |
-
-You can combine filters freely. The result count updates as you filter. Click **Clear filters** to reset.
+The home page also has a search across photos, photographers, and themes, plus links to the main collections and recent photos.
 
 ---
 
-## 5. Photo Detail
+## 3. Photo details
 
-Click any photo to open its detail page. Here you can:
-
-- **Like a photo** — click the heart icon. You can unlike it by clicking again.
-- **Leave a comment** — type in the comment box and press Enter or click **Post**. You must be signed in to comment.
-- **View photographer info** — the photographer's name links to their public profile.
+Select a photo to open its detail page. You can view its description and photographer, club, and theme links when available. Signed-in users can like photos and post comments; sign in when prompted. Use the back link to return to the gallery or collection you came from.
 
 ---
 
-## 6. Your Profile and Photos
+## 4. Your profile and photos
 
-Click your **avatar** in the top-right corner and choose **My Photos** (or navigate to **My Photos** directly) to manage your profile and your uploaded work.
+Open **My Photos** from your avatar menu or the mobile navigation. If no photographer profile is linked yet, follow the page's prompts to claim, link, or create one.
 
-### Profile
-
-- **Name** — your display name shown across the platform.
-- **Bio** — a short description about yourself and your photography.
-- **Avatar** — click your profile picture to upload a new one. Accepted formats: JPG, PNG, WebP.
-
-Click the pencil icon next to your name or bio to edit, then **Save**.
-
-### Club Membership
-
-Shows which clubs you belong to. To update your memberships:
-
-1. Click the pencil icon next to **Club membership**.
-2. Tick or untick the clubs you belong to. For each ticked club you can optionally enter the year you joined.
-3. Click **Save**.
-
-### Specialty Themes
-
-Shows the themes you are most interested in or specialise in. To update:
-
-1. Click the pencil icon next to **Specialty themes**.
-2. Tick or untick themes.
-3. Click **Save**.
-
-### Stats
-
-Below your photos you can see your total **Likes** and **Comments** received across all your photos.
-
-### Reordering Photos
-
-By default your photos are shown newest first. To set a custom order:
-
-1. Click **Reorder photos**.
-2. Drag photos into the order you prefer.
-3. Click **Save order**. Click **Cancel** to discard changes.
+- Edit your display name and bio with **Edit**. Select your avatar image to choose a replacement.
+- Edit club memberships and their optional member-since years in **Club membership**.
+- Edit your specialty themes in **Specialty themes**.
+- Your photo list shows likes and comments received. Use its edit and delete controls to manage a photo.
+- Choose **Reorder photos**, drag photos into position, then **Save order**. Choose **Cancel** to discard the rearrangement.
+- **Public profile** opens the profile other visitors can see.
 
 ---
 
-## 7. Uploading a Photo
+## 5. Uploading a photo
 
-Click **Upload photo** on your My Photos page (or use the upload button in the navigation).
+From **My Photos**, choose **Upload photo**. Choose an image from your device's photo library, use the camera picker where available, or drag an image into the picker. Choosing a file creates a preview; it does not upload it yet.
 
-You can add a photo in two ways:
-
-**Upload a file**
-- Click the upload area and select an image file from your device (JPG, PNG, WebP, up to 10 MB).
-
-**Import from URL**
-- Paste a direct image URL (e.g. a link to an image hosted elsewhere). PhotoMatrix will fetch and store a copy.
-
-Fill in the details:
-
-| Field | Required | Notes |
-|---|---|---|
-| **Title** | Yes | The name of the photo |
-| **Club** | No | The club this photo is associated with |
-| **Theme** | No | The theme this photo belongs to |
-| **Description** | No | A short caption or story behind the photo |
-
-Click **Upload** to publish. The photo will appear in your profile and in the Gallery immediately.
+Enter a title, then optionally choose a club, theme, and description. For member uploads, the club list is limited to your club memberships (or no club). When ready, press **Upload** to transfer the image and save the photo. There is no member photo-from-URL import in this web form.
 
 ---
 
-## 8. Themes
+## 6. Themes
 
-Themes are the creative categories that photos are organised around — things like *Landscapes*, *Street Photography*, or *Portraits*.
+Open **Themes** to browse and search themes; choose one to see its photos and photographers.
 
-### Browsing Themes
-
-Navigate to **Themes** in the top menu. Each theme card shows its name and how many photos have been submitted under it. Click a theme to see all photos tagged with it.
-
-### Proposing a New Theme
-
-If you think a theme is missing, you can suggest it:
-
-1. Go to **My Photos** and scroll down to **Specialty themes**.
-2. Below your themes, enter your proposed theme name in the text field.
-3. Click **Propose theme**.
-
-Your proposal is sent to the administrators for review. You will receive an email when it is approved or rejected.
-
-### Tracking Your Proposals
-
-Under **My Theme Proposals** on the My Photos page, you can see all proposals you have submitted and their current status:
-
-- 🟡 **Pending** — waiting for an administrator to review it
-- ✅ **Approved** — the theme has been added to the library
-- ❌ **Rejected** — the proposal was not accepted
-
-### Withdrawing a Proposal
-
-If your proposal is still **pending** and you no longer want it considered, click the **Withdraw** link next to it. This removes it immediately.
+To suggest a theme, use **Propose theme** from the specialty-themes editor on My Photos or from the theme selector on the upload page. The My Photos page shows submitted proposals and their pending, approved, or rejected status. You can withdraw a pending proposal there.
 
 ---
 
-## 9. Clubs
+## 7. Clubs
 
-Navigate to **Clubs** in the top menu to see all registered photography clubs. Each club page shows:
+Open **Clubs** to search clubs by name, location, or description. A club page includes its details, members, and photos.
 
-- Club description, location, and website
-- All photographers who are members
-- All photos submitted under that club
-
-### Joining a Club
-
-If you are signed in as a photographer, a **Join** button appears on each club page you are not yet a member of. Click it to join; the button changes to **Leave** so you can undo at any time. Admins manage club membership centrally and are not affected by this button.
+Signed-in photographers can use **Join** or **Leave** on a club page. You must be signed in to join; if prompted that your photographer profile is missing, link or create one in My Photos first.
 
 ---
 
-## 10. Photographers
+## 8. Photographers and navigation
 
-Navigate to **Photographers** in the top menu to browse all members. Click a photographer's name or avatar to view their public profile, including their club memberships, specialty themes, and all their uploaded photos.
+Open **Photographers** to browse member profiles. A public photographer profile shows their available profile details, memberships, specialty themes, and photos.
 
----
-
-## 11. Switching Language
-
-PhotoMatrix is available in **English** and **Dutch**. Click the language indicator (EN / NL) in the top-right corner to switch. Your choice is remembered for future visits.
+On a smaller screen, open the menu button in the header for site sections and signed-in links such as **My Photos** and **Sign out**. Use the language control in the header to switch the site's display language.
 
 ---
 
-*Last updated: August 2026*
+*Last updated: September 2026*

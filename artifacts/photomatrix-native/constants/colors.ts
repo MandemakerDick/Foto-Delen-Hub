@@ -16,7 +16,7 @@ const colors = {
   light: {
     // Legacy aliases (kept for backward compatibility)
     text: '#0a0a0a',
-    tint: '#2f95dc',
+    tint: '#ff9f43',
 
     // Core surfaces
     background: '#0b0b0c',
@@ -27,8 +27,8 @@ const colors = {
     cardForeground: '#e7e3dc',
 
     // Primary action color (buttons, links, active states)
-    primary: '#c43d35',
-    primaryForeground: '#ffffff',
+    primary: '#ff9f43',
+    primaryForeground: '#201308',
 
     // Secondary / less-emphasis interactive surfaces
     secondary: '#1b1b1e',

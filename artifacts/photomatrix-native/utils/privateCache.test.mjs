@@ -17,6 +17,10 @@ test('sign-out and sign-in as another member cannot show the previous member’s
   const photosKey = ['my-photos', 11];
   const likeKey = ['photo-like', 42];
   const generatedLikeKey = ['/api/photos/42/like'];
+  const likedPhotosKey = ['/api/photos/liked'];
+  const followingKey = ['/api/photographers/following', 'A'];
+  const followStatusKey = ['/api/photographers/11/follow'];
+  const membershipKey = ['/api/clubs/3/membership'];
   const galleryKey = ['/api/photos/gallery', { limit: 24 }];
   const gallery = { pages: [{ photos: [{ id: 42 }] }], pageParams: [undefined] };
 
@@ -25,6 +29,10 @@ test('sign-out and sign-in as another member cannot show the previous member’s
   client.setQueryData(photosKey, [{ title: 'Member A private list' }]);
   client.setQueryData(likeKey, { liked: true });
   client.setQueryData(generatedLikeKey, { liked: true });
+  client.setQueryData(likedPhotosKey, [{ id: 42 }]);
+  client.setQueryData(followingKey, [{ id: 11 }]);
+  client.setQueryData(followStatusKey, { following: true });
+  client.setQueryData(membershipKey, { isMember: true });
   client.setQueryData(galleryKey, gallery);
   client.setQueryData(['/api/photos/42'], { title: 'Public photo' });
   client.setQueryData(['/api/photographers'], [{ name: 'Public photographer' }]);
@@ -32,7 +40,7 @@ test('sign-out and sign-in as another member cannot show the previous member’s
   // Clerk changes from A to signed out. The navigation subtree is hidden and
   // its observers unmounted before this removal runs.
   clearPrivateAccountCaches(client);
-  for (const key of [profileKey, photosKey, likeKey, generatedLikeKey]) {
+  for (const key of [profileKey, photosKey, likeKey, generatedLikeKey, likedPhotosKey, followingKey, followStatusKey, membershipKey]) {
     assert.equal(client.getQueryData(key), undefined);
   }
   assert.deepEqual(client.getQueryData(galleryKey), gallery);

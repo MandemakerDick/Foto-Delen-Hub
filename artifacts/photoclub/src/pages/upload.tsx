@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { LogIn, Link2, UploadCloud, X, CheckCircle2 } from "lucide-react";
+import { LogIn, Link2, X } from "lucide-react";
 import { Show, SignInButton } from "@clerk/react";
 import {
   useCreatePhoto,
@@ -15,8 +16,13 @@ import {
   useGetAdminStatus,
   getGetAdminStatusQueryKey,
   useProposeTheme,
+  getListPhotosQueryKey,
+  getListGalleryPhotosQueryKey,
+  getListRecentPhotosQueryKey,
 } from "@workspace/api-client-react";
-import { ObjectUploader } from "@workspace/object-storage-web";
+import { PhotoDraftPicker } from "@/components/photo-draft-picker";
+import { ClubProposal } from "@/components/club-proposal";
+import { storePhoto, UploadTimeoutError } from "@/lib/photo-upload";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { useAuth } from "@clerk/react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +46,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required").max(100),
+  title: z.string().trim().min(1, "Title is required"),
   description: z.string().optional(),
   clubId: z.coerce.number().optional(),
   themeId: z.coerce.number().optional(),
@@ -53,21 +59,24 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { profile, loading } = useMyProfile();
 
-  const { data: allClubs } = useListClubs();
-  // Non-admin photographers may only assign photos to their own clubs.
-  const clubs = isAdmin ? allClubs : allClubs?.filter((c) => profile?.clubs?.some((pc) => pc.id === c.id));
-  const { data: themes } = useListThemes();
+  const allClubs = useListClubs();
+  // A photographer sees only their memberships; No club is always available.
+  const clubs = isAdmin ? allClubs.data : profile?.clubs;
+  const themes = useListThemes();
   const { data: photographers } = useListPhotographers(
     {},
     { query: { enabled: isAdmin, queryKey: getListPhotographersQueryKey() } },
   );
   const createMutation = useCreatePhoto();
 
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [uploadedObjectPath, setUploadedObjectPath] = useState<string | null>(null);
-  const pendingObjectPathRef = useRef<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadStage, setUploadStage] = useState<"idle" | "transferring" | "saving">("idle");
+  const uploadController = useRef<AbortController | null>(null);
+  const savingUpload = useRef(false);
+  useEffect(() => () => { if (!savingUpload.current) uploadController.current?.abort(); }, []);
 
   const [showPropose, setShowPropose] = useState(false);
   const [proposedName, setProposedName] = useState("");
@@ -96,8 +105,9 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
     );
   };
 
-  const onSubmit = (values: FormValues) => {
-    if (!uploadedImageUrl) {
+  const onSubmit = async (values: FormValues) => {
+    if (uploadController.current || savingUpload.current) return;
+    if (!selectedFile) {
       toast({ title: t("toasts.noImageTitle"), description: t("toasts.noImageDesc"), variant: "destructive" });
       return;
     }
@@ -105,37 +115,61 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
       toast({ title: "Select a photographer", description: "Choose which photographer this photo belongs to.", variant: "destructive" });
       return;
     }
-    createMutation.mutate(
-      {
+    if (!isAdmin && values.clubId !== undefined && !profile?.clubs.some(club => club.id === values.clubId)) {
+      toast({ title: t("upload.failed"), description: t("upload.clubMembershipRequired"), variant: "destructive" });
+      return;
+    }
+    const controller = new AbortController();
+    uploadController.current = controller;
+    setUploadStage("transferring");
+    try {
+      const imageUrl = await storePhoto(selectedFile, controller);
+      if (controller.signal.aborted) return;
+      savingUpload.current = true;
+      setUploadStage("saving");
+      const photo = await createMutation.mutateAsync({
         data: {
           ...values,
-          imageUrl: uploadedImageUrl,
+          title: values.title.trim(),
+          description: values.description?.trim() || undefined,
+          imageUrl,
+          ...(!isAdmin && profile ? { photographerId: profile.id } : {}),
         } as Parameters<typeof createMutation.mutate>[0]["data"],
-      },
-      {
-        onSuccess: (photo) => {
-          toast({ title: t("upload.successTitle"), description: t("upload.successBody") });
-          setLocation(`/photos/${photo.id}`);
-        },
-        onError: async (err: unknown) => {
-          const msg =
-            err instanceof Response
-              ? (await err.json().catch(() => ({}))).error
-              : (err as { message?: string })?.message;
-          toast({
-            title: "Upload failed",
-            description: msg || "Failed to add photograph. Please try again.",
-            variant: "destructive",
-          });
-        },
-      },
-    );
+      });
+      setSelectedFile(null);
+      form.reset();
+      void queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: getListGalleryPhotosQueryKey() });
+      void queryClient.invalidateQueries({ queryKey: getListRecentPhotosQueryKey() });
+      toast({ title: t("upload.successTitle"), description: t("upload.successBody") });
+      setLocation(isAdmin ? `/photos/${photo.id}` : "/my-photos");
+    } catch (error) {
+      if (!controller.signal.aborted || error instanceof UploadTimeoutError) {
+        toast({
+          title: t("upload.failed"),
+          description: error instanceof UploadTimeoutError
+            ? t("upload.timedOut")
+            : error instanceof Error ? error.message : t("upload.tryAgain"),
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (uploadController.current === controller) {
+        uploadController.current = null;
+        savingUpload.current = false;
+        setUploadStage("idle");
+      }
+    }
   };
 
-  const clearImage = () => {
-    setUploadedImageUrl(null);
-    setUploadedObjectPath(null);
-    pendingObjectPathRef.current = null;
+  const cancelUpload = () => {
+    if (savingUpload.current) return;
+    uploadController.current?.abort();
+    uploadController.current = null;
+    setUploadStage("idle");
+    setSelectedFile(null);
+    form.reset();
+    setLocation(isAdmin ? "/manage" : "/my-photos");
   };
 
   // Clerk user: wait for profile to load
@@ -186,7 +220,7 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
         <div className="w-full lg:w-1/2 order-2 lg:order-1">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
+              <fieldset disabled={uploadStage !== "idle"} className="space-y-6">
               {/* Photographer picker — admins only */}
               {isAdmin && (
                 <FormField
@@ -234,19 +268,25 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("upload.labelCommunity")}</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                      <Select value={field.value?.toString() ?? "none"}
+                        onValueChange={(value) => field.onChange(value === "none" ? undefined : Number(value))}>
                         <FormControl>
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder={t("upload.selectOptional")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="none">{t("myPhotos.noClub")}</SelectItem>
                           {clubs?.map((c) => (
                             <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
+                      {!isAdmin && <ClubProposal disabled={uploadStage !== "idle"} />}
+                      {!isAdmin && !clubs?.length && <p className="text-sm text-muted-foreground">{t("upload.noMemberClubs")}</p>}
+                      {isAdmin && allClubs.isLoading && <p className="text-sm text-muted-foreground">{t("upload.loadingOptions")}</p>}
+                      {isAdmin && allClubs.isError && <Button type="button" variant="link" className="px-0" onClick={() => void allClubs.refetch()}>{t("upload.retryOptions")}</Button>}
                     </FormItem>
                   )}
                 />
@@ -256,19 +296,24 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("upload.labelTheme")}</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                      <Select value={field.value?.toString() ?? "none"}
+                        onValueChange={(value) => field.onChange(value === "none" ? undefined : Number(value))}>
                         <FormControl>
                           <SelectTrigger className="bg-background">
                             <SelectValue placeholder={t("upload.selectOptional")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {themes?.map((theme) => (
+                          <SelectItem value="none">{t("upload.noTheme")}</SelectItem>
+                          {themes.data?.map((theme) => (
                             <SelectItem key={theme.id} value={theme.id.toString()}>{theme.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
+                      {themes.isLoading && <p className="text-sm text-muted-foreground">{t("upload.loadingOptions")}</p>}
+                      {themes.isError && <Button type="button" variant="link" className="px-0" onClick={() => void themes.refetch()}>{t("upload.retryOptions")}</Button>}
+                      {themes.isSuccess && !themes.data?.length && <p className="text-sm text-muted-foreground">{t("upload.noThemes")}</p>}
                       {!isAdmin && (
                         <div className="pt-2">
                           {!showPropose ? (
@@ -328,101 +373,27 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
                   </FormItem>
                 )}
               />
+              </fieldset>
 
               <Button
                 type="submit"
                 className="w-full"
-                disabled={createMutation.isPending || !uploadedImageUrl}
+                disabled={uploadStage !== "idle" || !selectedFile}
               >
-                {createMutation.isPending ? t("upload.submitting") : t("upload.submit")}
+                {uploadStage === "transferring" ? t("upload.transferring")
+                  : uploadStage === "saving" ? t("upload.finishing") : t("upload.submit")}
+              </Button>
+              <Button type="button" variant="outline" className="w-full"
+                disabled={uploadStage === "saving"} onClick={cancelUpload}>
+                {uploadStage === "saving" ? t("upload.finishing") : t("upload.cancel")}
               </Button>
             </form>
           </Form>
         </div>
 
-        {/* Image uploader / preview */}
+        {/* Selection is only a draft; bytes transfer after Upload is pressed. */}
         <div className="w-full lg:w-1/2 order-1 lg:order-2">
-          <div className="sticky top-24">
-            <div className="text-sm font-mono text-muted-foreground uppercase tracking-widest mb-2">
-              {uploadedImageUrl ? t("upload.preview") : t("upload.uploadPhoto")}
-            </div>
-
-            {uploadedImageUrl ? (
-              <div className="relative group">
-                <div className="aspect-[4/5] bg-secondary/50 rounded-sm border border-border/50 overflow-hidden">
-                  <img
-                    src={uploadedImageUrl}
-                    alt="Uploaded"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-sm flex items-center justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearImage}
-                    className="gap-2 bg-background/90"
-                  >
-                    <X className="w-4 h-4" />
-                    {t("upload.changePhoto")}
-                  </Button>
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-sm text-emerald-500">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span className="font-mono truncate">{uploadedObjectPath}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="aspect-[4/5] bg-secondary/50 rounded-sm border-2 border-dashed border-border flex flex-col items-center justify-center p-6">
-                <UploadCloud className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <p className="text-muted-foreground text-sm text-center mb-6">
-                  {t("upload.dropHint")}
-                </p>
-                <ObjectUploader
-                  onGetUploadParameters={async (file) => {
-                    const res = await fetch("/api/storage/uploads/request-url", {
-                      method: "POST",
-                      credentials: "include",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        name: file.name,
-                        size: file.size,
-                        contentType: file.type,
-                      }),
-                    });
-                    if (!res.ok) throw new Error("Failed to get upload URL");
-                    const data = await res.json() as { uploadURL: string; objectPath: string };
-                    pendingObjectPathRef.current = data.objectPath;
-                    return {
-                      method: "PUT" as const,
-                      url: data.uploadURL,
-                      headers: { "Content-Type": file.type ?? "application/octet-stream" },
-                    };
-                  }}
-                  onComplete={(result) => {
-                    if ((result.failed?.length ?? 0) > 0) {
-                      const errMsg = result.failed?.[0]?.error;
-                      toast({
-                        title: "Upload error",
-                        description: typeof errMsg === "string" ? errMsg : "Upload failed",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    const objectPath = pendingObjectPathRef.current;
-                    if (!objectPath) return;
-                    const servingUrl = `/api/storage${objectPath}`;
-                    setUploadedObjectPath(objectPath);
-                    setUploadedImageUrl(servingUrl);
-                  }}
-                  buttonClassName="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  {t("upload.choosePhoto")}
-                </ObjectUploader>
-              </div>
-            )}
-          </div>
+          <PhotoDraftPicker file={selectedFile} onChange={setSelectedFile} disabled={uploadStage !== "idle"} />
         </div>
       </div>
     </div>

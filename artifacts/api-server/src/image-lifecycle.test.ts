@@ -93,6 +93,23 @@ async function addPhoto(url: string, photographerId: number | null = null) {
   return row.id;
 }
 
+async function uploadFirst(photographerId: number, title = "New upload") {
+  const url = "https://example.invalid/upload.jpg";
+  const [photo] = await lifecycle.withPhotographerUploadAttachment(photographerId, url,
+    tx => tx.insert(schema.photosTable).values({
+      title, imageUrl: url, photographerId, sortOrder: 0,
+    }).returning());
+  return photo.id;
+}
+
+async function photoOrder(photographerId: number) {
+  return (await pool.query<{ id: number; sort_order: number | null }>(
+    `SELECT id, sort_order FROM photo WHERE photographer_id = $1
+     ORDER BY sort_order ASC NULLS LAST, created_at DESC, id DESC`,
+    [photographerId],
+  )).rows;
+}
+
 async function addClub(name: string, logoUrl: string | null = null) {
   const { rows: [row] } = await pool.query<{ id: number }>(
     "INSERT INTO club (name, logo_url) VALUES ($1, $2) RETURNING id",
@@ -241,6 +258,88 @@ afterAll(async () => {
 }, 30000);
 
 describe("image reclamation on isolated Unix-socket PostgreSQL", () => {
+  it("puts an upload first and moves a custom order down without touching another owner", async () => {
+    const owner = await addPhotographer();
+    const other = await addPhotographer("Other owner");
+    const a = await addPhoto("https://example.invalid/a.jpg", owner);
+    const b = await addPhoto("https://example.invalid/b.jpg", owner);
+    const legacy = await addPhoto("https://example.invalid/legacy.jpg", owner);
+    const untouched = await addPhoto("https://example.invalid/other.jpg", other);
+    await pool.query("UPDATE photo SET sort_order = 5 WHERE id = $1", [b]);
+    await pool.query("UPDATE photo SET sort_order = 9 WHERE id = $1", [a]);
+    const fresh = await uploadFirst(owner);
+    expect(await photoOrder(owner)).toEqual([
+      { id: fresh, sort_order: 0 }, { id: b, sort_order: 1 },
+      { id: a, sort_order: 2 }, { id: legacy, sort_order: 3 },
+    ]);
+    expect(await photoOrder(other)).toEqual([{ id: untouched, sort_order: null }]);
+  });
+
+  it("puts the first and successive uploads at position zero", async () => {
+    const owner = await addPhotographer();
+    const first = await uploadFirst(owner);
+    expect(await photoOrder(owner)).toEqual([{ id: first, sort_order: 0 }]);
+    const second = await uploadFirst(owner);
+    expect(await photoOrder(owner)).toEqual([
+      { id: second, sort_order: 0 }, { id: first, sort_order: 1 },
+    ]);
+  });
+
+  it("preserves newest-first order for legacy photos without saved positions", async () => {
+    const owner = await addPhotographer();
+    const older = await addPhoto("https://example.invalid/older.jpg", owner);
+    const newer = await addPhoto("https://example.invalid/newer.jpg", owner);
+    await pool.query("UPDATE photo SET created_at = '2025-01-01' WHERE id = $1", [older]);
+    const fresh = await uploadFirst(owner);
+    expect((await photoOrder(owner)).map(photo => photo.id)).toEqual([fresh, newer, older]);
+  });
+
+  it("serializes simultaneous uploads with unique dense positions", async () => {
+    const owner = await addPhotographer();
+    const existing = await uploadFirst(owner);
+    const uploaded = await Promise.all([uploadFirst(owner, "A"), uploadFirst(owner, "B")]);
+    const order = await photoOrder(owner);
+    expect(order.map(photo => photo.sort_order)).toEqual([0, 1, 2]);
+    expect(order.slice(0, 2).map(photo => photo.id).sort()).toEqual(uploaded.sort());
+    expect(order[2].id).toBe(existing);
+  });
+
+  it("rolls back shifted positions when attaching an expired upload fails", async () => {
+    const owner = await addPhotographer();
+    await uploadFirst(owner);
+    const before = await photoOrder(owner);
+    const token = "90909090-9090-4090-8090-909090909090";
+    await addReservation(objectPath(token), "deleted");
+    const create = vi.fn(async () => []);
+    await expect(lifecycle.withPhotographerUploadAttachment(owner, imageUrl(token), create)).rejects.toThrow();
+    expect(create).not.toHaveBeenCalled();
+    expect(await photoOrder(owner)).toEqual(before);
+  });
+
+  it("keeps a new upload first when an older reorder list is saved, ignoring foreign IDs", async () => {
+    const owner = await addPhotographer();
+    const other = await addPhotographer("Other owner");
+    const a = await uploadFirst(owner);
+    const b = await uploadFirst(owner);
+    const foreign = await uploadFirst(other);
+    const fresh = await uploadFirst(owner);
+    await lifecycle.reorderPhotographerPhotos(owner, [a, foreign, b, a]);
+    expect(await photoOrder(owner)).toEqual([
+      { id: fresh, sort_order: 0 }, { id: a, sort_order: 1 }, { id: b, sort_order: 2 },
+    ]);
+    expect(await photoOrder(other)).toEqual([{ id: foreign, sort_order: 0 }]);
+  });
+
+  it("serializes a reorder racing an upload without losing either change", async () => {
+    const owner = await addPhotographer();
+    const a = await uploadFirst(owner);
+    const b = await uploadFirst(owner);
+    const [fresh] = await Promise.all([
+      uploadFirst(owner), lifecycle.reorderPhotographerPhotos(owner, [a, b]),
+    ]);
+    expect((await photoOrder(owner)).map(photo => photo.id)).toEqual([fresh, a, b]);
+  });
+
   it("retires the last photo reference for 24 hours before sweeping the object", async () => {
     const id = "10101010-1010-4010-8010-101010101010";
     const path = objectPath(id);

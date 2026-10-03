@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { withUploadAttachment } from "../lib/upload-staging";
-import { db, photographersTable, photosTable, themesTable, photographerClubsTable, photographerThemesTable, photographerFollowsTable, adminsTable } from "@workspace/db";
+import { UploadUnavailableError, withUploadLifecycle } from "../lib/upload-staging";
+import { db, photographersTable, photosTable, themesTable, clubsTable, photographerClubsTable, photographerThemesTable, photographerFollowsTable, adminsTable } from "@workspace/db";
 import { eq, ilike, count, or, sql, exists, and } from "drizzle-orm";
 import {
   ListPhotographersQueryParams,
@@ -81,33 +81,6 @@ export function buildRow(r: {
   return { ...r, createdAt: r.createdAt.toISOString() };
 }
 
-/** Replace club memberships for a photographer in the junction table. */
-async function setClubMemberships(
-  photographerId: number,
-  clubs: { id: number; memberSince?: number | null }[],
-) {
-  await db.delete(photographerClubsTable).where(eq(photographerClubsTable.photographerId, photographerId));
-  if (clubs.length > 0) {
-    await db.insert(photographerClubsTable).values(
-      clubs.map(({ id: clubId, memberSince }) => ({
-        photographerId,
-        clubId,
-        memberSince: memberSince ?? null,
-      })),
-    );
-  }
-}
-
-/** Replace theme preferences for a photographer in the junction table. */
-async function setThemeMemberships(photographerId: number, themeIds: number[]) {
-  await db.delete(photographerThemesTable).where(eq(photographerThemesTable.photographerId, photographerId));
-  if (themeIds.length > 0) {
-    await db.insert(photographerThemesTable).values(
-      themeIds.map((themeId) => ({ photographerId, themeId })),
-    );
-  }
-}
-
 // GET /api/photographers — list all photographers, optionally filtered by
 // name/bio/preferred-theme search, club membership, or submitted photos under a theme.
 router.get("/photographers", async (req, res) => {
@@ -172,16 +145,30 @@ router.post("/photographers", requireAdmin, async (req, res) => {
     return;
   }
   const { clubs, themeIds, ...photographerData } = body.data;
-  const [photographer] = await withUploadAttachment(photographerData.avatarUrl ?? "",
-    (tx) => tx.insert(photographersTable).values(photographerData).returning());
-
-  if (clubs && clubs.length > 0) {
-    await setClubMemberships(photographer.id, clubs);
-  }
-  if (themeIds && themeIds.length > 0) {
-    await db.insert(photographerThemesTable).values(
-      themeIds.map((themeId) => ({ photographerId: photographer.id, themeId })),
-    );
+  let photographer: typeof photographersTable.$inferSelect;
+  try {
+    photographer = await db.transaction(async (tx) => {
+      const [created] = await withUploadLifecycle({ attach: [photographerData.avatarUrl ?? ""] },
+        (transaction) => transaction.insert(photographersTable).values(photographerData).returning(),
+        { transaction: tx });
+      if (clubs && clubs.length > 0) {
+        await tx.insert(photographerClubsTable).values(clubs.map(({ id: clubId, memberSince }) => ({
+          photographerId: created.id, clubId, memberSince: memberSince ?? null,
+        })));
+      }
+      if (themeIds && themeIds.length > 0) {
+        await tx.insert(photographerThemesTable).values(
+          themeIds.map((themeId) => ({ photographerId: created.id, themeId })),
+        );
+      }
+      return created;
+    });
+  } catch (error) {
+    if (error instanceof UploadUnavailableError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
+    throw error;
   }
 
   const rows = await photographerBaseQuery()
@@ -313,29 +300,60 @@ router.patch("/photographers/:id", async (req: any, res) => {
     res.status(401).json({ error: "Authentication required" });
     return;
   }
-
   const { clubs, themeIds, ...photographerFields } = body.data;
-
-  // Update scalar photographer fields (skip if nothing to update)
-  if (Object.keys(photographerFields).length > 0) {
-    try {
-      await updatePhotographerWithReclamation(id, photographerFields);
-    } catch (error) {
-      if (error instanceof ImageLifecycleError) {
-        res.status(error.status).json({ error: error.message });
-        return;
-      }
-      throw error;
+  if (clubs !== undefined) {
+    const requestedIds = clubs.map(club => club.id);
+    if (requestedIds.some(clubId => !Number.isInteger(clubId) || clubId <= 0) ||
+        new Set(requestedIds).size !== requestedIds.length) {
+      res.status(400).json({ error: "Choose each valid club only once" });
+      return;
+    }
+    const availableClubs = await db.select({ id: clubsTable.id }).from(clubsTable);
+    const availableIds = new Set(availableClubs.map(club => club.id));
+    if (requestedIds.some(clubId => !availableIds.has(clubId))) {
+      res.status(400).json({ error: "One or more clubs are no longer available" });
+      return;
     }
   }
 
-  // Replace club memberships if clubs was provided
-  if (clubs !== undefined) {
-    await setClubMemberships(id, clubs);
-  }
-  // Replace theme preferences if themeIds was provided
-  if (themeIds !== undefined) {
-    await setThemeMemberships(id, themeIds);
+  try {
+    await db.transaction(async tx => {
+      if (Object.keys(photographerFields).length > 0) {
+        await updatePhotographerWithReclamation(id, photographerFields, undefined, tx);
+      }
+      if (clubs !== undefined) {
+        const previous = await tx.select({
+          clubId: photographerClubsTable.clubId,
+          memberSince: photographerClubsTable.memberSince,
+          joinedAt: photographerClubsTable.joinedAt,
+        }).from(photographerClubsTable).where(eq(photographerClubsTable.photographerId, id));
+        await tx.delete(photographerClubsTable).where(eq(photographerClubsTable.photographerId, id));
+        if (clubs.length > 0) {
+          await tx.insert(photographerClubsTable).values(clubs.map(club => {
+            const existingMembership = previous.find(row => row.clubId === club.id);
+            return {
+              photographerId: id,
+              clubId: club.id,
+              // Owners choose memberships, but only admins can set historical join years.
+              memberSince: admin ? club.memberSince ?? null : existingMembership?.memberSince ?? null,
+              ...(existingMembership?.joinedAt ? { joinedAt: existingMembership.joinedAt } : {}),
+            };
+          }));
+        }
+      }
+      if (themeIds !== undefined) {
+        await tx.delete(photographerThemesTable).where(eq(photographerThemesTable.photographerId, id));
+        if (themeIds.length > 0) {
+          await tx.insert(photographerThemesTable).values(themeIds.map(themeId => ({ photographerId: id, themeId })));
+        }
+      }
+    });
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
   }
 
   const rows = await photographerBaseQuery()

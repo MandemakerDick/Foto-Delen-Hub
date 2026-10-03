@@ -36,7 +36,7 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
   }
   doc.moveDown(0.6);
   doc.fontSize(9).font('Helvetica').fillColor('#888888')
-     .text('July 2026', { align: 'center', width: W });
+     .text('September 2026', { align: 'center', width: W });
 
   // ── Page-number helpers ────────────────────────────────────────
   // contentPageNum counts body pages (1-based); cover is never numbered.
@@ -149,7 +149,7 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
 
     if (/^## /.test(line)) {
       const title = line.replace(/^## /, '');
-      if (/table of contents/i.test(title)) { skipToc = true; return; }
+       if (/^(table of )?contents$/i.test(title)) { skipToc = true; return; }
       skipToc = false;
       if (needsNewPage(100)) newPage();
       doc.moveDown(0.6);
@@ -192,6 +192,7 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
         doc.fontSize(10).font('Helvetica').fillColor(DARK)
            .text('\u2022 ' + stripMd(raw), { indent: 10, width: W - 10 });
       }
+      doc.moveDown(0.15);
       return;
     }
 
@@ -199,6 +200,7 @@ function renderGuide({ inputPath, outputPath, coverTitle, coverSubtitle, coverSu
       const m = line.match(/^(\d+)\. (.*)/);
       doc.fontSize(10).font('Helvetica').fillColor(DARK)
          .text(m[1] + '.  ' + stripMd(m[2]), { indent: 8, width: W - 8 });
+      doc.moveDown(0.15);
       return;
     }
 

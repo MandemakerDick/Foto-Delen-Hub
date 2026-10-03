@@ -4,7 +4,8 @@ import {
   sessionReviewersTable, reviewSessionsTable, type InsertClub, type InsertPhotographer,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
-import { withUploadLifecycle, type UploadTransaction } from "./upload-staging";
+import { UploadUnavailableError, withUploadLifecycle, type UploadTransaction } from "./upload-staging";
+import { reserveFirstPhotoPosition, setPhotographerPhotoOrder } from "./photo-order";
 
 export class ImageLifecycleError extends Error {
   constructor(message: string, public readonly status: 404 | 409) {
@@ -36,22 +37,30 @@ export async function deletePhotosWithReclamation(photoIds: number[], now?: Date
 }
 
 export async function updatePhotographerWithReclamation(
-  id: number, fields: Partial<InsertPhotographer>, now?: Date,
+  id: number, fields: Partial<InsertPhotographer>, now?: Date, transaction?: UploadTransaction,
 ) {
-  return db.transaction(async (tx) => {
+  const update = async (tx: UploadTransaction) => {
     // Capture the actual previous avatar, not the route's pre-authorization
     // snapshot: concurrent replacements can have committed in the meantime.
     const [previous] = await tx.select().from(photographersTable)
       .where(eq(photographersTable.id, id)).for("update");
     if (!previous) throw new ImageLifecycleError("Photographer not found", 404);
     const replacesAvatar = Object.hasOwn(fields, "avatarUrl");
-    const [updated] = await withUploadLifecycle({
-      attach: replacesAvatar ? [fields.avatarUrl] : [],
-      release: replacesAvatar ? [previous.avatarUrl] : [],
-    }, (transaction) => transaction.update(photographersTable).set(fields)
-      .where(eq(photographersTable.id, id)).returning(), { transaction: tx, now });
-    return updated;
-  });
+    try {
+      const [updated] = await withUploadLifecycle({
+        attach: replacesAvatar ? [fields.avatarUrl] : [],
+        release: replacesAvatar ? [previous.avatarUrl] : [],
+      }, (transaction) => transaction.update(photographersTable).set(fields)
+        .where(eq(photographersTable.id, id)).returning(), { transaction: tx, now });
+      return updated;
+    } catch (error) {
+      if (error instanceof UploadUnavailableError) {
+        throw new ImageLifecycleError(error.message, 409);
+      }
+      throw error;
+    }
+  };
+  return transaction ? update(transaction) : db.transaction(update);
 }
 
 export async function updateClubWithReclamation(
@@ -103,9 +112,9 @@ export async function deletePhotographerWithReclamation(id: number, now?: Date) 
   });
 }
 
-async function lockPhotographer(tx: UploadTransaction, id: number) {
+async function lockPhotographer(tx: UploadTransaction, id: number, mode: "key share" | "update" = "key share") {
   const [owner] = await tx.select({ id: photographersTable.id }).from(photographersTable)
-    .where(eq(photographersTable.id, id)).for("key share");
+    .where(eq(photographersTable.id, id)).for(mode);
   if (!owner) throw new ImageLifecycleError("Photographer not found", 404);
 }
 
@@ -136,19 +145,30 @@ export async function withReviewSessionUploadAttachment<T>(
 ): Promise<T> {
   return db.transaction(async (tx) => {
     await lockReviewSession(tx, sessionId);
-    await lockPhotographer(tx, photographerId);
+    await lockPhotographer(tx, photographerId, "update");
+    await reserveFirstPhotoPosition(tx, photographerId);
     return withUploadLifecycle({ attach: [imageUrl] }, create, { transaction: tx });
   });
 }
 
-// Owner -> existing photo -> ledger is the common lock ordering. Inserts use
-// new photo IDs, so they cannot deadlock a remover holding existing photo rows.
+// Owner -> existing photos -> ledger is the common lock ordering. Reserve the
+// first position before locking the ledger; failed attachments roll it all back.
 export async function withPhotographerUploadAttachment<T>(
   photographerId: number | null, imageUrl: string, create: (tx: UploadTransaction) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
-    if (photographerId !== null) await lockPhotographer(tx, photographerId);
+    if (photographerId !== null) {
+      await lockPhotographer(tx, photographerId, "update");
+      await reserveFirstPhotoPosition(tx, photographerId);
+    }
     return withUploadLifecycle({ attach: [imageUrl] }, create, { transaction: tx });
+  });
+}
+
+export async function reorderPhotographerPhotos(photographerId: number, photoIds: number[]) {
+  return db.transaction(async (tx) => {
+    await lockPhotographer(tx, photographerId, "update");
+    await setPhotographerPhotoOrder(tx, photographerId, photoIds);
   });
 }
 

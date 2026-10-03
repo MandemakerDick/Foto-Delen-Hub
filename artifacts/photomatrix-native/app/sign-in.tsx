@@ -1,31 +1,199 @@
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useClerk, useSignIn, useSignUp } from '@clerk/expo';
+import { reloadAppAsync } from 'expo';
 import { useColors } from '@/hooks/useColors';
 import { useLocale } from '@/context/locale';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+
+type CodeFactor = 'totp' | 'backup_code' | 'email_code' | 'phone_code';
+const isCodeFactor = (strategy: string): strategy is CodeFactor =>
+  strategy === 'totp' || strategy === 'backup_code' || strategy === 'email_code' || strategy === 'phone_code';
 
 export default function SignIn() {
-  const c = useColors(); const { t } = useLocale(); const router = useRouter();
-  const params = useLocalSearchParams<{ returnTo?: string }>(); const returnTo = params.returnTo ?? '/';
-  const { signIn } = useSignIn(); const { signUp } = useSignUp(); const { setActive } = useClerk();
+  const c = useColors();
+  const { t } = useLocale();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ returnTo?: string }>();
+  const returnTo = params.returnTo ?? '/';
+  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
+  const { setActive } = useClerk();
   const ready = !!signIn && !!signUp && !!setActive;
-  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [code, setCode] = useState('');
-  const [create, setCreate] = useState(false); const [verify, setVerify] = useState(false); const [busy, setBusy] = useState(false);
-  const errorText = (error: any, fallback: string) => error?.errors?.[0]?.message ?? error?.message ?? fallback;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [factorCode, setFactorCode] = useState('');
+  const [create, setCreate] = useState(false);
+  const [verify, setVerify] = useState(false);
+  const [needsSecondFactor, setNeedsSecondFactor] = useState(false);
+  const [selectedFactor, setSelectedFactor] = useState<CodeFactor | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const factors = (signIn?.supportedSecondFactors ?? []).filter(factor => isCodeFactor(factor.strategy));
+  const factorLabel = (strategy: CodeFactor) =>
+    t(strategy === 'totp' ? 'authenticatorCode' : strategy === 'backup_code' ? 'backupCode' : strategy === 'email_code' ? 'emailCode' : 'phoneCode');
+  const errorText = (failure: any, fallback: string) => failure?.errors?.[0]?.message ?? failure?.message ?? fallback;
+
+  const finishSignIn = async () => {
+    if (signIn!.status === 'complete' && signIn!.createdSessionId) {
+      await setActive!({ session: signIn!.createdSessionId });
+      setPassword('');
+      setFactorCode('');
+      router.replace(returnTo as any);
+    } else if (signIn!.status === 'needs_second_factor') {
+      const options = signIn!.supportedSecondFactors.filter(factor => isCodeFactor(factor.strategy));
+      setNeedsSecondFactor(true);
+      setSelectedFactor(options.some(factor => factor.strategy === 'totp') ? 'totp' : null);
+      if (!options.length) setError(t('secondFactorUnavailable'));
+    } else {
+      setError(`${t('signInIncomplete')} (${signIn!.status})`);
+    }
+  };
+
   const submit = async () => {
-    if (!ready || !email.trim() || !password) return; setBusy(true);
+    if (!ready) { setError(t('authLoading')); return; }
+    if (!email.trim() || !password) { setError(t('enterEmailPassword')); return; }
+    setError('');
+    setBusy(true);
     try {
-      if (create) { await signUp!.create({ emailAddress: email.trim(), password }); await signUp!.verifications.sendEmailCode(); setVerify(true); }
-      else { const result: any = await signIn!.create({ identifier: email.trim(), password }); if (result.status === 'complete' && result.createdSessionId) { await setActive!({ session: result.createdSessionId }); router.replace(returnTo as any); } }
-    } catch (error) { Alert.alert(t('signInFailed'), errorText(error, t('tryAgain'))); } finally { setBusy(false); }
+      if (create) {
+        const result = await signUp!.create({ emailAddress: email.trim(), password });
+        if (result.error) throw result.error;
+        const sent = await signUp!.verifications.sendEmailCode();
+        if (sent.error) throw sent.error;
+        setVerify(true);
+      } else {
+        const result = await signIn!.create({ identifier: email.trim(), password });
+        if (result.error) throw result.error;
+        await finishSignIn();
+      }
+    } catch (failure) {
+      setError(errorText(failure, t('signInFailed')));
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const chooseFactor = async (strategy: CodeFactor) => {
+    if (!ready || busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      if (!signIn!.supportedSecondFactors.some(factor => factor.strategy === strategy)) throw new Error(t('secondFactorUnavailable'));
+      if (strategy === 'email_code') {
+        const result = await signIn!.mfa.sendEmailCode();
+        if (result.error) throw result.error;
+      } else if (strategy === 'phone_code') {
+        const result = await signIn!.mfa.sendPhoneCode();
+        if (result.error) throw result.error;
+      }
+      setFactorCode('');
+      setSelectedFactor(strategy);
+    } catch (failure) {
+      setError(errorText(failure, t('secondFactorUnavailable')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifySecondFactor = async () => {
+    if (!ready || !selectedFactor || !factorCode.trim()) { setError(t('invalidCode')); return; }
+    setError('');
+    setBusy(true);
+    try {
+      const params = { code: factorCode.trim() };
+      const result = selectedFactor === 'totp' ? await signIn!.mfa.verifyTOTP(params)
+        : selectedFactor === 'backup_code' ? await signIn!.mfa.verifyBackupCode(params)
+          : selectedFactor === 'email_code' ? await signIn!.mfa.verifyEmailCode(params)
+            : await signIn!.mfa.verifyPhoneCode(params);
+      if (result.error) throw result.error;
+      if (signIn!.status === 'needs_second_factor') setError(t('invalidCode'));
+      else await finishSignIn();
+    } catch (failure) {
+      setError(errorText(failure, t('invalidCode')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const verifyEmail = async () => {
-    if (!ready || !code.trim()) return; setBusy(true);
-    try { await signUp!.verifications.verifyEmailCode({ code: code.trim() }); if (signUp!.status === 'complete' && signUp!.createdSessionId) { await setActive!({ session: signUp!.createdSessionId }); router.replace(returnTo as any); } else Alert.alert(t('verificationIncomplete'), t('tryAgain')); }
-    catch (error) { Alert.alert(t('verificationFailed'), errorText(error, t('invalidCode'))); } finally { setBusy(false); }
+    if (!ready || !code.trim()) { setError(t('invalidCode')); return; }
+    setError('');
+    setBusy(true);
+    try {
+      const result = await signUp!.verifications.verifyEmailCode({ code: code.trim() });
+      if (result.error) throw result.error;
+      if (signUp!.status === 'complete' && signUp!.createdSessionId) {
+        await setActive!({ session: signUp!.createdSessionId });
+        router.replace(returnTo as any);
+      } else setError(t('verificationIncomplete'));
+    } catch (failure) {
+      setError(errorText(failure, t('invalidCode')));
+    } finally {
+      setBusy(false);
+    }
   };
-  if (!ready) return <View style={[styles.center, { backgroundColor: c.background }]}><Text style={{ color: c.mutedForeground }}>{t('authLoading')}</Text></View>;
-  return <View style={[styles.root, { backgroundColor: c.background }]}><Stack.Screen options={{ title: create ? t('createAccount') : t('signIn') }}/><Text style={[styles.title, { color: c.foreground }]}>{verify ? t('checkEmail') : create ? t('joinDarkroom') : t('welcomeBack')}</Text>{verify ? <><Text style={{ color: c.mutedForeground }}>{t('emailSent')} {email}</Text><TextInput keyboardType="number-pad" value={code} onChangeText={setCode} placeholder={t('verificationCode')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} /><Pressable onPress={verifyEmail} disabled={busy} style={[styles.button, { backgroundColor: c.primary }]}><Text style={{ color: c.primaryForeground }}>{t('verifyEmail')}</Text></Pressable></> : <><TextInput autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder={t('email')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} /><TextInput secureTextEntry value={password} onChangeText={setPassword} placeholder={t('password')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} /><Pressable onPress={submit} disabled={busy} style={[styles.button, { backgroundColor: c.primary }]}><Text style={{ color: c.primaryForeground }}>{busy ? t('sending') : create ? t('createAccount') : t('signIn')}</Text></Pressable><Pressable onPress={() => setCreate(!create)}><Text style={{ color: c.mutedForeground, textAlign: 'center', marginTop: 20 }}>{create ? t('existingMember') : t('newMember')}</Text></Pressable></>}</View>;
+
+  return <KeyboardAwareScrollViewCompat style={{ backgroundColor: c.background }} contentContainerStyle={styles.root} bottomOffset={20}>
+    <Stack.Screen options={{ title: create ? t('createAccount') : t('signIn') }} />
+    <Text style={[styles.title, { color: c.foreground }]}>{needsSecondFactor ? t('secondFactorTitle') : verify ? t('checkEmail') : create ? t('joinDarkroom') : t('welcomeBack')}</Text>
+    {!ready ? <View>
+      <Text style={{ color: c.mutedForeground, marginBottom: 12 }}>{t('authLoading')}</Text>
+      <Pressable accessibilityRole="button" onPress={async () => {
+        try { await reloadAppAsync(); } catch { setError(t('tryAgain')); }
+      }} style={[styles.button, { backgroundColor: c.primary }]}>
+        <Text style={{ color: c.primaryForeground }}>{t('refresh')}</Text>
+      </Pressable>
+    </View> : needsSecondFactor ? <>
+      <Text style={{ color: c.mutedForeground, marginBottom: 12 }}>{t('chooseSecondFactor')}</Text>
+      {factors.filter((factor, index) => factors.findIndex(item => item.strategy === factor.strategy) === index).map(factor => <Pressable
+        key={factor.strategy}
+        accessibilityRole="button"
+        accessibilityState={{ selected: selectedFactor === factor.strategy }}
+        disabled={busy}
+        onPress={() => chooseFactor(factor.strategy as CodeFactor)}
+        style={[styles.factor, { borderColor: selectedFactor === factor.strategy ? c.primary : c.border }]}
+      ><Text style={{ color: c.foreground }}>{factorLabel(factor.strategy as CodeFactor)}</Text></Pressable>)}
+      {selectedFactor && <View>
+        {(selectedFactor === 'email_code' || selectedFactor === 'phone_code') && <Text style={{ color: c.mutedForeground, marginBottom: 10 }}>{t('secondFactorSent')}</Text>}
+        <TextInput
+          value={factorCode}
+          onChangeText={setFactorCode}
+          placeholder={factorLabel(selectedFactor)}
+          placeholderTextColor={c.mutedForeground}
+          keyboardType={selectedFactor === 'backup_code' ? 'default' : 'number-pad'}
+          autoCapitalize="none"
+          autoComplete="one-time-code"
+          style={[styles.input, { color: c.foreground, borderColor: c.border }]}
+        />
+        <Pressable accessibilityRole="button" onPress={verifySecondFactor} disabled={busy} style={[styles.button, { backgroundColor: c.primary }]}><Text style={{ color: c.primaryForeground }}>{t('verifyCode')}</Text></Pressable>
+      </View>}
+      <Pressable accessibilityRole="button" onPress={() => { setNeedsSecondFactor(false); setSelectedFactor(null); setFactorCode(''); setError(''); }} style={styles.switch}><Text style={{ color: c.mutedForeground }}>{t('anotherAccount')}</Text></Pressable>
+    </> : verify ? <>
+      <Text style={{ color: c.mutedForeground }}>{t('emailSent')} {email}</Text>
+      <TextInput keyboardType="number-pad" autoComplete="one-time-code" value={code} onChangeText={setCode} placeholder={t('verificationCode')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} />
+      <Pressable accessibilityRole="button" onPress={verifyEmail} disabled={busy} style={[styles.button, { backgroundColor: c.primary }]}><Text style={{ color: c.primaryForeground }}>{t('verifyEmail')}</Text></Pressable>
+    </> : <>
+      <TextInput autoCapitalize="none" keyboardType="email-address" autoComplete="email" value={email} onChangeText={setEmail} placeholder={t('email')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} />
+      <TextInput secureTextEntry autoComplete={create ? 'new-password' : 'current-password'} value={password} onChangeText={setPassword} placeholder={t('password')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} />
+      <Pressable accessibilityRole="button" onPress={submit} disabled={busy} style={[styles.button, { backgroundColor: c.primary }]}><Text style={{ color: c.primaryForeground }}>{busy ? t('sending') : create ? t('createAccount') : t('signIn')}</Text></Pressable>
+      <GoogleSignInButton onSuccess={() => router.replace(returnTo as any)} />
+      <Pressable accessibilityRole="button" onPress={() => { setCreate(!create); setError(''); }} style={styles.switch}><Text style={{ color: c.mutedForeground }}>{create ? t('existingMember') : t('newMember')}</Text></Pressable>
+    </>}
+    {!!error && <Text accessibilityRole="alert" style={{ color: c.primary, marginTop: 18, textAlign: 'center' }}>{error}</Text>}
+    <View style={styles.exit}><Pressable onPress={() => router.replace('/')}><Text style={{ color: c.primary }}>{t('home')}</Text></Pressable><Pressable onPress={() => router.replace('/gallery')}><Text style={{ color: c.primary }}>{t('gallery')}</Text></Pressable></View>
+  </KeyboardAwareScrollViewCompat>;
 }
-const styles = StyleSheet.create({ root: { flex: 1, padding: 22, justifyContent: 'center' }, center: { flex: 1, justifyContent: 'center', alignItems: 'center' }, title: { fontSize: 31, fontWeight: '700', marginBottom: 22 }, input: { borderWidth: 1, borderRadius: 7, padding: 14, marginBottom: 12 }, button: { padding: 15, borderRadius: 7, alignItems: 'center', marginTop: 7 } });
+
+const styles = StyleSheet.create({
+  root: { flexGrow: 1, padding: 22, justifyContent: 'center' },
+  title: { fontSize: 31, fontWeight: '700', marginBottom: 22 },
+  input: { borderWidth: 1, borderRadius: 7, padding: 14, marginBottom: 12 },
+  button: { padding: 15, borderRadius: 7, alignItems: 'center', marginTop: 7 },
+  factor: { borderWidth: 1, borderRadius: 7, padding: 14, marginBottom: 10, minHeight: 48 },
+  switch: { marginTop: 20, alignItems: 'center' },
+  exit: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 32, paddingBottom: 12 },
+});

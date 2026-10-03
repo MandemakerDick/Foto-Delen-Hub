@@ -9,18 +9,42 @@
 - [PhotoMatrix app store plans](photomatrix-app-store-plans.md) — remind about in-app feedback widget when native app work begins.
 - [Manage page crash lessons](manage-page-crash-lessons.md) — missing import + undefined state setter caused black screen; how to prevent and debug.
 - [OpenAPI regeneration contract](openapi-regeneration-contract.md) — generated clients are full replacements; keep active API models complete before codegen.
-- [Photographer invite onboarding](photographer-invite-onboarding.md) — admin-creates-profile → auto-sends invite email → photographer redeems → one-click auto-link. invite_token has photographerId FK.
+- [Photographer invite onboarding](photographer-invite-onboarding.md) — development native invites need an unlinked development account; Android token-paste linking was confirmed.
+- [PhotoMatrix club policy](photomatrix-club-assignment.md) — photo tagging is not membership; owners choose their own memberships, and missing clubs are proposed for review.
+- [PhotoMatrix club metadata terminology](photomatrix-club-metadata-labels.md) — preserve web Location/Year established names and make native Club detail values prominent.
+- [PhotoMatrix theme cardinality](photomatrix-theme-multiplicity.md) — a Photo has one theme; a Photographer may have several. Do not generalize one model to the other.
 - [Workspace dependency pruning](workspace-dependency-pruning.md) — verify removals in the artifact manifest and lockfile; root-level removal may not affect a workspace package.
 - [Managed OpenAI without SDK](managed-openai-http.md) — package installation can reject the OpenAI SDK; use the managed OpenAI-compatible HTTP endpoint instead.
 - [API Vitest mock boundary](api-vitest-mock-boundary.md) — tests importing API code must run with the API artifact as Vitest root or workspace package mocks may be bypassed.
 - [Bilingual semantic photo search](bilingual-semantic-search.md) — use cached LLM query expansion; the managed OpenAI proxy rejects embeddings.
 - [AI theme assignment policy](ai-theme-assignment.md) — auto-apply only high-confidence suggestions to new unthemed photos; keep existing-library changes review-first.
-- [Shared Gallery pagination contract](gallery-pagination-contract.md) — web and future native clients should use the dedicated paginated Gallery API; keep legacy photo lists compatible.
+- [Shared Gallery pagination contract](gallery-pagination-contract.md) — use the dedicated Gallery API; native needs visible Load more, not only invisible scroll loading.
 - [Standalone frontend builds](standalone-frontend-builds.md) — artifact workflows inject routing variables that ad-hoc build shells lack; supply them explicitly when building outside a workflow.
 - [Expo React version alignment](expo-react-version-alignment.md) — root pnpm React overrides defeat Expo's local version pin; native and shared React peers must agree.
+- [Clerk Expo Core 3 results](clerk-expo-core3-results.md) — custom sign-in methods can return an error object instead of throwing; check both the result and resource status.
+- [Android Google OAuth recovery](android-oauth-custom-tab.md) — an interrupted Expo auth session can orphan a Chrome Custom Tab; close it before retrying.
+- [PhotoMatrix Clerk startup](photomatrix-clerk-startup.md) — keep public navigation independent of Clerk readiness to avoid a blank screen while auth initializes.
+- [PhotoMatrix account indicator](photomatrix-account-indicator.md) — prefer a compact top-right sign-out control with optional first name, not an email/status card.
+- [PhotoMatrix upload confirmation](photomatrix-upload-confirmation.md) — photo picking is draft selection, not consent to upload; require a separate confirmation.
+- [PhotoMatrix reorder layout](photomatrix-reorder-layout.md) — use a photo grid and explicit Save/Cancel in native, matching the web reorder screen.
+- [PhotoMatrix theme proposal channel](photomatrix-theme-proposal-channel.md) — native theme suggestions are emailed for review, not auto-published or added to the web queue.
+- [Photographer proposal placement](photomatrix-profile-proposal-placement.md) — keep club/theme proposal actions in native profile edit, not public Photographer view.
+- [Multi-artifact publishing](multi-artifact-publishing.md) — republishing updates the whole project, not just one web artifact; the user must click Republish.
+- [PhotoMatrix editing entry points](photomatrix-editing-entry-points.md) — reuse the full-size photo editor from My photos; keep long theme lists collapsed.
+- [PhotoMatrix shared selection links](photomatrix-shared-links.md) — Expo Go cannot claim the app's custom scheme; pasted links work in preview, direct handoff needs an installed build.
+- [PhotoMatrix brand identity](photomatrix-brand-identity.md) — use the colorful matrix logo and white camera wordmark for app branding, not the aperture app icon.
+- [PhotoMatrix orange accent](photomatrix-orange-accent.md) — native primary orange was preferred and confirmed more readable than red on black; keep semantic danger states separate.
+- [PhotoMatrix navigation policy](photomatrix-navigation-policy.md) — keep bottom tabs on browsing and detail pages, but hide them during focused sign-in, upload, and editing flows.
+- [Generated query hook options](generated-query-hook-options.md) — inspect parameterized hook signatures before passing query options; supply an explicit query key when needed.
+- [Feedback diagnostics privacy](feedback-diagnostics-privacy.md) — optional diagnostics must be allowlisted on the server, and opt-out means no diagnostics section in either email format.
+- [Managed Clerk Android builds](managed-clerk-android-build.md) — a separate Android builder cannot use Replit-managed production Clerk keys; Expo Go covers only partial production QA.
+- [Separate admin/photographer identities](admin-photographer-identities.md) — use distinct logins for admin work and personal photography, even when one person has both roles.
 - [Daemon test processes](daemon-test-processes.md) — avoid piped stdio when synchronously starting a daemon; inherited pipes can make the caller wait forever.
 - [Mobile query-key invalidation](mobile-query-key-invalidation.md) — generated URL keys are single strings; invalidate related list/detail caches by family, not array-prefix alone.
 - [Mobile account-cache boundary](mobile-account-cache-boundary.md) — remove only private queries on identity change, and hide the old navigation tree until removal completes.
 - [Account identity epochs](account-identity-epochs.md) — bind private-cache responses and mutation callbacks to an identity epoch, and observe auth changes outside private pages.
 - [Staged upload safety](staged-upload-safety.md) — the shared uploader serves avatars too; cleanup must protect every attachment type and remain compatible with deployed writers.
 - [Review retention policy](review-retention-policy.md) — file reclamation must protect live review-linked records, not only retain their image bytes.
+- [Long-running task sync](long-running-task-sync.md) — reconcile newer main changes safely; apply isolated task changes before republishing for production QA.
+- [Exact source recovery](source-recovery-io.md) — terminal transcripts can truncate or normalize file content; recover git objects through temporary files and filesystem reads.
+- [New photo placement](new-photo-order-policy.md) — new uploads go first; existing photographs shift down without losing their relative custom order.

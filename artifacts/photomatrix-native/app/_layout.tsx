@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,9 +15,11 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
-import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { LocaleProvider } from '@/context/locale';
+import { AccountEpoch } from '@/utils/accountEpoch';
+import { AccountEpochContext } from '@/context/account-epoch';
 import { clearPrivateAccountCaches } from '@/utils/privateCache';
 
 if (process.env.EXPO_PUBLIC_DOMAIN) setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -28,9 +30,14 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
-  const { getToken, userId } = useAuth();
+  const { getToken, userId, isLoaded } = useAuth();
+  const session = useRef(new AccountEpoch(userId)).current;
+  const epoch = session.observe(userId);
   const [cacheOwner, setCacheOwner] = useState(userId);
-  useLayoutEffect(() => { setAuthTokenGetter(() => getToken()); return () => setAuthTokenGetter(null); }, [getToken]);
+  useLayoutEffect(() => {
+    setAuthTokenGetter(() => isLoaded ? getToken() : Promise.resolve(null));
+    return () => setAuthTokenGetter(null);
+  }, [getToken, isLoaded]);
   useLayoutEffect(() => {
     if (cacheOwner !== userId) {
       clearPrivateAccountCaches(queryClient);
@@ -41,9 +48,13 @@ function RootLayoutNav() {
   // identity against the prior identity's private query results.
   if (cacheOwner !== userId) return null;
   return (
-      <Stack screenOptions={{ headerBackTitle: 'Back', headerStyle: { backgroundColor: '#0b0b0c' }, headerTintColor: '#e7e3dc', headerTitleStyle: { fontFamily: 'Inter_600SemiBold' } }}>
+    <AccountEpochContext.Provider value={{ session, epoch }}>
+      <Stack key={epoch} screenOptions={{ headerBackTitle: 'Back', headerStyle: { backgroundColor: '#0b0b0c' }, headerTintColor: '#e7e3dc', headerTitleStyle: { fontFamily: 'Inter_600SemiBold' } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="sign-in" options={{ headerShown: true }} />
+      <Stack.Screen name="sso-callback" options={{ headerShown: false }} />
     </Stack>
+    </AccountEpochContext.Provider>
   );
 }
 
@@ -68,12 +79,11 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''} proxyUrl={process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined} tokenCache={tokenCache}>
-    <ClerkLoaded>
     <LocaleProvider>
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
+          <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <RootLayoutNav />
             </KeyboardProvider>
@@ -82,7 +92,6 @@ export default function RootLayout() {
       </ErrorBoundary>
     </SafeAreaProvider>
     </LocaleProvider>
-    </ClerkLoaded>
     </ClerkProvider>
   );
 }

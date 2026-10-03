@@ -1,68 +1,62 @@
-# PhotoMatrix — Admin Guide: Bulk-Editing Photos
+# PhotoMatrix — Web Admin Guide: Bulk Photo Management
 
-Admins can edit the title, theme, and club of multiple photos at once directly from a **photographer's portfolio page** or a **club's photo list**. This is faster than opening each photo individually and is the recommended way to correct metadata after an import.
+PhotoMatrix's bulk photo tools are selection-based modes on **Manage > Photos** (`/manage`). They are not a per-photo detail-page editor: they do not provide bulk title or theme editing. The available bulk actions are assigning a club to selected photos and permanently deleting selected photos.
 
 ---
 
 ## Table of Contents
 
-1. [Opening the Bulk Editor](#1-opening-the-bulk-editor)
-2. [Editing Fields](#2-editing-fields)
-3. [Saving Changes](#3-saving-changes)
-4. [Tips](#4-tips)
+1. [Open a Bulk Mode](#1-open-a-bulk-mode)
+2. [Filter and Select Photos](#2-filter-and-select-photos)
+3. [Assign a Club](#3-assign-a-club)
+4. [Delete Selected Photos](#4-delete-selected-photos)
+5. [API Behavior](#5-api-behavior)
 
 ---
 
-## 1. Opening the Bulk Editor
+## 1. Open a Bulk Mode
 
-The **Edit photos** button appears next to the **Portfolio** or **Photos** heading whenever you are signed in as an admin and the photographer or club has at least one photo.
+1. Sign in as an administrator and open **Manage** (`/manage`).
+2. Choose **Photos**.
+3. Under **Bulk photo management**, choose one of the displayed modes:
+   - **Bulk Club Assignment**
+   - **Bulk Delete Photos**
 
-- **Photographer page** — navigate to a photographer's profile. The button sits beside the "Portfolio" heading.
-- **Club page** — navigate to a club's detail page. The button sits beside the "Photos" heading.
-
-Click **Edit photos** to enter bulk-edit mode. The photo grid is replaced by a scrollable list of rows, one per photo.
-
-> Theme filter chips (if active on the photographer page) are hidden while bulk-edit mode is open, but the **Edit photos** button remains visible while filtering — so you can filter to a theme, spot a mislabelled photo, and immediately open the editor.
-
----
-
-## 2. Editing Fields
-
-Each row in the bulk editor shows:
-
-| Element | Description |
-|---|---|
-| **Thumbnail** | A square preview of the photo — for quick identification. |
-| **Title** | Free-text field. A row with a blank title gets an amber highlight. |
-| **Theme** | Drop-down. Select a theme or leave as "No theme". |
-| **Club** | Drop-down. Select a club or leave as "No club". |
-
-Rows you have changed turn **blue** (primary colour highlight) so you can see at a glance what is pending. Unchanged rows have no highlight.
+The mode opens a filterable list of photos. Use **Change** to return to the mode picker.
 
 ---
 
-## 3. Saving Changes
+## 2. Filter and Select Photos
 
-The bottom bar shows two buttons:
+In either mode, narrow the list with the club filter (**All clubs**, **No club**, or a specific club) and the photographer filter (**All photographers** or a specific photographer). Changing either filter clears the current selection.
 
-- **Cancel** — discards all unsaved changes and returns to the normal photo view.
-- **Save *N* changes** — sends a PATCH request for each modified photo and refreshes the list. The button is labelled **No changes** and disabled when nothing has been edited.
+- Select individual photos with their checkboxes.
+- **Select All** selects every photo currently shown by the filters.
+- **Clear Selection** removes the current selection.
+- The count beside the controls shows how many photos are selected.
 
-A spinner replaces the button label while saving. After a successful save, a toast confirms how many photos were updated.
-
----
-
-## 4. Tips
-
-### Filtering first
-On the photographer page, apply a theme filter before clicking **Edit photos**. Only photos matching the filter will appear in the bulk editor — useful when you want to rename all photos in a specific theme.
-
-### Importing and then correcting
-After importing a batch of photos, check their themes on the photographer's page. If titles or themes were not set correctly during import, use the bulk editor to fix them without re-importing.
-
-### Partial saves are safe
-If you close the editor (Cancel) before saving, no changes are applied. Only the rows you explicitly save are touched.
+Rows display a thumbnail, title, club, and photographer when available. These are identification details, not editable fields.
 
 ---
 
-*Last updated: August 2026*
+## 3. Assign a Club
+
+Choose **Bulk Club Assignment**. After selecting one or more photos, choose a destination club and click **Assign Club (N)**. The action is disabled until there is a selection and a club has been chosen. The operation changes the selected photos' club assignment; it does not edit their titles, themes, or photographer.
+
+The UI reports the number of photos updated and clears the selection after success.
+
+---
+
+## 4. Delete Selected Photos
+
+Choose **Bulk Delete Photos**, select the photos, and click **Delete (N)**. Review the confirmation dialog, then choose **Delete photos** to confirm. This permanently removes the selected photo records; the action cannot be undone. On success, the UI reports the count and clears the selection.
+
+---
+
+## 5. API Behavior
+
+The web UI uses the admin-only `PATCH /api/photos/bulk-club` endpoint with selected `photoIds` and a destination `clubId`, and `DELETE /api/photos/bulk-delete` with selected `photoIds`. The API validates that the ID list is non-empty and contains positive integers. The club-assignment endpoint applies a single club to all submitted photo IDs; it does not expose title or theme editing.
+
+---
+
+*Last updated: September 2026*

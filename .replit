@@ -144,3 +144,6 @@ defaultBucketID = "replit-objstore-0a7fe58d-543c-4819-80df-52cb7b238c10"
 
 [userenv.shared]
 EMAIL_FROM = "PhotoMatrix <noreply@connectingthedots.fit>"
+
+[userenv.development]
+FEEDBACK_EMAIL = "dick.mandemaker@live.nl"

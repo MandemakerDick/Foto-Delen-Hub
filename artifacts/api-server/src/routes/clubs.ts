@@ -20,6 +20,7 @@ const router = Router();
  * Counts are aggregated via LEFT JOINs:
  *   - photoCount   — number of photos tagged to this club
  *   - memberCount  — number of distinct photographers who belong to this club
+ *   - memberPhotoCount — all photos by club members, regardless of photo club tag
  *
  * Both joins are LEFT so clubs with no photos / no members still appear.
  * memberCount uses COUNT(DISTINCT ...) because one photographer joining produces
@@ -36,6 +37,11 @@ const clubSelectFields = {
   createdAt: clubsTable.createdAt,
   photoCount: countDistinct(photosTable.id),
   memberCount: sql<number>`count(distinct ${photographerClubsTable.photographerId})`,
+  memberPhotoCount: sql<number>`(
+    select count(*)::integer from photo member_photo
+    join photographer_club membership on membership.photographer_id = member_photo.photographer_id
+    where membership.club_id = ${clubsTable.id}
+  )`,
 };
 
 /** Apply the standard LEFT JOINs needed to compute photo / member counts. */
@@ -79,7 +85,7 @@ router.post("/clubs", requireAdmin, async (req, res) => {
   const [club] = await withUploadAttachment(body.data.logoUrl ?? "", (tx) =>
     tx.insert(clubsTable).values(body.data).returning());
   // New club always starts with zero photos and members
-  res.status(201).json({ ...club, photoCount: 0, memberCount: 0, createdAt: club.createdAt.toISOString() });
+  res.status(201).json({ ...club, photoCount: 0, memberCount: 0, memberPhotoCount: 0, createdAt: club.createdAt.toISOString() });
 });
 
 // GET /api/clubs/:id — fetch a single club by id

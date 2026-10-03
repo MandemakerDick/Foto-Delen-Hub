@@ -1,0 +1,1 @@
+export { PhotoDetail as default } from '../../../photo/[id]';

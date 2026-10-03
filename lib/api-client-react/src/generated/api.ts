@@ -1534,6 +1534,7 @@ export const getUpdatePhotographerUrl = (id: number,) => {
 }
 
 /**
+ * The linked owner may edit profile details and club memberships; administrators may edit any profile and set historical membership years.
  * @summary Update a photographer profile
  */
 export const updatePhotographer = async (id: number,
@@ -1907,6 +1908,7 @@ export const getCreatePhotoUrl = () => {
 }
 
 /**
+ * A linked photographer may assign a new photo only to one of their clubs, or leave it without a club. Administrators may upload for a photographer with any existing club.
  * @summary Upload a new photo
  */
 export const createPhoto = async (photoInput: PhotoInput, options?: RequestInit): Promise<Photo> => {
@@ -2576,6 +2578,7 @@ export const getUpdatePhotoUrl = (id: number,) => {
 }
 
 /**
+ * Owners may assign their own photo to any existing club without joining it; other photographers' photos remain protected.
  * @summary Update a photo
  */
 export const updatePhoto = async (id: number,
@@ -2594,7 +2597,7 @@ export const updatePhoto = async (id: number,
 
 
 
-export const getUpdatePhotoMutationOptions = <TError = ErrorType<unknown>,
+export const getUpdatePhotoMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePhoto>>, TError,{id: number;data: BodyType<PhotoUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updatePhoto>>, TError,{id: number;data: BodyType<PhotoUpdate>}, TContext> => {
 
@@ -2623,12 +2626,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdatePhotoMutationResult = NonNullable<Awaited<ReturnType<typeof updatePhoto>>>
     export type UpdatePhotoMutationBody = BodyType<PhotoUpdate>
-    export type UpdatePhotoMutationError = ErrorType<unknown>
+    export type UpdatePhotoMutationError = ErrorType<void>
 
     /**
  * @summary Update a photo
  */
-export const useUpdatePhoto = <TError = ErrorType<unknown>,
+export const useUpdatePhoto = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePhoto>>, TError,{id: number;data: BodyType<PhotoUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updatePhoto>>,
@@ -6095,10 +6098,3 @@ export function useGetInviteSession<TData = Awaited<ReturnType<typeof getInviteS
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
-
-
-
-
-
-
-

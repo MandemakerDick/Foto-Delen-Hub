@@ -20,6 +20,7 @@ export interface Club {
   /** @nullable */
   yearEstablished?: number | null;
   photoCount?: number;
+  memberPhotoCount?: number;
   memberCount?: number;
   createdAt: string;
 }

@@ -1,2 +1,2 @@
-import Directory from './directory';
-export default function Clubs() { return <Directory kind="clubs" />; }
+import { Redirect } from 'expo-router';
+export default function Clubs() { return <Redirect href="/gallery/clubs" />; }

@@ -145,7 +145,7 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
     EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY || '',
     EXPO_PUBLIC_CLERK_PROXY_URL: process.env.CLERK_PROXY_URL
-      ? `${process.env.CLERK_PROXY_URL.replace(/\/+$/, '')}/${expoPublicDomain}`
+      ? `https://${expoPublicDomain}${process.env.CLERK_PROXY_URL}`
       : '',
   };
 

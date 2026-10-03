@@ -4,12 +4,13 @@ import type { Server } from "node:http";
 import { once } from "node:events";
 
 type Row = Record<string, any>;
-type TableName = "photographers" | "admins" | "invites" | "clubs" | "clubRecords" | "themes" | "uploadReservations";
+type TableName = "photographers" | "photos" | "admins" | "invites" | "clubs" | "clubRecords" | "themes" | "uploadReservations";
 type Condition = (row: Row) => boolean;
 
 const fixture = vi.hoisted(() => {
   const state = {
     photographers: [] as Row[],
+    photos: [] as Row[],
     admins: [] as Row[],
     invites: [] as Row[],
     clubs: [] as Row[],
@@ -30,9 +31,9 @@ const table = (name: TableName, fields: string[]) =>
   Object.fromEntries(fields.map((field) => [field, column(name, field)]));
 const tables = {
   photographersTable: table("photographers", ["id", "name", "bio", "email", "avatarUrl", "clerkUserId", "createdAt"]),
-  photosTable: table("photographers", ["id", "photographerId"]),
+  photosTable: table("photos", ["id", "title", "description", "imageUrl", "photographerId", "clubId", "themeId", "likeCount", "createdAt"]),
   themesTable: table("themes", ["id", "name"]),
-  photographerClubsTable: table("clubs", ["photographerId", "clubId", "memberSince"]),
+  photographerClubsTable: table("clubs", ["photographerId", "clubId", "memberSince", "joinedAt"]),
   photographerThemesTable: table("themes", ["photographerId", "themeId"]),
   photographerFollowsTable: table("photographers", ["photographerId", "clerkUserId"]),
   adminsTable: table("admins", ["id", "clerkUserId", "email"]),
@@ -70,10 +71,11 @@ vi.mock("drizzle-orm", () => ({
 
 function nameOf(tableRef: Row): TableName {
   if (tableRef === tables.photographersTable) return "photographers";
+  if (tableRef === tables.photosTable) return "photos";
   if (tableRef === tables.adminsTable) return "admins";
   if (tableRef === tables.inviteTokensTable) return "invites";
-  if (tableRef === tables.clubsTable) return "clubRecords";
   if (tableRef === tables.photographerClubsTable) return "clubs";
+  if (tableRef === tables.clubsTable) return "clubRecords";
   if (tableRef === tables.photographerThemesTable) return "themes";
   if (tableRef === tables.uploadReservationsTable) return "uploadReservations";
   throw new Error("Unexpected table in authorization fixture");
@@ -86,7 +88,10 @@ function database() {
     const result = () => fixture[name].filter(predicate).map((row) => {
       if (!selection) return { ...row };
       return Object.fromEntries(Object.entries(selection).map(([key, value]) => {
-        if (key === "clubs" || key === "themes") return [key, []];
+        if (key === "clubs") return [key, fixture.clubs.filter(c => c.photographerId === row.id).map(c => ({
+          id: c.clubId, name: fixture.clubRecords.find(club => club.id === c.clubId)?.name, memberSince: c.memberSince,
+        }))];
+        if (key === "themes") return [key, []];
         if (key === "claimed") return [key, row.clerkUserId != null];
         if (key === "photoCount" || key === "memberCount" || value === "countDistinct") return [key, 0];
         return [key, typeof value === "string" && value.includes(".") ? field(row, value) : value];
@@ -153,10 +158,14 @@ function database() {
   });
   return {
     select, update, insert, delete: remove,
+    // Raw ordering SQL is exercised against real isolated PostgreSQL in
+    // image-lifecycle.test.ts; this fixture tests authorization over HTTP.
+    execute: async () => ({ rows: [] }),
     transaction: async <T>(callback: (tx: ReturnType<typeof database>) => Promise<T>) => {
       const snapshot = structuredClone({
         photographers: fixture.photographers, admins: fixture.admins, invites: fixture.invites,
         clubs: fixture.clubs, clubRecords: fixture.clubRecords, themes: fixture.themes,
+        photos: fixture.photos,
         uploadReservations: fixture.uploadReservations,
       });
       try { return await callback(database()); }
@@ -211,6 +220,7 @@ export function resetFixture() {
     id: 1, name: "Public club", description: null, location: null, websiteUrl: null,
     logoUrl: null, yearEstablished: null, createdAt,
   }];
+  fixture.photos = [];
   fixture.themes = [];
   fixture.uploadReservations = [];
   fixture.userId = null;
@@ -220,9 +230,9 @@ export function resetFixture() {
 }
 
 export async function startFixture() {
-  const [{ default: photographers }, { default: storage }, { default: invites }, { default: clubs }] = await Promise.all([
+  const [{ default: photographers }, { default: storage }, { default: invites }, { default: photos }, { default: clubs }] = await Promise.all([
     import("../routes/photographers"), import("../routes/storage"), import("../routes/invites"),
-    import("../routes/clubs"),
+    import("../routes/photos"), import("../routes/clubs"),
   ]);
   const app = express();
   app.use(express.json());
@@ -231,7 +241,7 @@ export async function startFixture() {
     (req as any).log = { warn() {}, error() {} };
     next();
   });
-  app.use("/api", photographers, storage, invites, clubs);
+  app.use("/api", photographers, storage, invites, photos, clubs);
   const server: Server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();

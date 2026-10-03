@@ -33,6 +33,7 @@ export const ListClubsResponseItem = zod.object({
   "logoUrl": zod.string().nullish(),
   "yearEstablished": zod.number().nullish(),
   "photoCount": zod.number().optional(),
+  "memberPhotoCount": zod.number().optional(),
   "memberCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -71,6 +72,7 @@ export const GetClubResponse = zod.object({
   "logoUrl": zod.string().nullish(),
   "yearEstablished": zod.number().nullish(),
   "photoCount": zod.number().optional(),
+  "memberPhotoCount": zod.number().optional(),
   "memberCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -104,6 +106,7 @@ export const UpdateClubResponse = zod.object({
   "logoUrl": zod.string().nullish(),
   "yearEstablished": zod.number().nullish(),
   "photoCount": zod.number().optional(),
+  "memberPhotoCount": zod.number().optional(),
   "memberCount": zod.number().optional(),
   "createdAt": zod.string()
 })
@@ -145,6 +148,7 @@ export const ListThemesResponseItem = zod.object({
   "name": zod.string(),
   "description": zod.string().nullish(),
   "photoCount": zod.number().optional(),
+  "photographerCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 export const ListThemesResponse = zod.array(ListThemesResponseItem)
@@ -174,6 +178,7 @@ export const GetThemeResponse = zod.object({
   "name": zod.string(),
   "description": zod.string().nullish(),
   "photoCount": zod.number().optional(),
+  "photographerCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 
@@ -198,6 +203,7 @@ export const UpdateThemeResponse = zod.object({
   "name": zod.string(),
   "description": zod.string().nullish(),
   "photoCount": zod.number().optional(),
+  "photographerCount": zod.number().optional(),
   "createdAt": zod.string()
 })
 
@@ -328,6 +334,7 @@ export const GetPhotographerResponse = zod.object({
 
 
 /**
+ * The linked owner may edit profile details and club memberships; administrators may edit any profile and set historical membership years.
  * @summary Update a photographer profile
  */
 export const UpdatePhotographerParams = zod.object({
@@ -442,6 +449,7 @@ export const ListPhotosResponse = zod.array(ListPhotosResponseItem)
 
 
 /**
+ * A linked photographer may assign a new photo only to one of their clubs, or leave it without a club. Administrators may upload for a photographer with any existing club.
  * @summary Upload a new photo
  */
 
@@ -673,6 +681,7 @@ export const GetPhotoResponse = zod.object({
 
 
 /**
+ * Owners may assign their own photo to any existing club without joining it; other photographers' photos remain protected.
  * @summary Update a photo
  */
 export const UpdatePhotoParams = zod.object({
@@ -1578,5 +1587,3 @@ export const GetInviteSessionResponse = zod.object({
   "hasAccess": zod.boolean(),
   "photographerId": zod.number().nullish().describe('Pre-linked photographer profile to auto-link on sign-in')
 })
-
-

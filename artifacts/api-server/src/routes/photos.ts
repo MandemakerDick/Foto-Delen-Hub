@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-zod";
 import { getPhotographerIdForClerkUser } from "../lib/db-helpers";
 import { sendPhotoUploadConfirmation } from "../lib/notifications";
-import { withPhotographerUploadAttachment, deletePhotosWithReclamation, ImageLifecycleError } from "../lib/image-lifecycle";
+import { withPhotographerUploadAttachment, deletePhotosWithReclamation, ImageLifecycleError, reorderPhotographerPhotos } from "../lib/image-lifecycle";
 import { requireAdmin } from "./admins";
 import {
   enqueuePhotoAiAnalysis,
@@ -388,27 +388,28 @@ router.post("/photos", async (req: any, res) => {
     return;
   }
 
-  // Clerk photographers (non-admins) may only upload to clubs they belong to.
-  if (userId && !sessionAdminId && body.data.clubId) {
-    const membership = await db
-      .select({ one: sql<number>`1` })
-      .from(photographerClubsTable)
-      .where(
-        and(
+  if (body.data.clubId != null) {
+    const [club] = await db.select({ id: clubsTable.id })
+      .from(clubsTable).where(eq(clubsTable.id, body.data.clubId)).limit(1);
+    if (!club) { res.status(400).json({ error: "Club not found" }); return; }
+    if (userId) {
+      const [membership] = await db.select({ clubId: photographerClubsTable.clubId })
+        .from(photographerClubsTable)
+        .where(and(
           eq(photographerClubsTable.photographerId, photographerId!),
           eq(photographerClubsTable.clubId, body.data.clubId),
-        ),
-      );
-    if (!membership.length) {
-      res.status(403).json({ error: "You can only upload photos to clubs you are a member of" });
-      return;
+        )).limit(1);
+      if (!membership) {
+        res.status(403).json({ error: "Join this club before assigning it to a new photo" });
+        return;
+      }
     }
   }
 
   let photo: typeof photosTable.$inferSelect;
   try {
     [photo] = await withPhotographerUploadAttachment(photographerId!, body.data.imageUrl,
-      (tx) => tx.insert(photosTable).values(body.data).returning());
+      (tx) => tx.insert(photosTable).values({ ...body.data, sortOrder: 0 }).returning());
   } catch (error) {
     if (error instanceof ImageLifecycleError) {
       res.status(error.status).json({ error: error.message });
@@ -688,22 +689,12 @@ router.patch("/photos/:id", async (req, res) => {
       res.status(403).json({ error: "You can only edit your own photos" });
       return;
     }
-    // If the update changes the club, verify the photographer is a member of the new club.
-    if (body.data.clubId != null) {
-      const membership = await db
-        .select({ one: sql<number>`1` })
-        .from(photographerClubsTable)
-        .where(
-          and(
-            eq(photographerClubsTable.photographerId, photographerId!),
-            eq(photographerClubsTable.clubId, body.data.clubId),
-          ),
-        );
-      if (!membership.length) {
-        res.status(403).json({ error: "You can only assign photos to clubs you are a member of" });
-        return;
-      }
-    }
+  }
+
+  if (body.data.clubId != null) {
+    const [club] = await db.select({ id: clubsTable.id })
+      .from(clubsTable).where(eq(clubsTable.id, body.data.clubId)).limit(1);
+    if (!club) { res.status(400).json({ error: "Club not found" }); return; }
   }
 
   await db.update(photosTable).set(body.data).where(eq(photosTable.id, params.data.id));
@@ -758,18 +749,15 @@ router.patch("/me/photos/order", async (req, res) => {
   const photographerId = await getPhotographerIdForClerkUser(userId);
   if (!photographerId) { res.status(404).json({ error: "Photographer profile not found" }); return; }
 
-  // Verify all supplied IDs belong to this photographer, then bulk-update in parallel.
-  const owned = await db
-    .select({ id: photosTable.id })
-    .from(photosTable)
-    .where(and(eq(photosTable.photographerId, photographerId)));
-  const ownedIds = new Set(owned.map((r) => r.id));
-
-  const updates = body.data.photoIds
-    .filter((id) => ownedIds.has(id))
-    .map((id, idx) => db.update(photosTable).set({ sortOrder: idx }).where(eq(photosTable.id, id)));
-
-  await Promise.all(updates);
+  try {
+    await reorderPhotographerPhotos(photographerId, body.data.photoIds);
+  } catch (error) {
+    if (error instanceof ImageLifecycleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
   res.status(204).send();
 });
 

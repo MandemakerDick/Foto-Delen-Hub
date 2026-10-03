@@ -1,0 +1,1 @@
+export { DirectoryDetail as default } from '../../../../directory/[kind]/[id]';

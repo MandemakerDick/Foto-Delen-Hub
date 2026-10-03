@@ -413,6 +413,7 @@ paths:
       operationId: updatePhotographer
       tags: [photographers]
       summary: Update a photographer profile
+      description: The linked owner may edit profile details and club memberships; administrators may edit any profile and set historical membership years.
       parameters:
         - name: id
           in: path
@@ -434,6 +435,10 @@ paths:
                 $ref: "#/components/schemas/Photographer"
         "404":
           description: Not found
+        "400":
+          description: Invalid photographer update
+        "403":
+          description: The signed-in account cannot edit this photographer
         "409":
           description: The supplied avatar upload expired; upload the image again
     delete:
@@ -526,6 +531,7 @@ paths:
       operationId: createPhoto
       tags: [photos]
       summary: Upload a new photo
+      description: A linked photographer may assign a new photo only to one of their clubs, or leave it without a club. Administrators may upload for a photographer with any existing club.
       requestBody:
         required: true
         content:
@@ -539,6 +545,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Photo"
+        "400":
+          description: Invalid photo data or club does not exist
         "409":
           description: The supplied upload expired; upload the image again
 
@@ -781,6 +789,7 @@ paths:
       operationId: updatePhoto
       tags: [photos]
       summary: Update a photo
+      description: Owners may assign their own photo to any existing club without joining it; other photographers' photos remain protected.
       parameters:
         - name: id
           in: path
@@ -800,6 +809,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Photo"
+        "400":
+          description: Invalid photo data or club does not exist
     delete:
       operationId: deletePhoto
       tags: [photos]
@@ -1879,6 +1890,8 @@ components:
           type: ["integer", "null"]
         photoCount:
           type: integer
+        memberPhotoCount:
+          type: integer
         memberCount:
           type: integer
         createdAt:
@@ -1914,6 +1927,8 @@ components:
         description:
           type: ["string", "null"]
         photoCount:
+          type: integer
+        photographerCount:
           type: integer
         createdAt:
           type: string

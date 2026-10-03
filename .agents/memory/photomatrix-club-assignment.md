@@ -1,0 +1,10 @@
+---
+name: PhotoMatrix club policy
+description: User-chosen distinction between new photo uploads, existing photo edits, self-service memberships, and club proposals
+---
+
+A linked photographer may assign a club to a **new upload** only if they are a member; No club is always allowed, even if they have memberships. Administrators can still upload with any existing club. The owner-only editor for **existing photos** still allows any existing club unless the user changes that policy separately. Assigning a photo does not enroll its photographer or grant permission to edit the club. Linked photographers may select multiple existing clubs as their own memberships without an administrator. A missing club may be proposed for review; a proposal does not create a public club automatically.
+
+**Why:** The user originally chose "Let me assign any available club" after the membership-only photo picker appeared empty during Android release checks. After self-service membership and proposals were added, the user explicitly changed the **new-upload** rule to membership-only during Android QA, then clarified that No club remains a valid option throughout the app regardless of memberships. The existing-photo editor was not part of that request. A photo's club assignment, a photographer's memberships, and the public club directory serve different purposes. Public club counts must distinguish photos linked to a club from photos taken by its members; the tester later said the directory labels and counts appeared sound in both English and Dutch, and reported that self-service membership changes and counts worked on their development phone.
+
+**How to apply:** Filter the new-upload picker to the linked photographer's clubs and enforce membership in the create-photo API, while allowing no club. Preserve the existing-photo edit policy unless explicitly changed. Keep ownership authorization for photo uploads, edits, and membership changes. Check membership selections against existing clubs and preserve historical join years for retained memberships. Route proposed new clubs for review; do not auto-publish them or grant membership until the club exists.

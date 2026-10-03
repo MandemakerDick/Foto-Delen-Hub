@@ -11,7 +11,11 @@ export function clearPrivateAccountCaches(queryClient: QueryClient) {
         key.startsWith('/api/me/') ||
         key === 'my-photos' ||
         key === 'photo-like' ||
-        /^\/api\/photos\/[^/]+\/like(?:\/|$)/.test(key)
+        key === '/api/photos/liked' ||
+        key === '/api/photographers/following' ||
+        /^\/api\/photos\/[^/]+\/like(?:\/|$)/.test(key) ||
+        /^\/api\/photographers\/[^/]+\/follow(?:\/|$)/.test(key) ||
+        /^\/api\/clubs\/[^/]+\/membership(?:\/|$)/.test(key)
       );
     },
   });

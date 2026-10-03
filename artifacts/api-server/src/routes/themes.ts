@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, themesTable, photosTable, themeProposalsTable, photographersTable } from "@workspace/db";
-import { eq, ilike, count } from "drizzle-orm";
+import { eq, ilike, count, sql } from "drizzle-orm";
 import {
   ListThemesQueryParams,
   CreateThemeBody,
@@ -53,6 +53,10 @@ const themeSelectFields = {
   description: themesTable.description,
   createdAt: themesTable.createdAt,
   photoCount: count(photosTable.id),
+  photographerCount: sql<number>`(
+    select count(*)::integer from photographer_theme preference
+    where preference.theme_id = ${themesTable.id}
+  )`,
 };
 
 /** Apply the LEFT JOIN on photos and GROUP BY required to compute photoCount. */
@@ -206,7 +210,7 @@ router.post("/themes/proposals/:id/approve", requireAdmin, async (req, res) => {
     sendProposalStatusEmail(photographer?.clerkUserId, proposal.name, "approved");
   }
 
-  res.status(201).json({ ...theme, photoCount: 0, createdAt: theme.createdAt.toISOString() });
+  res.status(201).json({ ...theme, photoCount: 0, photographerCount: 0, createdAt: theme.createdAt.toISOString() });
 });
 
 // DELETE /api/themes/proposals/:id — admin rejects a proposal (marks as rejected, keeps the row)
@@ -288,7 +292,7 @@ router.post("/themes", async (req, res) => {
     return;
   }
   const [theme] = await db.insert(themesTable).values(body.data).returning();
-  res.status(201).json({ ...theme, photoCount: 0, createdAt: theme.createdAt.toISOString() });
+  res.status(201).json({ ...theme, photoCount: 0, photographerCount: 0, createdAt: theme.createdAt.toISOString() });
 });
 
 // PUT /api/themes/:id — update a theme's name / description

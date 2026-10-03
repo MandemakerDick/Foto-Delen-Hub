@@ -12,5 +12,6 @@ export interface Theme {
   /** @nullable */
   description?: string | null;
   photoCount?: number;
+  photographerCount?: number;
   createdAt: string;
 }

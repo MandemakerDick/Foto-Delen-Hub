@@ -49,6 +49,47 @@ describe("authenticated authorization over HTTP", () => {
     expect(fixture.photographers[0]).toMatchObject({ clerkUserId: "owner", bio: "Safe" });
   });
 
+  it("lets a linked owner select multiple existing clubs and remove one without changing its recorded join year", async () => {
+    fixture.clubRecords = [{ id: 1, name: "One" }, { id: 2, name: "Two" }];
+    fixture.userId = "owner";
+    fixture.clubs = [{ photographerId: 1, clubId: 1, memberSince: 2019, joinedAt: new Date("2020-01-01") }];
+    const changed = await http.request("PATCH", "/photographers/1", {
+      clubs: [{ id: 1, memberSince: 2000 }, { id: 2, memberSince: 2001 }],
+    });
+    expect(changed.status).toBe(200);
+    expect(changed.body.clubs).toEqual([
+      { id: 1, name: "One", memberSince: 2019 },
+      { id: 2, name: "Two", memberSince: null },
+    ]);
+    expect(fixture.clubs[0]).toMatchObject({ memberSince: 2019, joinedAt: new Date("2020-01-01") });
+    const removed = await http.request("PATCH", "/photographers/1", { clubs: [{ id: 2 }] });
+    expect(removed.status).toBe(200);
+    expect(fixture.clubs.map(row => row.clubId)).toEqual([2]);
+  });
+
+  it("rejects missing or duplicate clubs without changing the owner's memberships", async () => {
+    fixture.userId = "owner";
+    fixture.clubs = [{ photographerId: 1, clubId: 1, memberSince: null }];
+    expect((await http.request("PATCH", "/photographers/1", { clubs: [{ id: 99 }], name: "Changed" })).status).toBe(400);
+    expect((await http.request("PATCH", "/photographers/1", { clubs: [{ id: 1 }, { id: 1 }] })).status).toBe(400);
+    expect(fixture.clubs.map(row => row.clubId)).toEqual([1]);
+    expect(fixture.photographers[0].name).toBe("Owner");
+    fixture.userId = "stranger";
+    expect((await http.request("PATCH", "/photographers/1", { clubs: [] })).status).toBe(401);
+    expect(fixture.clubs.map(row => row.clubId)).toEqual([1]);
+  });
+
+  it("rejects new photos assigned to a club outside the linked photographer's memberships", async () => {
+    fixture.userId = "owner";
+    fixture.clubs = [{ photographerId: 2, clubId: 1, memberSince: null }];
+    const response = await http.request("POST", "/photos", {
+      title: "Test photo", imageUrl: "/objects/test-photo", photographerId: 2, clubId: 1,
+    });
+    expect(response.status).toBe(403);
+    expect(response.body.error).toMatch(/join this club/i);
+    expect(fixture.photographers).toHaveLength(2);
+  });
+
   it("lets a verified admin create and edit profiles and issue upload URLs and invites", async () => {
     fixture.userId = "admin";
     const created = await http.request("POST", "/photographers", { name: "New photographer" });
@@ -56,6 +97,9 @@ describe("authenticated authorization over HTTP", () => {
     expect(fixture.photographers[2].name).toBe("New photographer");
     expect((await http.request("PATCH", "/photographers/1", { name: "Admin edit" })).status).toBe(200);
     expect(fixture.photographers[0].name).toBe("Admin edit");
+    const memberships = await http.request("PATCH", "/photographers/1", { clubs: [{ id: 1, memberSince: 2017 }] });
+    expect(memberships.status).toBe(200);
+    expect(fixture.clubs[0]).toMatchObject({ clubId: 1, memberSince: 2017 });
     expect((await http.request("POST", "/storage/uploads/request-url", upload)).status).toBe(200);
     expect((await http.request("POST", "/invites", { label: "Welcome", photographerId: 2, maxUses: 1 })).status).toBe(201);
     expect(fixture.invites[1]).toMatchObject({ photographerId: 2, maxUses: 1, useCount: 0 });

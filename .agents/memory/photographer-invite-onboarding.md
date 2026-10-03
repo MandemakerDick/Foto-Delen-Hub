@@ -25,3 +25,11 @@ description: End-to-end architecture for admin-driven photographer onboarding vi
 **Why:** The old flow had no connection between profile creation and invite delivery. Admins had to create a profile in one tab, then generate a generic invite link in the Admins tab, then manually send it. Option B closes all three steps into one action.
 
 **How to apply:** When adding invite-related features, always check `invite_token.photographer_id` — a token may or may not have a pre-linked profile. The `claimed` flag on the photographer list is the source of truth for whether a photographer has a Clerk account.
+
+## Native development QA
+
+A tester confirmed on a physical Android phone that an invitation sent from the development web preview can be redeemed in the development native app by pasting the token into an unlinked, signed-in development account. The linked profile appeared, and a subsequent photo upload and edit from the full-size photo screen worked.
+
+**Why:** Development and production use separate Clerk user stores and databases; a production-web invitation cannot be redeemed in the development native preview. The email's web join link can consume a single-use token before the native app gets it.
+
+**How to apply:** For native development invite tests, use an invitation and an unlinked account from the same development environment. Copy the token from the email's URL without opening the web join page. Do not advise deleting an existing linked account just to test a new invitation.

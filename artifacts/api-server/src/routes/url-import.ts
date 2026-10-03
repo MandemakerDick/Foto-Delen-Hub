@@ -387,17 +387,16 @@ router.post("/admins/import-from-url/import", requireAdmin, async (req: any, res
 
       // 4. Create photo record
       const title = img.title?.trim() || titleFromSrc(img.src);
-      const [photo] = await withPhotographerUploadAttachment(photographerId ?? null, imageUrl, (tx) => tx
-        .insert(photosTable)
-        .values({
+      const [photo] = await withPhotographerUploadAttachment(photographerId ?? null, imageUrl, (tx) =>
+        tx.insert(photosTable).values({
           title,
           description: img.description?.trim() || null,
           imageUrl,
           photographerId: photographerId ?? null,
           clubId: clubId ?? null,
           themeId: img.themeId ?? themeId ?? null,
-        })
-        .returning());
+          sortOrder: photographerId != null ? 0 : null,
+        }).returning());
 
       // Re-fetch with full joins
       const rows = await buildPhotoSelect().where(eq(photosTable.id, photo.id));

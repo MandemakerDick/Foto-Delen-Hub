@@ -1,2 +1,2 @@
-import Directory from './directory';
-export default function Themes() { return <Directory kind="themes" />; }
+import { Redirect } from 'expo-router';
+export default function Themes() { return <Redirect href="/gallery/themes" />; }

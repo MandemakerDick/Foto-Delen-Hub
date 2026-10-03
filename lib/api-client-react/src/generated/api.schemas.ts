@@ -54,6 +54,7 @@ export interface Club {
   /** @nullable */
   yearEstablished?: number | null;
   photoCount?: number;
+  memberPhotoCount?: number;
   memberCount?: number;
   createdAt: string;
 }
@@ -75,6 +76,7 @@ export interface Theme {
   /** @nullable */
   description?: string | null;
   photoCount?: number;
+  photographerCount?: number;
   createdAt: string;
 }
 
@@ -773,4 +775,3 @@ export type ListReviewSessionsParams = {
 clubId?: number;
 status?: string;
 };
-

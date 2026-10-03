@@ -374,9 +374,8 @@ router.post("/review-sessions/:id/photos", requireAuth, async (req: any, res): P
     if (isDirectUpload) {
       const { title, imageUrl } = parsed.data as unknown as { title: string; imageUrl: string };
       sp = await withReviewSessionUploadAttachment(params.data.id, photographerId, imageUrl, async (tx) => {
-        const [newPhoto] = await tx
-          .insert(photosTable)
-          .values({ title, imageUrl, photographerId })
+        const [newPhoto] = await tx.insert(photosTable)
+          .values({ title, imageUrl, photographerId, sortOrder: 0 })
           .returning({ id: photosTable.id });
         const [reference] = await tx
           .insert(sessionPhotosTable)

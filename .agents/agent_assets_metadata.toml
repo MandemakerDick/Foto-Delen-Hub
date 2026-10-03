@@ -12,12 +12,54 @@ logical_id = "7fdd0cde-271d-4c38-ab25-72984f949ec5"
 id = "-8mEKsnG-B5Jgs0GHH8jq"
 uri = "file://docs/user-guide.pdf"
 type = "pdf"
-title = "User Guide"
+title = "PhotoMatrix Web Guide"
+description = "Updated member guide for the website, September 2026."
 logical_id = "a1de5de2-d20c-4da3-8ad4-d703f62b48b9"
+content_hash = "sha256:ba94ab99b35f3b8baac2958c72a97b869e171ea46abd7684aff8335658ad3b88"
+size = 5934
+mtime_ms = 1790433974289
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:a7ee72db-470a-46a8-b82c-360e0ac7ae49/a1de5de2-d20c-4da3-8ad4-d703f62b48b9/3d86c855-adfb-449b-856a-84966d53d12e"
+storage_version_token = "1790433989592653"
+content_type = "application/pdf"
 
 [[outputs]]
 id = "NM2M5YMCQLCW1RWVYdvV7"
 uri = "file://docs/admin-guide-import.pdf"
 type = "pdf"
-title = "Admin Guide — Import"
+title = "Photo Import Admin Guide"
+description = "Web admin instructions for importing photos from a URL."
 logical_id = "c2fbf27b-8aad-4246-bfc1-e3be15711594"
+content_hash = "sha256:e2b341b9a73cb2d3216b00b363e9347a670a599e6f165dace0c376f2b055f878"
+size = 6603
+mtime_ms = 1790433974465
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:a7ee72db-470a-46a8-b82c-360e0ac7ae49/c2fbf27b-8aad-4246-bfc1-e3be15711594/d1de73a0-7a60-4ed0-bc96-b0d71dbb11e5"
+storage_version_token = "1790433990935996"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "n23KApTrwSrzEwbgtZhG5"
+uri = "file://docs/admin-guide-photographers.pdf"
+type = "pdf"
+title = "Photographer Admin Guide"
+description = "Web admin instructions for profiles and invitations."
+logical_id = "8799f6e1-d761-476a-84bb-c7d84a72734a"
+content_hash = "sha256:064fc998167579c2b3ce69acaff9563f6eebe132049b8fa50c82f12147a0e30c"
+size = 6730
+mtime_ms = 1790433974465
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:a7ee72db-470a-46a8-b82c-360e0ac7ae49/8799f6e1-d761-476a-84bb-c7d84a72734a/35062cab-af62-475e-b956-5187690d78bd"
+storage_version_token = "1790433990248966"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "7co_0UVtlZlmdFQ9o6e_k"
+uri = "file://docs/admin-guide-bulk-edit.pdf"
+type = "pdf"
+title = "Bulk Photo Management Guide"
+description = "Web admin instructions for club assignment and deletion."
+logical_id = "52baf71d-0b4f-47d2-8f33-03c25a64425f"
+content_hash = "sha256:f3581b046d8ef8af8a817f9f6e453dda74092a7ffc392ae3e24c173ed8880b72"
+size = 3916
+mtime_ms = 1790433974465
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:a7ee72db-470a-46a8-b82c-360e0ac7ae49/52baf71d-0b4f-47d2-8f33-03c25a64425f/ec223528-5b73-436e-9ac8-2e66325f770b"
+storage_version_token = "1790433991553358"
+content_type = "application/pdf"

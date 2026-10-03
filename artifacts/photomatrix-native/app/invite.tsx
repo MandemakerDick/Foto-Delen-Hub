@@ -6,11 +6,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRedeemInvite } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useLocale } from '@/context/locale';
+import { useAccountGuard } from '@/context/account-epoch';
 
 export default function Invite() {
   const c = useColors(); const { t } = useLocale(); const router = useRouter(); const { isSignedIn } = useAuth(); const qc = useQueryClient();
+  const isCurrentAccount = useAccountGuard();
   const params = useLocalSearchParams<{ token?: string }>(); const [token, setToken] = useState(params.token ?? '');
-  const redeem = useRedeemInvite({ mutation: { onSuccess: result => { qc.invalidateQueries({ queryKey: ['/api/me'] }); if (result.photographerId) router.replace('/profile'); else router.replace('/profile'); }, onError: (e: any) => Alert.alert(t('inviteUnavailable'), e?.message ?? t('tryAgain')) } });
+  const redeem = useRedeemInvite({ mutation: { onSuccess: () => { if (!isCurrentAccount()) return; qc.invalidateQueries({ queryKey: ['/api/me'] }); router.replace('/profile'); }, onError: (e: any) => { if (isCurrentAccount()) Alert.alert(t('inviteUnavailable'), e?.message ?? t('tryAgain')); } } });
   const submit = () => { if (!isSignedIn) { router.push({ pathname: '/sign-in', params: { returnTo: `/invite?token=${encodeURIComponent(token.trim())}` } }); return; } if (token.trim()) redeem.mutate({ data: { token: token.trim() } }); };
   return <View style={[styles.root, { backgroundColor: c.background }]}><Stack.Screen options={{ title: t('invite') }}/><Text style={[styles.title, { color: c.foreground }]}>{t('inviteTitle')}</Text><Text style={{ color: c.mutedForeground, marginTop: 8 }}>{t('inviteIntro')}</Text><TextInput autoCapitalize="none" value={token} onChangeText={setToken} placeholder={t('inviteToken')} placeholderTextColor={c.mutedForeground} style={[styles.input, { color: c.foreground, borderColor: c.border }]} /><Pressable disabled={!token.trim() || redeem.isPending} onPress={submit} style={[styles.button, { backgroundColor: c.primary }]}><Text style={{ color: c.primaryForeground, fontWeight: '700' }}>{!isSignedIn ? t('signIn') : redeem.isPending ? t('sending') : t('redeem')}</Text></Pressable></View>;
 }
