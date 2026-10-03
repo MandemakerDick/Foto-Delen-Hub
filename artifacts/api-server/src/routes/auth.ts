@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { withUploadAttachment } from "../lib/upload-staging";
+import { withUploadLifecycle } from "../lib/upload-staging";
+import { isPhotographerOwnershipConflict, requireAvailablePhotographerOwner } from "../lib/photographer-ownership";
 import { getAuth } from "@clerk/express";
 import {
   db,
@@ -151,8 +152,8 @@ router.get("/me/following/photos", requireAuth, async (req: any, res) => {
 });
 
 // POST /api/me/link — link an existing photographer profile to the Clerk account.
-// Prevents double-claiming: if the profile is already linked to a *different*
-// Clerk user the request is rejected with 409.
+// One profile per account and one account per profile; same-profile retries
+// remain idempotent when backed by a matching invite grant.
 router.post("/me/link", requireAuth, async (req: any, res) => {
   const { photographerId } = req.body;
   if (!photographerId || typeof photographerId !== "number") {
@@ -186,14 +187,23 @@ router.post("/me/link", requireAuth, async (req: any, res) => {
 
   // The earlier read is only for a useful 404/409 response. The write itself
   // must recheck ownership: two valid browser grants can race after that read.
-  const claimed = await db
-    .update(photographersTable)
-    .set({ clerkUserId: req.clerkUserId })
-    .where(and(
-      eq(photographersTable.id, photographerId),
-      or(isNull(photographersTable.clerkUserId), eq(photographersTable.clerkUserId, req.clerkUserId)),
-    ))
-    .returning({ id: photographersTable.id });
+  let claimed;
+  try {
+    claimed = await db.transaction(async (tx) => {
+      await requireAvailablePhotographerOwner(tx, req.clerkUserId, photographerId);
+      return tx.update(photographersTable)
+        .set({ clerkUserId: req.clerkUserId })
+        .where(and(
+          eq(photographersTable.id, photographerId),
+          or(isNull(photographersTable.clerkUserId), eq(photographersTable.clerkUserId, req.clerkUserId)),
+        ))
+        .returning({ id: photographersTable.id });
+    });
+  } catch (error) {
+    if (!isPhotographerOwnershipConflict(error)) throw error;
+    res.status(409).json({ error: "Your account already has a different photographer profile" });
+    return;
+  }
   if (claimed.length === 0) {
     res.status(409).json({ error: "This profile is already claimed by another account" });
     return;
@@ -218,29 +228,31 @@ router.post("/me/profile", requireAuth, async (req: any, res) => {
     return;
   }
 
-  const existing = await getPhotographerByClerkId(req.clerkUserId);
-  if (existing) {
+  try {
+    await db.transaction(async (tx) => {
+      await requireAvailablePhotographerOwner(tx, req.clerkUserId);
+      const [newPhotographer] = await withUploadLifecycle(
+        { attach: [avatarUrl] },
+        (transaction) => transaction.insert(photographersTable)
+          .values({ name, bio, avatarUrl, clerkUserId: req.clerkUserId }).returning(),
+        { transaction: tx },
+      );
+
+      if (Array.isArray(clubIds) && clubIds.length > 0) {
+        await tx.insert(photographerClubsTable).values(
+          clubIds.map((clubId: number) => ({ photographerId: newPhotographer.id, clubId })),
+        );
+      }
+      if (Array.isArray(themeIds) && themeIds.length > 0) {
+        await tx.insert(photographerThemesTable).values(
+          themeIds.map((themeId: number) => ({ photographerId: newPhotographer.id, themeId })),
+        );
+      }
+    });
+  } catch (error) {
+    if (!isPhotographerOwnershipConflict(error)) throw error;
     res.status(409).json({ error: "You already have a profile linked" });
     return;
-  }
-
-  const [newPhotographer] = await withUploadAttachment(avatarUrl ?? "", (tx) => tx
-    .insert(photographersTable)
-    .values({ name, bio, avatarUrl, clerkUserId: req.clerkUserId })
-    .returning());
-
-  // Link club memberships via junction table
-  if (Array.isArray(clubIds) && clubIds.length > 0) {
-    await db.insert(photographerClubsTable).values(
-      clubIds.map((clubId: number) => ({ photographerId: newPhotographer.id, clubId })),
-    );
-  }
-
-  // Link theme preferences via junction table
-  if (Array.isArray(themeIds) && themeIds.length > 0) {
-    await db.insert(photographerThemesTable).values(
-      themeIds.map((themeId: number) => ({ photographerId: newPhotographer.id, themeId })),
-    );
   }
 
   const profile = await getPhotographerByClerkId(req.clerkUserId);

@@ -8,7 +8,8 @@ export const photographersTable = pgTable("photographer", {
   bio: text("bio"),
   email: text("email"),
   avatarUrl: text("avatar_url"),
-  clerkUserId: text("clerk_user_id"),
+  // NULL remains valid for unclaimed/admin-created profiles.
+  clerkUserId: text("clerk_user_id").unique("photographer_clerk_user_id_unique"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

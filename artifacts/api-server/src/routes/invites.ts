@@ -5,6 +5,7 @@ import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { requireAdmin } from "./admins";
 import { sendEmail } from "../lib/email";
 import { getAuth } from "@clerk/express";
+import { isPhotographerOwnershipConflict, requireAvailablePhotographerOwner } from "../lib/photographer-ownership";
 
 const router = Router();
 
@@ -200,6 +201,7 @@ router.post("/invites/redeem", async (req: any, res) => {
       // express-session cookie. When authenticated, link a pre-created profile
       // during redemption; the token itself is the authorization to claim it.
       if (userId && row.photographerId) {
+        await requireAvailablePhotographerOwner(tx, userId, row.photographerId);
         const [existing] = await tx
           .select({ id: photographersTable.id })
           .from(photographersTable)
@@ -242,6 +244,10 @@ router.post("/invites/redeem", async (req: any, res) => {
     if (result.photographerId) req.session.invitePhotographerId = result.photographerId;
     res.json({ ok: true, photographerId: result.photographerId, linked: result.linked });
   } catch (error) {
+    if (isPhotographerOwnershipConflict(error)) {
+      res.status(409).json({ error: "Your account already has a different photographer profile" });
+      return;
+    }
     if (error instanceof InviteRedeemError) {
       res.status(error.status).json({ error: error.message });
       return;

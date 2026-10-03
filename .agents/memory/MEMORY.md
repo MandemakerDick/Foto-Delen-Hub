@@ -48,3 +48,4 @@
 - [Long-running task sync](long-running-task-sync.md) — reconcile newer main changes safely; apply isolated task changes before republishing for production QA.
 - [Exact source recovery](source-recovery-io.md) — terminal transcripts can truncate or normalize file content; recover git objects through temporary files and filesystem reads.
 - [New photo placement](new-photo-order-policy.md) — new uploads go first; existing photographs shift down without losing their relative custom order.
+- [Photographer ownership rollout](photographer-ownership-rollout.md) — one account owns one profile; resolving existing duplicate owners requires explicit per-account approval.
