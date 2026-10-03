@@ -11,6 +11,13 @@ browser grant or incrementing authenticated invite usage.
 This change does **not** execute database DDL at startup or modify production
 records. Do not run a generic schema push/force-push to bypass this plan.
 
+Automatic workspace post-merge setup defers only the ownership constraint
+while the named ownership constraint is absent. It continues syncing other
+declared schema changes without approving or running this manual migration.
+Once the constraint is installed, the normal full schema snapshot is used.
+The deferred snapshot is confined to the schema-sync CLI process; runtime
+models still declare the intended ownership uniqueness.
+
 1. Deploy all updated ownership writers (browser link, self-service creation,
    authenticated invite redemption). Each takes the same transaction-scoped
    account lock before checking and writing. This protects new API writes even
