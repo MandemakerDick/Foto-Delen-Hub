@@ -1,3 +1,4 @@
+import { stagedObjectPathPattern } from "./staged-object-path";
 import { Storage, File } from "@google-cloud/storage";
 import { Readable } from "stream";
 import { randomUUID } from "crypto";
@@ -155,7 +156,7 @@ export class ObjectStorageService {
   }
 
   async deleteUploadObject(objectPath: string): Promise<void> {
-    if (!/^\/objects\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(objectPath)) {
+    if (!stagedObjectPathPattern.test(objectPath)) {
       throw new Error("Only staged upload objects can be deleted");
     }
     const entityId = objectPath.slice("/objects/".length);
@@ -214,8 +215,12 @@ export class ObjectStorageService {
     const { bucketName, objectName } = parseObjectPath(fullPath);
     const bucket = objectStorageClient.bucket(bucketName);
     const file = bucket.file(objectName);
-    await file.save(buffer, { contentType, resumable: false });
-    return `/objects/imports/${objectId}`;
+    const objectPath = `/objects/imports/${objectId}`;
+    // Lazy import avoids a module initialization cycle: staging uses this
+    // service for path normalization and expiry deletion.
+    const { stageImportObject } = await import("./upload-staging");
+    await stageImportObject(objectPath, () => file.save(buffer, { contentType, resumable: false }));
+    return objectPath;
   }
 
   async canAccessObjectEntity({

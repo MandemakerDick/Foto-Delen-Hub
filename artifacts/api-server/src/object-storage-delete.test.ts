@@ -25,18 +25,21 @@ beforeEach(() => {
 });
 
 describe("ObjectStorageService.deleteUploadObject", () => {
-  it("deletes only the canonical staged upload from its private bucket path", async () => {
+  it.each(["uploads", "imports"])("deletes a canonical staged %s object from its private bucket path", async (prefix) => {
     const id = "12345678-abcd-4abc-8abc-1234567890ab";
 
-    await service.deleteUploadObject(`/objects/uploads/${id}`);
+    await service.deleteUploadObject(`/objects/${prefix}/${id}`);
 
     expect(storageFixture.bucket).toHaveBeenCalledExactlyOnceWith("uploads-test-bucket");
-    expect(storageFixture.file).toHaveBeenCalledExactlyOnceWith(`private/uploads/${id}`);
+    expect(storageFixture.file).toHaveBeenCalledExactlyOnceWith(`private/${prefix}/${id}`);
     expect(storageFixture.delete).toHaveBeenCalledExactlyOnceWith({ ignoreNotFound: true });
   });
 
   it.each([
-    "/objects/imports/12345678-abcd-4abc-8abc-1234567890ab",
+    "/objects/legacy/12345678-abcd-4abc-8abc-1234567890ab",
+    "https://external.example.test/objects/imports/12345678-abcd-4abc-8abc-1234567890ab",
+    "/objects/imports/../../etc/passwd",
+    "/objects/imports/not-a-uuid",
     "/objects/uploads/../../etc/passwd",
     "/objects/uploads/not-a-uuid",
   ])("rejects unsafe or non-upload object paths: %s", async (path) => {

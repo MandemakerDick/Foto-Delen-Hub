@@ -30,6 +30,19 @@ Canonicalizing only new writes does not protect older noncanonical references.
 **How to apply:** Preserve conservative alias matching for existing references
 when changing path normalization or adding an image consumer.
 
+Server-side buffer imports must reserve durably before writing storage bytes,
+and exclude expiry cleanup for the duration of the write. A failed or ambiguous
+write must leave its reservation eligible for later cleanup, not delete eagerly.
+
+**Why:** Reserving after upload leaves an orphan on a process crash. Reserving
+before upload without excluding cleanup allows a sufficiently delayed write to
+recreate an object after its deletion tombstone. A reported failure can also
+follow a successful photo commit, so immediate deletion is unsafe.
+
+**How to apply:** Reuse the staging ledger for newly created import objects,
+keep attachment transactional, and never backfill old import objects merely
+because they share the same storage prefix.
+
 Authorize writes that can trigger retirement on the server, not just through
 management-page link visibility. Club creation and updates require a verified
 administrator; public club reads remain public.

@@ -2,6 +2,7 @@ import { clubsTable, db, photographersTable, photosTable, uploadReservationsTabl
 import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
 import { ObjectStorageService } from "./objectStorage";
 import { logger } from "./logger";
+import { stagedObjectPathPattern } from "./staged-object-path";
 
 export type UploadTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 // Signed PUT URLs last 15 minutes. Never delete while a PUT can still recreate
@@ -10,7 +11,6 @@ export const UPLOAD_STAGING_TTL_MS = 24 * 60 * 60 * 1000;
 export const UPLOAD_CLEANUP_RETRY_MS = 60 * 60 * 1000;
 export const UPLOAD_RECLAIM_DELAY_MS = UPLOAD_STAGING_TTL_MS;
 const service = new ObjectStorageService();
-const uploadPathPattern = /^\/objects\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class UploadUnavailableError extends Error {
   constructor() {
@@ -27,16 +27,35 @@ function uploadObjectPath(imageUrl: string): string | null {
     const normalized = service.normalizeObjectEntityPath(parsed.toString());
     const pathname = new URL(normalized, "https://local.invalid").pathname;
     const path = pathname.replace(/^\/api\/storage(?=\/objects\/)/, "");
-    return uploadPathPattern.test(path) ? path : null;
+    return stagedObjectPathPattern.test(path) ? path : null;
   } catch {
     return null; // External/legacy image URLs do not enter the staging lifecycle.
   }
 }
 
 export async function registerPendingUpload(objectPath: string, now = new Date()): Promise<void> {
-  if (!uploadPathPattern.test(objectPath)) throw new Error("Invalid upload object path");
+  if (!stagedObjectPathPattern.test(objectPath)) throw new Error("Invalid upload object path");
   await db.insert(uploadReservationsTable).values({
     objectPath, expiresAt: new Date(now.getTime() + UPLOAD_STAGING_TTL_MS),
+  });
+}
+
+/** Commit the reservation before writing bytes, and exclude cleanup during the
+ * write. An ambiguous storage failure leaves a durable pending row for expiry.
+ * Holding its row lock prevents a slow write from recreating a collected file.
+ */
+export async function stageImportObject(
+  objectPath: string, write: () => Promise<void>,
+): Promise<void> {
+  if (!objectPath.startsWith("/objects/imports/")) throw new Error("Invalid import object path");
+  await registerPendingUpload(objectPath);
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select().from(uploadReservationsTable)
+      .where(eq(uploadReservationsTable.objectPath, objectPath)).for("update");
+    if (!row || row.status !== "pending" || row.expiresAt.getTime() <= Date.now()) {
+      throw new UploadUnavailableError();
+    }
+    await write();
   });
 }
 
