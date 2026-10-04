@@ -495,10 +495,12 @@ function updateManifests(manifests, timestamp, baseUrl, assetsByHash) {
     manifest.createdAt = new Date(
       Number(timestamp.split('-')[0]),
     ).toISOString();
-    manifest.extra.expoClient.hostUri =
-      baseUrl.replace('https://', '') + '/' + platform;
-    manifest.extra.expoGo.debuggerHost =
-      baseUrl.replace('https://', '') + '/' + platform;
+    // Expo Go uses hostUri to reopen this manifest after OAuth. Platform is
+    // selected by a request header, not an /android or /ios manifest route.
+    const { manifestHost } = require('./manifest-host.cjs');
+    const hostUri = manifestHost(baseUrl, basePath);
+    manifest.extra.expoClient.hostUri = hostUri;
+    manifest.extra.expoGo.debuggerHost = hostUri;
     manifest.extra.expoGo.packagerOpts.dev = false;
 
     if (manifest.assets && manifest.assets.length > 0) {

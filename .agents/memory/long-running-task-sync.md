@@ -14,3 +14,5 @@ Publishing updates main, not an active task's isolated changes. Apply the task h
 **Why:** A successful republish generated a newer manifest but still served older native routes while the current development bundle contained the task's fixes. Replit's task documentation confirms changes reach main through Apply. The user explicitly approved separating the tested development handoff from remaining production release QA to resolve this dependency.
 
 **How to apply:** Check published bundle feature/route content as well as reachability and timestamps. If an active implementation task also requires production QA before completion, seek explicit scope approval to separate the development handoff from subsequent production QA; do not label untested release behavior as passed.
+
+The same separation can be necessary for repairs discovered during production QA: an active repair can still be absent from main after a successful republish. Obtain approval to hand off and apply the repair before continuing device tests, rather than repeatedly publishing the unchanged source.

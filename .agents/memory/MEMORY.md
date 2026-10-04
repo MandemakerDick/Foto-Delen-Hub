@@ -23,6 +23,7 @@
 - [Expo React version alignment](expo-react-version-alignment.md) — root pnpm React overrides defeat Expo's local version pin; native and shared React peers must agree.
 - [Clerk Expo Core 3 results](clerk-expo-core3-results.md) — custom sign-in methods can return an error object instead of throwing; check both the result and resource status.
 - [Android Google OAuth recovery](android-oauth-custom-tab.md) — an interrupted Expo auth session can orphan a Chrome Custom Tab; close it before retrying.
+- [Published Expo Go callbacks](photomatrix-expo-oauth.md) — authentication must reopen the hosted artifact over the right transport; preview evidence does not clear installed-app schemes.
 - [PhotoMatrix Clerk startup](photomatrix-clerk-startup.md) — keep public navigation independent of Clerk readiness to avoid a blank screen while auth initializes.
 - [PhotoMatrix account indicator](photomatrix-account-indicator.md) — prefer a compact top-right sign-out control with optional first name, not an email/status card.
 - [PhotoMatrix upload confirmation](photomatrix-upload-confirmation.md) — photo picking is draft selection, not consent to upload; require a separate confirmation.

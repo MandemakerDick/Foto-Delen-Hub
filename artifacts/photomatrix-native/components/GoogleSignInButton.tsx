@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSSO } from '@clerk/expo';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { oauthScheme } from '@/utils/emailAuth';
 import { useColors } from '@/hooks/useColors';
 import { useLocale } from '@/context/locale';
 
 const PENDING_GOOGLE_SIGN_IN = 'photomatrix:google-sign-in-pending';
+WebBrowser.maybeCompleteAuthSession();
 
-export function GoogleSignInButton({ onSuccess }: { onSuccess?: () => void }) {
+export function GoogleSignInButton({ onSuccess, disabled = false, onBusyChange }: { onSuccess?: () => void; disabled?: boolean; onBusyChange?: (busy: boolean) => void }) {
   const colors = useColors();
   const { t } = useLocale();
   const { startSSOFlow } = useSSO();
@@ -38,15 +43,23 @@ export function GoogleSignInButton({ onSuccess }: { onSuccess?: () => void }) {
   };
 
   const signIn = async () => {
-    if (busyRef.current || checkingRecovery || needsRecovery) return;
+    if (disabled || busyRef.current || checkingRecovery || needsRecovery) return;
     busyRef.current = true;
     setError('');
     setBusy(true);
+    onBusyChange?.(true);
     const attemptId = `${Date.now()}:${Math.random()}`;
     let completed = false;
     try {
       if (Platform.OS !== 'web') await AsyncStorage.setItem(PENDING_GOOGLE_SIGN_IN, attemptId);
-      const result = await startSSOFlow({ strategy: 'oauth_google' });
+      const redirectUrl = AuthSession.makeRedirectUri({
+        path: 'sso-callback',
+        scheme: oauthScheme(
+          Constants.executionEnvironment === ExecutionEnvironment.StoreClient,
+          process.env.EXPO_PUBLIC_CLERK_PROXY_URL,
+        ),
+      });
+      const result = await startSSOFlow({ strategy: 'oauth_google', redirectUrl });
       if (result.createdSessionId && result.setActive) {
         await result.setActive({ session: result.createdSessionId });
         completed = true;
@@ -68,6 +81,7 @@ export function GoogleSignInButton({ onSuccess }: { onSuccess?: () => void }) {
       }
       busyRef.current = false;
       setBusy(false);
+      onBusyChange?.(false);
     }
     if (completed) onSuccess?.();
   };
@@ -78,7 +92,7 @@ export function GoogleSignInButton({ onSuccess }: { onSuccess?: () => void }) {
       <Pressable accessibilityRole="button" onPress={() => { void confirmClosed(); }} style={[styles.button, { borderColor: colors.border }]}>
         <Text style={{ color: colors.foreground }}>{t('googleWindowClosed')}</Text>
       </Pressable>
-    </> : <Pressable accessibilityRole="button" onPress={signIn} disabled={busy || checkingRecovery} style={[styles.button, { borderColor: colors.border, opacity: busy || checkingRecovery ? 0.6 : 1 }]}>
+    </> : <Pressable accessibilityRole="button" onPress={signIn} disabled={disabled || busy || checkingRecovery} style={[styles.button, { borderColor: colors.border, opacity: disabled || busy || checkingRecovery ? 0.6 : 1 }]}>
       <Text style={{ color: colors.foreground }}>{busy ? t('sending') : checkingRecovery ? t('authLoading') : t('continueGoogle')}</Text>
     </Pressable>}
     {!!error && <Text accessibilityRole="alert" style={[styles.error, { color: colors.primary }]}>{error}</Text>}

@@ -147,3 +147,6 @@ EMAIL_FROM = "PhotoMatrix <noreply@connectingthedots.fit>"
 
 [userenv.development]
 FEEDBACK_EMAIL = "dick.mandemaker@live.nl"
+
+[userenv.production]
+APP_ORIGIN = "https://photo-share-hub--dickmandemaker.replit.app"
