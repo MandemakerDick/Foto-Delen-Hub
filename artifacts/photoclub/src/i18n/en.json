@@ -1,4 +1,16 @@
 {
+  "profileLoad": {
+    "title": "Photographer profile unavailable",
+    "body": "We couldn’t check whether your account has a linked photographer profile. Please try again.",
+    "refreshTitle": "Profile refresh failed",
+    "refreshBody": "Your previously loaded information is still shown. Your current edits have been kept. Please try again.",
+    "publicBody": "You can still browse this page. Your photographer profile could not be loaded, so account actions may be unavailable.",
+    "authBody": "Your session could not be verified. Please retry, or sign out and sign in again.",
+    "retry": "Retry",
+    "retrying": "Retrying…",
+    "signInAgain": "Sign out and sign in again",
+    "signOutError": "Could not sign out. Please try again."
+  },
   "nav": {
     "gallery": "Gallery",
     "clubs": "Clubs",

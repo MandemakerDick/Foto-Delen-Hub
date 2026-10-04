@@ -1,6 +1,6 @@
 ---
 name: Playwright strict mode and getByText
-description: How to avoid strict mode violations when asserting translated text in dialogs.
+description: Avoid ambiguous text locators in dialogs and responsive pages.
 ---
 
 ## Rule
@@ -23,3 +23,10 @@ await page.getByText("Theme", { exact: true }).toBeVisible(); // still may match
 ```
 
 The `locator("label").filter({ hasText: "..." })` approach is the most reliable for asserting translated label text in forms.
+
+## Responsive text copies
+Use accessible role locators for responsive headings rather than assuming exact text is unique.
+
+**Why:** `getByText` can match both a CSS-hidden copy and the visible copy. Adding `exact: true` or asserting `toBeVisible()` does not resolve that ambiguity.
+
+**How to apply:** Prefer `getByRole("heading", { name: expectedTitle, exact: true })`, which excludes inaccessible hidden copies by default, or scope to the intended visible region.

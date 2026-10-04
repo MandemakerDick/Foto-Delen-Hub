@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMyProfile } from "@/hooks/use-my-profile";
+import { ProfileLoadNotice } from "@/components/profile-load-notice";
 
 type PhotoEdit = { title: string; themeId: string; clubId: string };
 
@@ -58,7 +59,7 @@ export default function PhotographerDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isSignedIn, userId } = useAuth();
-  const { profile: myProfile } = useMyProfile();
+  const { profile: myProfile, error: profileError, refetch: retryProfile } = useMyProfile();
 
   const { data: photographer, isLoading: photographerLoading } = useGetPhotographer(photographerId, {
     query: { enabled: !!photographerId, queryKey: getGetPhotographerQueryKey(photographerId) },
@@ -270,6 +271,7 @@ export default function PhotographerDetail() {
 
   return (
     <div className="flex flex-col">
+      <ProfileLoadNotice error={profileError} retry={retryProfile} background={myProfile !== undefined} publicView />
       <Helmet>
         <meta property="og:title" content={photographer.name} />
         <meta property="og:description" content={photographer.bio ?? `Portfolio of ${photographer.name} on PhotoMatrix`} />

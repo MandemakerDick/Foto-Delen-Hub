@@ -1,4 +1,16 @@
 {
+  "profileLoad": {
+    "title": "Fotografenprofiel niet beschikbaar",
+    "body": "We konden niet controleren of je account aan een fotografenprofiel is gekoppeld. Probeer het opnieuw.",
+    "refreshTitle": "Profiel vernieuwen mislukt",
+    "refreshBody": "Je eerder geladen gegevens blijven zichtbaar. Je huidige wijzigingen zijn bewaard. Probeer het opnieuw.",
+    "publicBody": "Je kunt deze pagina blijven bekijken. Je fotografenprofiel kon niet worden geladen, waardoor accountacties mogelijk niet beschikbaar zijn.",
+    "authBody": "Je sessie kon niet worden gecontroleerd. Probeer het opnieuw, of log uit en log opnieuw in.",
+    "retry": "Opnieuw proberen",
+    "retrying": "Opnieuw proberen…",
+    "signInAgain": "Uitloggen en opnieuw inloggen",
+    "signOutError": "Uitloggen mislukt. Probeer het opnieuw."
+  },
   "nav": {
     "gallery": "Galerij",
     "clubs": "Clubs",

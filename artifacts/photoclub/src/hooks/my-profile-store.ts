@@ -8,6 +8,13 @@ export type MyProfile = {
   createdAt: string;
 };
 
+export class ProfileLoadError extends Error {
+  constructor(public readonly status: number) {
+    super(`Could not load photographer profile (${status})`);
+    this.name = "ProfileLoadError";
+  }
+}
+
 export type ProfileSnapshot = {
   userId: string | null | undefined;
   identityRevision: number;
@@ -58,7 +65,7 @@ export function createMyProfileStore(fetcher: typeof fetch = (...args) => fetch(
         credentials: "include", cache: "no-store", signal: requestController.signal,
       });
       if (!response.ok && response.status !== 404) {
-        throw new Error(`Could not load photographer profile (${response.status})`);
+        throw new ProfileLoadError(response.status);
       }
       const profile = response.status === 404 ? null : await response.json() as MyProfile;
       if (!isCurrent()) return;
@@ -66,7 +73,7 @@ export function createMyProfileStore(fetcher: typeof fetch = (...args) => fetch(
     } catch (error) {
       if (!isCurrent()) return;
       publish({
-        ...snapshot, profile: snapshot.profile ?? null, loading: false,
+        ...snapshot, loading: false,
         error: error instanceof Error ? error : new Error("Could not load photographer profile"),
       });
     } finally {

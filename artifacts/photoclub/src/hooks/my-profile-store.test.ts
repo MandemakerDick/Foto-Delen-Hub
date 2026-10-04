@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createMyProfileStore, getProfileView, type MyProfile } from "./my-profile-store";
+import { createMyProfileStore, getProfileView, ProfileLoadError, type MyProfile } from "./my-profile-store";
 
 type PendingRequest = {
   input: RequestInfo | URL;
@@ -52,6 +52,71 @@ afterEach(() => {
 });
 
 describe("createMyProfileStore", () => {
+  it.each([401, 500, 503])("keeps an initial HTTP %s failure unknown until a successful retry", async (status) => {
+    const { fetcher, requests } = createDeferredFetcher();
+    const store = createMyProfileStore(fetcher);
+    store.setIdentity("fixture-account");
+    requests[0].resolve(response({ error: "fixture failure" }, status));
+    await settleAsyncWork();
+    const failed = store.getSnapshot();
+    expect(failed.profile).toBeUndefined();
+    expect(failed.loading).toBe(false);
+    expect(failed.error).toBeInstanceOf(ProfileLoadError);
+    expect((failed.error as ProfileLoadError).status).toBe(status);
+
+    const retry = store.refresh("fixture-account", failed.identityRevision);
+    expect(store.getSnapshot()).toMatchObject({ profile: undefined, loading: true, error: null });
+    requests[1].resolve(response(profile(42, "Recovered fixture")));
+    await retry;
+    expect(store.getSnapshot()).toMatchObject({ profile: { id: 42 }, loading: false, error: null });
+  });
+
+  it("does not turn an initial network failure into a confirmed missing profile", async () => {
+    const { fetcher, requests } = createDeferredFetcher();
+    const store = createMyProfileStore(fetcher);
+    store.setIdentity("fixture-account");
+    requests[0].reject(new TypeError("Fixture network unavailable"));
+    await settleAsyncWork();
+    expect(store.getSnapshot()).toMatchObject({ profile: undefined, loading: false });
+    expect(store.getSnapshot().error).toBeInstanceOf(TypeError);
+    const retry = store.refresh("fixture-account", store.getSnapshot().identityRevision);
+    requests[1].resolve(response({ error: "No linked profile" }, 404));
+    await retry;
+    expect(store.getSnapshot()).toMatchObject({ profile: null, loading: false, error: null });
+  });
+
+  it.each([401, 500])("preserves the exact loaded profile during a failed HTTP %s refresh", async (status) => {
+    const { fetcher, requests } = createDeferredFetcher();
+    const store = createMyProfileStore(fetcher);
+    store.setIdentity("fixture-account");
+    requests[0].resolve(response(profile(42, "Loaded fixture")));
+    await settleAsyncWork();
+    const loaded = store.getSnapshot().profile;
+    const retry = store.refresh("fixture-account", store.getSnapshot().identityRevision);
+    expect(store.getSnapshot()).toMatchObject({ loading: false, error: null });
+    expect(store.getSnapshot().profile).toBe(loaded);
+    requests[1].resolve(response({ error: "Fixture refresh failure" }, status));
+    await retry;
+    expect(store.getSnapshot().profile).toBe(loaded);
+    expect(store.getSnapshot().loading).toBe(false);
+    expect((store.getSnapshot().error as ProfileLoadError).status).toBe(status);
+  });
+
+  it("rejects a failed screen's retry callback after the identity changes", async () => {
+    const { fetcher, requests } = createDeferredFetcher();
+    const store = createMyProfileStore(fetcher);
+    store.setIdentity("fixture-A");
+    requests[0].resolve(response({}, 500));
+    await settleAsyncWork();
+    const oldRevision = store.getSnapshot().identityRevision;
+    store.setIdentity("fixture-B");
+    await store.refresh("fixture-A", oldRevision);
+    expect(requests).toHaveLength(2);
+    requests[1].resolve(response(profile(43, "Account B fixture")));
+    await settleAsyncWork();
+    expect(store.getSnapshot()).toMatchObject({ userId: "fixture-B", profile: { id: 43 }, error: null });
+  });
+
   it("starts unloaded, does not fetch until signed in, and keeps stores isolated", () => {
     const firstFetcher = createDeferredFetcher();
     const secondFetcher = createDeferredFetcher();
@@ -315,7 +380,7 @@ describe("createMyProfileStore", () => {
     expect(store.getSnapshot().error).toBeInstanceOf(Error);
     expect(store.getSnapshot()).toMatchObject({
       userId: "sameuser",
-      profile: null,
+      profile: undefined,
       loading: false,
     });
 

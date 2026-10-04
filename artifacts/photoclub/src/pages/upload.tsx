@@ -24,6 +24,7 @@ import { PhotoDraftPicker } from "@/components/photo-draft-picker";
 import { ClubProposal } from "@/components/club-proposal";
 import { storePhoto, UploadTimeoutError } from "@/lib/photo-upload";
 import { useMyProfile } from "@/hooks/use-my-profile";
+import { ProfileLoadNotice } from "@/components/profile-load-notice";
 import { useAuth } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +61,7 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { profile, loading } = useMyProfile();
+  const { profile, loading, error, refetch } = useMyProfile();
 
   const allClubs = useListClubs();
   // A photographer sees only their memberships; No club is always available.
@@ -181,10 +182,15 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
     );
   }
 
+  if (!isAdmin && error && profile === undefined) {
+    return <ProfileLoadNotice error={error} retry={refetch} />;
+  }
+
   // Clerk user: must link a photographer profile first
   if (!isAdmin && !profile) {
     return (
       <div className="max-w-md mx-auto text-center py-20 px-4">
+        <ProfileLoadNotice error={error} retry={refetch} background />
         <div className="w-14 h-14 rounded-full bg-secondary border border-border flex items-center justify-center mx-auto mb-6">
           <Link2 className="w-6 h-6 text-primary" />
         </div>
@@ -205,6 +211,7 @@ function UploadForm({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-5xl">
+      {!isAdmin && <ProfileLoadNotice error={error} retry={refetch} background />}
       <div className="mb-10 text-center">
         <h1 className="font-serif text-4xl font-bold mb-4">{t("upload.title")}</h1>
         <p className="text-muted-foreground text-lg">{t("upload.subtitle")}</p>

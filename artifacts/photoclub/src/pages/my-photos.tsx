@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useMyProfile, type MyProfile as PhotographerProfile } from "@/hooks/use-my-profile";
+import { ProfileLoadNotice } from "@/components/profile-load-notice";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1236,13 +1237,14 @@ function SignInFallback() {
 }
 
 export default function MyPhotos() {
-  const { profile, loading, refetch, updateProfile } = useMyProfile();
+  const { profile, loading, error, refetch, updateProfile } = useMyProfile();
 
   return (
     <Show
       when="signed-in"
       fallback={<SignInFallback />}
     >
+      <ProfileLoadNotice error={error} retry={refetch} background={profile !== undefined} />
       {loading ? (
         <div className="container mx-auto px-4 py-16">
           <div className="flex items-center gap-4 mb-10 animate-pulse">

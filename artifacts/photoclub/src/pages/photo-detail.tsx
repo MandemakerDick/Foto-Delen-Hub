@@ -29,6 +29,7 @@ import {
 } from "@workspace/api-client-react";
 import { SignInButton, useAuth } from "@clerk/react";
 import { useMyProfile } from "@/hooks/use-my-profile";
+import { ProfileLoadNotice } from "@/components/profile-load-notice";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -126,7 +127,7 @@ export default function PhotoDetail() {
   const createCommentMutation = useCreateComment();
   const deleteCommentMutation = useDeleteComment();
 
-  const { profile: myProfile } = useMyProfile();
+  const { profile: myProfile, error: profileError, refetch: retryProfile } = useMyProfile();
   const { data: adminStatus } = useGetAdminStatus({ query: { queryKey: getGetAdminStatusQueryKey() } });
   const dateLocale = useDateLocale();
 
@@ -423,6 +424,7 @@ export default function PhotoDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <ProfileLoadNotice error={profileError} retry={retryProfile} background={myProfile !== undefined} publicView />
       {photo && (
         <Helmet>
           <title>{photo.title} — PhotoMatrix</title>
