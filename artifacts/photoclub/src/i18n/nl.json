@@ -649,6 +649,11 @@
     "clubProposalError": "Het clubvoorstel kon niet worden verstuurd."
   },
   "myPhotos": {
+    "loadErrorTitle": "Je foto's konden niet worden geladen",
+    "loadErrorBody": "Je fotolijst is niet beschikbaar. Probeer het opnieuw; dit betekent niet dat je portfolio leeg is.",
+    "refreshErrorTitle": "Je foto's konden niet worden vernieuwd",
+    "refreshErrorBody": "Je eerder geladen foto's blijven zichtbaar. Je niet-opgeslagen wijzigingen blijven behouden.",
+    "authErrorBody": "Je sessie of toegang kon niet worden gecontroleerd. Probeer het opnieuw, of gebruik Afmelden hierboven en meld je opnieuw aan.",
     "signInTitle": "Log in om je foto's te beheren",
     "signInBody": "Maak of koppel een fotografenprofiel en deel je werk.",
     "connectTitle": "Koppel je profiel",

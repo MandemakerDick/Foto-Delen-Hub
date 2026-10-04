@@ -649,6 +649,11 @@
     "clubProposalError": "Could not send the club proposal."
   },
   "myPhotos": {
+    "loadErrorTitle": "Could not load your photographs",
+    "loadErrorBody": "Your photo list is unavailable. Please retry; this does not mean your portfolio is empty.",
+    "refreshErrorTitle": "Could not refresh your photographs",
+    "refreshErrorBody": "Your previously loaded photographs are still shown. Your unsaved changes are preserved.",
+    "authErrorBody": "Your session or access could not be verified. Please retry, or use Sign out above and sign in again.",
     "signInTitle": "Sign in to manage your photos",
     "signInBody": "Create or link a photographer profile, then start sharing your work.",
     "connectTitle": "Connect your profile",

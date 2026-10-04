@@ -40,6 +40,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useMyProfile, type MyProfile as PhotographerProfile } from "@/hooks/use-my-profile";
 import { ProfileLoadNotice } from "@/components/profile-load-notice";
+import { MyPhotosLoadNotice } from "@/components/my-photos-load-notice";
+import { myPhotosQueryOptions, retryMyPhotos } from "@/lib/my-photos-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -822,10 +824,14 @@ function MyPhotosDashboard({
   profile,
   onProfileUpdated,
   onProfilePartialUpdate,
+  identityKey,
+  isCurrentIdentity,
 }: {
   profile: PhotographerProfile;
   onProfileUpdated: () => void;
   onProfilePartialUpdate: (partial: Partial<PhotographerProfile>) => void;
+  identityKey: string;
+  isCurrentIdentity: () => boolean;
 }) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -838,10 +844,13 @@ function MyPhotosDashboard({
     window.location.assign(homePath);
   };
 
-  const { data: photos = [], isLoading } = useListPhotos(
+  const { data: photoData, isLoading, error: photoError, isFetching, refetch: refetchPhotos } = useListPhotos(
     { photographerId: profile.id },
-    { query: { queryKey: getListPhotosQueryKey({ photographerId: profile.id }) } },
+    { query: myPhotosQueryOptions(profile.id, identityKey, isCurrentIdentity) },
   );
+  const photos = photoData ?? [];
+  const hasLoadedPhotos = photoData !== undefined;
+  const retryPhotos = () => retryMyPhotos(isCurrentIdentity, refetchPhotos);
 
   const deleteMutation = useDeletePhoto();
 
@@ -1016,18 +1025,18 @@ function MyPhotosDashboard({
       {/* Stats bar */}
       <div className="mb-10 grid grid-cols-3 gap-3 border-b border-border/40 pb-8 sm:flex sm:gap-8">
         <div>
-          <div className="text-2xl font-serif font-bold sm:text-3xl">{photos.length}</div>
+          <div className="text-2xl font-serif font-bold sm:text-3xl">{hasLoadedPhotos ? photos.length : "—"}</div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">{t("search.photosSection")}</div>
         </div>
         <div>
           <div className="text-2xl font-serif font-bold sm:text-3xl">
-            {photos.reduce((sum, p) => sum + Number(p.likeCount || 0), 0)}
+            {hasLoadedPhotos ? photos.reduce((sum, p) => sum + Number(p.likeCount || 0), 0) : "—"}
           </div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">{t("myPhotos.totalLikes")}</div>
         </div>
         <div>
           <div className="text-2xl font-serif font-bold sm:text-3xl">
-            {photos.reduce((sum, p) => sum + Number(p.commentCount ?? 0), 0)}
+            {hasLoadedPhotos ? photos.reduce((sum, p) => sum + Number(p.commentCount ?? 0), 0) : "—"}
           </div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground sm:text-xs">{t("myPhotos.commentsReceived")}</div>
         </div>
@@ -1058,13 +1067,14 @@ function MyPhotosDashboard({
       )}
 
       {/* Photo grid */}
+      <MyPhotosLoadNotice error={photoError} background={hasLoadedPhotos} fetching={isFetching} retry={retryPhotos} />
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="aspect-[4/5] bg-muted rounded-sm animate-pulse" />
           ))}
         </div>
-      ) : photos.length === 0 ? (
+      ) : !hasLoadedPhotos ? null : photos.length === 0 ? (
         <div className="text-center py-20">
           <Camera className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
           <p className="font-serif text-xl text-muted-foreground mb-2">{t("myPhotos.noPhotosTitle")}</p>
@@ -1237,7 +1247,7 @@ function SignInFallback() {
 }
 
 export default function MyPhotos() {
-  const { profile, loading, error, refetch, updateProfile } = useMyProfile();
+  const { profile, loading, error, refetch, updateProfile, identityKey, isCurrentIdentity } = useMyProfile();
 
   return (
     <Show
@@ -1263,7 +1273,7 @@ export default function MyPhotos() {
       ) : profile === null ? (
         <LinkProfilePanel onLinked={refetch} />
       ) : profile ? (
-        <MyPhotosDashboard profile={profile} onProfileUpdated={refetch} onProfilePartialUpdate={updateProfile} />
+        <MyPhotosDashboard key={`${identityKey}:${profile.id}`} profile={profile} onProfileUpdated={refetch} onProfilePartialUpdate={updateProfile} identityKey={identityKey} isCurrentIdentity={isCurrentIdentity} />
       ) : null}
     </Show>
   );

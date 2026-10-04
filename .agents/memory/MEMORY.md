@@ -50,3 +50,4 @@
 - [Exact source recovery](source-recovery-io.md) — terminal transcripts can truncate or normalize file content; recover git objects through temporary files and filesystem reads.
 - [New photo placement](new-photo-order-policy.md) — new uploads go first; existing photographs shift down without losing their relative custom order.
 - [Photographer ownership rollout](photographer-ownership-rollout.md) — one account owns one profile; resolving existing duplicate owners requires explicit per-account approval.
+- [Browser mock module interoperability](browser-mock-module-interop.md) — raw intercepted browser modules do not receive Vite's CommonJS import rewriting.

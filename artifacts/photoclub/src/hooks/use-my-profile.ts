@@ -37,6 +37,14 @@ export function useMyProfile() {
     (partial: Partial<MyProfile>) => store.updateProfile(userId, identityRevision, partial),
     [userId, identityRevision],
   );
+  const isCurrentIdentity = useCallback(() => {
+    const current = store.getSnapshot();
+    return typeof userId === "string" && current.userId === userId &&
+      current.identityRevision === identityRevision;
+  }, [userId, identityRevision]);
 
-  return { ...getProfileView(snapshot, userId), invalidate: refetch, refetch, updateProfile };
+  return {
+    ...getProfileView(snapshot, userId), invalidate: refetch, refetch, updateProfile,
+    identityKey: `${userId ?? ""}:${identityRevision ?? ""}`, isCurrentIdentity,
+  };
 }
