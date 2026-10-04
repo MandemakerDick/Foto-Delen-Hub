@@ -470,6 +470,12 @@
     "signInToJoin": "Sign in to join"
   },
   "photoDetail": {
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "loadErrorTitle": "Could not load this photograph",
+    "loadErrorBody": "Please try again. Any previously loaded photograph is still shown.",
+    "selectionUnavailable": "This browsing selection is no longer available. Return to the Gallery to continue browsing.",
+    "nextLoadError": "Could not load the next photograph in this selection. Your current photograph is still shown.",
     "back": "Back to Gallery",
     "backToPhotographer": "Back to Photographer",
     "backToClub": "Back to Club",
@@ -534,6 +540,14 @@
     "feedEmptyBody": "The photographers you follow have not shared a photo yet."
   },
   "gallery": {
+    "loadErrorTitle": "Could not load the Gallery",
+    "initialLoadError": "We could not load the photographs. Please try again.",
+    "nextPageError": "Could not load more photographs. Your loaded photographs and filters have been kept.",
+    "refreshError": "Could not refresh the Gallery. Your previously loaded photographs are still shown.",
+    "retry": "Retry",
+    "invalidDateRange": "The start date must be on or before the end date.",
+    "invalidSharedView": "Some shared filters were invalid and have been reset.",
+    "filterLoadError": "Some filter options could not be loaded. Your photographs and active filters are unchanged.",
     "title": "The Gallery",
     "subtitle": "Every photo, every photographer, every theme.",
     "searchPlaceholder": "Search by title or description...",

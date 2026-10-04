@@ -1,4 +1,4 @@
-import { useParams, Link, useSearch } from "wouter";
+import { useParams, Link, useSearch, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,6 +30,8 @@ import {
 import { SignInButton, useAuth } from "@clerk/react";
 import { useMyProfile } from "@/hooks/use-my-profile";
 import { ProfileLoadNotice } from "@/components/profile-load-notice";
+import { useGalleryNavigation } from "@/hooks/use-gallery-navigation";
+import { safeGalleryPath } from "@/lib/gallery-view";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -69,6 +71,7 @@ export default function PhotoDetail() {
   const { id } = useParams();
   const photoId = Number(id);
   const search = useSearch();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isSignedIn, userId } = useAuth();
 
@@ -79,7 +82,13 @@ export default function PhotoDetail() {
   const ctx = new URLSearchParams(search).get("ctx") ?? "gallery";
   const [ctxType, ctxId] = ctx.includes(":") ? ctx.split(":") : [ctx, ""];
   const contextId = Number(ctxId);
+  const rawView = new URLSearchParams(search).get("view");
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const galleryView = ctxType === "gallery" ? safeGalleryPath(rawView, base) : null;
+  const galleryNavigation = useGalleryNavigation(galleryView, photoId);
+  const useGallerySelection = ctxType === "gallery" && rawView !== null;
   const backHref =
+    galleryView ? galleryView.slice(base.length) :
     ctxType === "photographer" && Number.isInteger(contextId) && contextId > 0
       ? `/photographers/${contextId}`
       : ctxType === "club" && Number.isInteger(contextId) && contextId > 0
@@ -100,14 +109,17 @@ export default function PhotoDetail() {
     ctxType === "club"         ? { clubId: Number(ctxId) } :
     ctxType === "theme"        ? { themeId: Number(ctxId) } :
     {};
-  const { data: ctxPhotos = [] } = useListPhotos(listParams);
+  const { data: ctxPhotos = [] } = useListPhotos(listParams, {
+    query: { enabled: !useGallerySelection, queryKey: getListPhotosQueryKey(listParams) },
+  });
   const ctxIndex = ctxPhotos.findIndex((p) => p.id === photoId);
-  const prevPhoto = ctxIndex > 0 ? ctxPhotos[ctxIndex - 1] : null;
-  const nextPhoto = ctxIndex !== -1 && ctxIndex < ctxPhotos.length - 1 ? ctxPhotos[ctxIndex + 1] : null;
-  const ctxParam = ctx !== "gallery" ? `?ctx=${encodeURIComponent(ctx)}` : "";
+  const previousId = useGallerySelection ? galleryNavigation.previous : ctxIndex > 0 ? ctxPhotos[ctxIndex - 1].id : null;
+  const nextId = useGallerySelection ? galleryNavigation.next : ctxIndex !== -1 && ctxIndex < ctxPhotos.length - 1 ? ctxPhotos[ctxIndex + 1].id : null;
+  const ctxParam = galleryView ? `?${new URLSearchParams({ ctx: "gallery", view: galleryView })}` :
+    ctx !== "gallery" ? `?ctx=${encodeURIComponent(ctx)}` : "";
   const queryClient = useQueryClient();
 
-  const { data: photo, isLoading, error } = useGetPhoto(photoId, {
+  const { data: photo, isLoading, error, refetch: retryPhoto, isFetching: photoFetching } = useGetPhoto(photoId, {
     query: { enabled: !!photoId, queryKey: getGetPhotoQueryKey(photoId) },
   });
 
@@ -163,17 +175,34 @@ export default function PhotoDetail() {
     );
   }
 
-  if (error || !photo) {
+  const notFound = error && typeof error === "object" && "status" in error && error.status === 404;
+  if (notFound || (!error && !photo)) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <h2 className="font-serif text-3xl mb-4">{t("photoDetail.notFound")}</h2>
         <p className="text-muted-foreground mb-8">{t("photoDetail.notFoundBody")}</p>
-        <Link href="/photos">
+        <Link href={backHref}>
           <Button variant="outline">{t("photoDetail.returnLink")}</Button>
         </Link>
       </div>
     );
   }
+
+  if (!photo) {
+    return (
+      <div role="alert" data-testid="photo-load-error" className="container mx-auto px-4 py-24 text-center">
+        <h2 className="font-serif text-3xl mb-4">{t("photoDetail.loadErrorTitle")}</h2>
+        <p className="text-muted-foreground mb-8">{t("photoDetail.loadErrorBody")}</p>
+        <Button disabled={photoFetching} onClick={() => void retryPhoto()}>{t("gallery.retry")}</Button>
+        <Link href={backHref} className="ml-3"><Button variant="outline">{backLabel}</Button></Link>
+      </div>
+    );
+  }
+
+  const loadNextPhoto = async () => {
+    const id = await galleryNavigation.loadNext();
+    if (id !== null) navigate(`/photos/${id}${ctxParam}`);
+  };
 
   const handleProposeTheme = () => {
     if (!proposedName.trim()) return;
@@ -425,6 +454,21 @@ export default function PhotoDetail() {
   return (
     <div className="container mx-auto px-4 py-8">
       <ProfileLoadNotice error={profileError} retry={retryProfile} background={myProfile !== undefined} publicView />
+      {error && (
+        <div role="alert" data-testid="photo-load-error" className="mb-6 rounded-lg border border-destructive/40 p-4">
+          <p className="mb-3">{t("photoDetail.loadErrorBody")}</p>
+          <Button disabled={photoFetching} onClick={() => void retryPhoto()}>{t("gallery.retry")}</Button>
+        </div>
+      )}
+      {useGallerySelection && (!galleryView || galleryNavigation.unavailable) && (
+        <p role="status" className="mb-6 text-sm text-muted-foreground">{t("photoDetail.selectionUnavailable")}</p>
+      )}
+      {galleryNavigation.failed && (
+        <div role="alert" data-testid="photo-navigation-error" className="mb-6">
+          <p className="mb-3 text-sm text-muted-foreground">{t("photoDetail.nextLoadError")}</p>
+          <Button disabled={galleryNavigation.pending} onClick={() => void loadNextPhoto()}>{t("gallery.retry")}</Button>
+        </div>
+      )}
       {photo && (
         <Helmet>
           <title>{photo.title} — PhotoMatrix</title>
@@ -571,23 +615,30 @@ export default function PhotoDetail() {
               alt={photo.title}
               className="max-h-[50vh] lg:max-h-[75vh] max-w-full w-auto object-contain shadow-2xl"
             />
-            {prevPhoto && (
+            {previousId !== null && (
               <Link
-                href={`/photos/${prevPhoto.id}${ctxParam}`}
+                href={`/photos/${previousId}${ctxParam}`}
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors"
-                aria-label="Previous photo"
+                aria-label={t("photoDetail.previousPhoto")}
               >
                 <ChevronLeft className="w-5 h-5" />
               </Link>
             )}
-            {nextPhoto && (
+            {nextId !== null && (
               <Link
-                href={`/photos/${nextPhoto.id}${ctxParam}`}
+                href={`/photos/${nextId}${ctxParam}`}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors"
-                aria-label="Next photo"
+                aria-label={t("photoDetail.nextPhoto")}
               >
                 <ChevronRight className="w-5 h-5" />
               </Link>
+            )}
+            {nextId === null && galleryNavigation.canLoadNext && (
+              <Button type="button" variant="ghost" size="icon" onClick={() => void loadNextPhoto()}
+                disabled={galleryNavigation.pending} aria-label={t("photoDetail.nextPhoto")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 text-white hover:bg-black/80">
+                <ChevronRight className={`w-5 h-5 ${galleryNavigation.pending ? "animate-pulse" : ""}`} />
+              </Button>
             )}
           </div>
 

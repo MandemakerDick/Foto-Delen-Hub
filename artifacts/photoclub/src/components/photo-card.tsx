@@ -3,15 +3,20 @@ import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Heart, MessageCircle } from "lucide-react";
 import type { Photo } from "@workspace/api-client-react";
+import { memo } from "react";
 
-export function PhotoCard({ photo, index, context }: { photo: Photo; index?: number; context?: string }) {
+export const PhotoCard = memo(function PhotoCard({ photo, index, context, galleryView }: { photo: Photo; index?: number; context?: string; galleryView?: string }) {
   const { t } = useTranslation();
-  const photoHref = context ? `/photos/${photo.id}?ctx=${encodeURIComponent(context)}` : `/photos/${photo.id}`;
+  const params = new URLSearchParams();
+  if (context) params.set("ctx", context);
+  if (galleryView) params.set("view", galleryView);
+  const photoHref = `/photos/${photo.id}${params.size ? `?${params}` : ""}`;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index ? index * 0.05 : 0 }}
+      transition={{ duration: 0.4, delay: Math.min(Math.max(index ?? 0, 0), 5) * 0.05 }}
+      data-testid={`photo-card-${photo.id}`}
       className="group flex flex-col gap-3"
     >
       <Link href={photoHref} className="block relative aspect-[4/5] overflow-hidden bg-black rounded-sm">
@@ -20,6 +25,7 @@ export function PhotoCard({ photo, index, context }: { photo: Photo; index?: num
           alt={photo.title}
           className="block object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
         {(photo.commentCount ?? 0) > 0 && (
@@ -62,4 +68,4 @@ export function PhotoCard({ photo, index, context }: { photo: Photo; index?: num
       </div>
     </motion.div>
   );
-}
+});

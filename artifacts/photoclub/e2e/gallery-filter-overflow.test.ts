@@ -32,6 +32,7 @@ async function stubApiCalls(page: Page) {
       { pattern: /\/api\/themes(\?|$)/, status: 200, body: [] },
       { pattern: /\/api\/photographers(\?|$)/, status: 200, body: [] },
       { pattern: /\/api\/photos\/recent(\?|$)/, status: 200, body: [] },
+      { pattern: /\/api\/photos\/gallery(\?|$)/, status: 200, body: { items: [], total: 0, nextCursor: null, hasMore: false } },
       { pattern: /\/api\/photos(\?|$)/, status: 200, body: [] },
       {
         pattern: /\/api\/stats(\?|$)/,
@@ -117,9 +118,10 @@ test("gallery search input does not extend past the viewport width on mobile (39
   const filterBar = page.getByTestId("gallery-filter-bar");
   await expect(filterBar).toBeVisible();
 
-  // The search input is the first <input> inside the filter bar.
-  const searchInput = filterBar.locator("input").first();
-  await expect(searchInput, "Expected a search input inside the gallery filter bar").toBeVisible();
+  // Search lives above the filter bar; its first input is a date filter.
+  const searchInput = page.locator("form input").first();
+  await expect(searchInput, "Expected the Gallery text search input").toBeVisible();
+  await expect(searchInput).not.toHaveAttribute("type", "date");
 
   // Measure the rendered bounding box of the input element.
   const inputBox = await searchInput.boundingBox();

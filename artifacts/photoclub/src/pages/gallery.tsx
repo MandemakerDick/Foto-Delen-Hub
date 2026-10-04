@@ -20,73 +20,34 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SearchBar } from "@/components/search-bar";
 import { useToast } from "@/hooks/use-toast";
+import { galleryPath, parseGalleryView, uniqueGalleryPhotos } from "@/lib/gallery-view";
+import { rememberGallerySelection } from "@/lib/gallery-selection";
 
 type SortOption = "newest" | "oldest" | "photographer" | "likes" | "comments" | "random";
 type GroupOption = "none" | "club" | "photographer" | "theme";
 
-const sortOptions = new Set<SortOption>(["newest", "oldest", "photographer", "likes", "comments", "random"]);
-const groupOptions = new Set<GroupOption>(["none", "club", "photographer", "theme"]);
-
-function parseIdList(value: string | null) {
-  return value?.split(",").filter((id) => /^\d+$/.test(id)) ?? [];
-}
-
-function parseDate(value: string | null) {
-  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
-}
-
 export default function Gallery() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const initialParams = useMemo(() => new URLSearchParams(window.location.search), []);
-  const initialGroupParam = initialParams.get("group");
-  const initialGroup = initialGroupParam as GroupOption | null;
-  const initialSort = initialParams.get("sort") as SortOption | null;
-  const initialSeed = Number(initialParams.get("seed"));
-
-  const [search, setSearch] = useState(initialParams.get("search") ?? "");
-  const [debouncedSearch, setDebouncedSearch] = useState(initialParams.get("search") ?? "");
-  const [clubFilter, setClubFilter] = useState<string[]>(() => parseIdList(initialParams.get("clubs")));
-  const [themeFilter, setThemeFilter] = useState<string[]>(() => parseIdList(initialParams.get("themes")));
-  const [photographerFilter, setPhotographerFilter] = useState<string>(() => {
-    const photographer = initialParams.get("photographer");
-    return photographer && /^\d+$/.test(photographer) ? photographer : "all";
-  });
-  const [dateFrom, setDateFrom] = useState(() => parseDate(initialParams.get("from")));
-  const [dateTo, setDateTo] = useState(() => parseDate(initialParams.get("to")));
-  const [groupBy, setGroupBy] = useState<GroupOption>(
-    initialSort === "photographer"
-      ? "photographer"
-      : initialGroup && groupOptions.has(initialGroup)
-        ? initialGroup
-        : "none",
-  );
-  const [sortBy, setSortBy] = useState<SortOption>(
-    initialSort && sortOptions.has(initialSort)
-      ? initialSort
-      : initialGroupParam === "random"
-        ? "random"
-        : "newest",
-  );
-  const [randomSeed, setRandomSeed] = useState(
-    Number.isSafeInteger(initialSeed) && initialSeed > 0 ? initialSeed : Date.now(),
-  );
+  const initial = useMemo(() => parseGalleryView(window.location.search), []);
+  const [invalidSharedView, setInvalidSharedView] = useState(initial.invalid);
+  const [search, setSearch] = useState(initial.view.search);
+  const [debouncedSearch, setDebouncedSearch] = useState(initial.view.search);
+  const [clubFilter, setClubFilter] = useState<string[]>(initial.view.clubs);
+  const [themeFilter, setThemeFilter] = useState<string[]>(initial.view.themes);
+  const [photographerFilter, setPhotographerFilter] = useState(initial.view.photographer);
+  const [dateFrom, setDateFrom] = useState(initial.view.from);
+  const [dateTo, setDateTo] = useState(initial.view.to);
+  const [groupBy, setGroupBy] = useState<GroupOption>(initial.view.group);
+  const [sortBy, setSortBy] = useState<SortOption>(initial.view.sort);
+  const [randomSeed, setRandomSeed] = useState(initial.view.seed);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   const shareablePath = useMemo(() => {
-    const params = new URLSearchParams();
-    const trimmedSearch = search.trim();
-    if (trimmedSearch) params.set("search", trimmedSearch);
-    if (clubFilter.length) params.set("clubs", clubFilter.join(","));
-    if (themeFilter.length) params.set("themes", themeFilter.join(","));
-    if (photographerFilter !== "all") params.set("photographer", photographerFilter);
-    if (dateFrom) params.set("from", dateFrom);
-    if (dateTo) params.set("to", dateTo);
-    if (groupBy !== "none") params.set("group", groupBy);
-    if (sortBy !== "newest") params.set("sort", sortBy);
-    if (sortBy === "random") params.set("seed", String(randomSeed));
-    const query = params.toString();
-    return `${window.location.pathname}${query ? `?${query}` : ""}`;
+    return galleryPath({
+      search, clubs: clubFilter, themes: themeFilter, photographer: photographerFilter,
+      from: dateFrom, to: dateTo, group: groupBy, sort: sortBy, seed: randomSeed,
+    }, window.location.pathname);
   }, [clubFilter, dateFrom, dateTo, groupBy, photographerFilter, randomSeed, search, sortBy, themeFilter]);
 
   useEffect(() => {
@@ -94,13 +55,31 @@ export default function Gallery() {
   }, [shareablePath]);
 
   useEffect(() => {
+    const pathname = window.location.pathname;
+    const restore = () => {
+      if (window.location.pathname !== pathname) return;
+      const { view, invalid } = parseGalleryView(window.location.search);
+      setSearch(view.search); setDebouncedSearch(view.search);
+      setClubFilter(view.clubs); setThemeFilter(view.themes); setPhotographerFilter(view.photographer);
+      setDateFrom(view.from); setDateTo(view.to); setGroupBy(view.group); setSortBy(view.sort); setRandomSeed(view.seed);
+      setInvalidSharedView(invalid);
+    };
+    window.addEventListener("popstate", restore);
+    window.addEventListener("pushState", restore);
+    return () => {
+      window.removeEventListener("popstate", restore);
+      window.removeEventListener("pushState", restore);
+    };
+  }, []);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => window.clearTimeout(timeout);
   }, [search]);
 
-  const { data: clubs } = useListClubs();
-  const { data: themes } = useListThemes();
-  const { data: photographers } = useListPhotographers();
+  const { data: clubs, error: clubsError, refetch: retryClubs, isFetching: clubsFetching } = useListClubs();
+  const { data: themes, error: themesError, refetch: retryThemes, isFetching: themesFetching } = useListThemes();
+  const { data: photographers, error: photographersError, refetch: retryPhotographers, isFetching: photographersFetching } = useListPhotographers();
 
   const galleryParams = useMemo<ListGalleryPhotosParams>(() => ({
     search: debouncedSearch || undefined,
@@ -114,6 +93,12 @@ export default function Gallery() {
     seed: sortBy === "random" ? randomSeed : undefined,
     limit: 24,
   }), [clubFilter, dateFrom, dateTo, debouncedSearch, groupBy, photographerFilter, randomSeed, sortBy, themeFilter]);
+  const invalidDateRange = !!dateFrom && !!dateTo && dateFrom > dateTo;
+  const searchPending = search.trim() !== debouncedSearch;
+  const appliedPath = useMemo(() => galleryPath({
+    search: debouncedSearch, clubs: clubFilter, themes: themeFilter, photographer: photographerFilter,
+    from: dateFrom, to: dateTo, group: groupBy, sort: sortBy, seed: randomSeed,
+  }, window.location.pathname), [debouncedSearch, clubFilter, themeFilter, photographerFilter, dateFrom, dateTo, groupBy, sortBy, randomSeed]);
 
   const {
     data: galleryData,
@@ -121,18 +106,33 @@ export default function Gallery() {
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
+    isError,
+    isFetchNextPageError,
+    isFetching,
+    refetch,
   } = useInfiniteQuery({
     queryKey: getListGalleryPhotosQueryKey(galleryParams),
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam, signal }) => listGalleryPhotos({ ...galleryParams, cursor: pageParam }, { signal }),
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
+    enabled: !invalidDateRange,
   });
 
   const galleryPhotos = useMemo(
-    () => galleryData?.pages.flatMap((page) => page.items) ?? [],
+    () => uniqueGalleryPhotos(galleryData?.pages ?? []),
     [galleryData],
   );
   const totalPhotos = galleryData?.pages[0]?.total ?? 0;
+  const selectedPhotographerName = photographers?.find(p => String(p.id) === photographerFilter)?.name ??
+    galleryPhotos.find(p => String(p.photographerId) === photographerFilter)?.photographerName ?? `#${photographerFilter}`;
+  useEffect(() => {
+    if (!galleryData) return;
+    const last = galleryData.pages.at(-1)!;
+    rememberGallerySelection({
+      path: appliedPath, ids: galleryPhotos.map(photo => photo.id),
+      cursor: last.nextCursor ?? null, hasMore: last.hasMore,
+    });
+  }, [appliedPath, galleryData, galleryPhotos]);
 
   const groupedPhotos = useMemo(() => {
     if (groupBy === "none") {
@@ -163,7 +163,8 @@ export default function Gallery() {
     return groups;
   }, [galleryPhotos, groupBy, t]);
 
-  const activeFiltersCount = clubFilter.length + themeFilter.length + (photographerFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+  const activeFiltersCount = clubFilter.length + themeFilter.length + (photographerFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (search.trim() ? 1 : 0);
+  const changedView = activeFiltersCount > 0 || groupBy !== "none" || sortBy !== "newest";
 
   const toggleFilter = (
     value: string,
@@ -181,6 +182,9 @@ export default function Gallery() {
     setDebouncedSearch("");
     setDateFrom("");
     setDateTo("");
+    setGroupBy("none");
+    setSortBy("newest");
+    setInvalidSharedView(false);
   };
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -268,7 +272,7 @@ export default function Gallery() {
 
           <Select value={photographerFilter} onValueChange={setPhotographerFilter}>
             <SelectTrigger data-testid="gallery-photographer-filter" className="flex-1 min-w-[160px] bg-background border-border/50">
-              <SelectValue placeholder={`${t("gallery.filterAll")} ${t("nav.photographers")}`} />
+              <SelectValue>{photographerFilter === "all" ? `${t("gallery.filterAll")} ${t("nav.photographers")}` : selectedPhotographerName}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{`${t("gallery.filterAll")} ${t("nav.photographers")}`}</SelectItem>
@@ -364,28 +368,53 @@ export default function Gallery() {
             <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{t("gallery.dateTo")}</span>
             <Input data-testid="gallery-date-to" aria-label={t("gallery.dateTo")} type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-7 w-24 sm:w-28 border-0 bg-transparent p-0 text-xs shadow-none focus-visible:ring-0" />
           </div>
-          {activeFiltersCount > 0 && (
+          {changedView && (
             <Button variant="ghost" onClick={clearFilters} className="px-3">
               <X className="w-4 h-4 mr-2" />
               {t("gallery.clearFilters")}
             </Button>
           )}
         </div>
-      </div>
-
-      <div className="mb-6 flex items-center justify-between">
-        <div className="text-sm font-mono text-muted-foreground">
-          {totalPhotos} {t("common.prints")}
-        </div>
-        {activeFiltersCount > 0 && (
-          <div className="flex gap-2">
-            {clubFilter.map((id) => <Badge key={id} variant="secondary">{t("gallery.filterClub")}: {clubs?.find(c => c.id.toString() === id)?.name}</Badge>)}
-            {themeFilter.map((id) => <Badge key={id} variant="secondary">{t("gallery.filterTheme")}: {themes?.find(th => th.id.toString() === id)?.name}</Badge>)}
-            {photographerFilter !== "all" && <Badge variant="secondary">{t("gallery.filterPhotographer")}: {photographers?.find(p => p.id.toString() === photographerFilter)?.name}</Badge>}
+        {(clubsError || themesError || photographersError) && (
+          <div role="alert" data-testid="gallery-filter-error" className="mt-4 text-sm">
+            <p className="mb-3 text-muted-foreground">{t("gallery.filterLoadError")}</p>
+            <Button type="button" size="sm" variant="outline"
+              disabled={clubsFetching || themesFetching || photographersFetching}
+              onClick={() => {
+                if (clubsError) void retryClubs();
+                if (themesError) void retryThemes();
+                if (photographersError) void retryPhotographers();
+              }}>{t("gallery.retry")}</Button>
           </div>
         )}
       </div>
 
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm font-mono text-muted-foreground">
+          {galleryData ? totalPhotos : "—"} {t("common.prints")}
+        </div>
+        {activeFiltersCount > 0 && (
+          <div className="flex min-w-0 max-w-full flex-wrap gap-2">
+            {clubFilter.map((id) => <Badge key={id} variant="secondary">{t("gallery.filterClub")}: {clubs?.find(c => c.id.toString() === id)?.name ?? galleryPhotos.find(p => String(p.clubId) === id)?.clubName ?? `#${id}`}</Badge>)}
+            {themeFilter.map((id) => <Badge key={id} variant="secondary">{t("gallery.filterTheme")}: {themes?.find(th => th.id.toString() === id)?.name ?? galleryPhotos.find(p => String(p.themeId) === id)?.themeName ?? `#${id}`}</Badge>)}
+            {photographerFilter !== "all" && <Badge variant="secondary">{t("gallery.filterPhotographer")}: {selectedPhotographerName}</Badge>}
+          </div>
+        )}
+      </div>
+
+      {invalidSharedView && <p role="alert" className="mb-6 text-sm text-muted-foreground">{t("gallery.invalidSharedView")}</p>}
+      {invalidDateRange && <p role="alert" data-testid="gallery-date-error" className="mb-6 text-sm text-destructive">{t("gallery.invalidDateRange")}</p>}
+      {isError && !invalidDateRange && (
+        <div role="alert" data-testid="gallery-load-error" className="mb-6 rounded-lg border border-destructive/40 bg-secondary p-5">
+          <h2 className="font-semibold">{t("gallery.loadErrorTitle")}</h2>
+          <p className="my-3 text-sm text-muted-foreground">{t(
+            isFetchNextPageError ? "gallery.nextPageError" : galleryPhotos.length ? "gallery.refreshError" : "gallery.initialLoadError",
+          )}</p>
+          <Button type="button" disabled={isFetching} onClick={() => void (isFetchNextPageError ? fetchNextPage() : refetch())}>
+            {t(isFetching ? "gallery.loadingMore" : "gallery.retry")}
+          </Button>
+        </div>
+      )}
       {photosLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -410,28 +439,28 @@ export default function Gallery() {
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-10">
                 {group.photos.map((photo, i) => (
-                  <PhotoCard key={photo.id} photo={photo} index={i} context="gallery" />
+                    <PhotoCard key={photo.id} photo={photo} index={i} context="gallery" galleryView={appliedPath} />
                 ))}
               </div>
             </section>
           ))}
         </div>
-      ) : (
+      ) : !isError && !invalidDateRange ? (
         <div className="text-center py-24 bg-secondary/50 rounded-lg border border-border/50 border-dashed">
           <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="font-serif text-xl font-medium mb-2">{t("gallery.empty")}</h3>
           <p className="text-muted-foreground mb-6">{t("home.recent.subheading")}</p>
           <Button variant="outline" onClick={clearFilters}>{t("gallery.clearFilters")}</Button>
         </div>
-      )}
-      {hasNextPage && (
+      ) : null}
+      {hasNextPage && !invalidDateRange && !isFetchNextPageError && (
         <div className="mt-10 flex justify-center">
           <Button
             data-testid="gallery-load-more"
             type="button"
             variant="outline"
             onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
+            disabled={isFetching || searchPending}
           >
             {isFetchingNextPage ? t("gallery.loadingMore") : t("gallery.loadMore")}
           </Button>

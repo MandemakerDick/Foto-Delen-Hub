@@ -470,6 +470,12 @@
     "signInToJoin": "Aanmelden om lid te worden"
   },
   "photoDetail": {
+    "previousPhoto": "Vorige foto",
+    "nextPhoto": "Volgende foto",
+    "loadErrorTitle": "Deze foto kon niet worden geladen",
+    "loadErrorBody": "Probeer het opnieuw. Een eerder geladen foto blijft zichtbaar.",
+    "selectionUnavailable": "Deze fotoselectie is niet meer beschikbaar. Ga terug naar de galerij om verder te bladeren.",
+    "nextLoadError": "De volgende foto in deze selectie kon niet worden geladen. Je huidige foto blijft zichtbaar.",
     "back": "Terug naar galerij",
     "backToPhotographer": "Terug naar fotograaf",
     "backToClub": "Terug naar fotoclub",
@@ -534,6 +540,14 @@
     "feedEmptyBody": "De fotografen die je volgt hebben nog geen foto gedeeld."
   },
   "gallery": {
+    "loadErrorTitle": "De galerij kon niet worden geladen",
+    "initialLoadError": "De foto's konden niet worden geladen. Probeer het opnieuw.",
+    "nextPageError": "Meer foto's laden is mislukt. Je geladen foto's en filters zijn bewaard.",
+    "refreshError": "De galerij kon niet worden vernieuwd. Je eerder geladen foto's blijven zichtbaar.",
+    "retry": "Opnieuw proberen",
+    "invalidDateRange": "De begindatum moet op of vóór de einddatum liggen.",
+    "invalidSharedView": "Sommige gedeelde filters waren ongeldig en zijn teruggezet.",
+    "filterLoadError": "Sommige filteropties konden niet worden geladen. Je foto's en actieve filters blijven behouden.",
     "title": "De galerij",
     "subtitle": "Elke foto, elke fotograaf, elk thema.",
     "searchPlaceholder": "Zoek op titel of beschrijving...",
